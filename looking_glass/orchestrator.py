@@ -55,11 +55,33 @@ class Orchestrator:
         truth = tern
         ber = np.mean(t_out != truth)
         energy_pj = float((Pp2.sum()+Pm2.sum())*1e-3*dt*1e-9*1e12)  # mW * s -> J, to pJ
-        return {"ber": float(ber), "energy_pj": energy_pj, "window_ns": float(dt)}
+        # Simple per-module SNR proxies (avoid zero-divide)
+        eps = 1e-18
+        snr_emit = float((np.mean(Pp+Pm)+eps)/(np.std(Pp-Pm)+eps))
+        snr_pd = float((np.mean(Ip+Im)+eps)/(np.std(Ip-Im)+eps))
+        snr_tia = float((np.mean(Vp+Vm)+eps)/(np.std(Vp-Vm)+eps))
+        return {
+            "ber": float(ber),
+            "energy_pj": energy_pj,
+            "window_ns": float(dt),
+            "snr_emit": snr_emit,
+            "snr_pd": snr_pd,
+            "snr_tia": snr_tia,
+        }
 
     def run(self, trials=100):
         outs = [self.step() for _ in range(trials)]
         ber = np.median([o["ber"] for o in outs])
         en = np.median([o["energy_pj"] for o in outs])
         dt = np.median([o["window_ns"] for o in outs])
-        return {"p50_ber": float(ber), "p50_energy_pj": float(en), "window_ns": float(dt)}
+        snr_emit = np.median([o["snr_emit"] for o in outs])
+        snr_pd = np.median([o["snr_pd"] for o in outs])
+        snr_tia = np.median([o["snr_tia"] for o in outs])
+        return {
+            "p50_ber": float(ber),
+            "p50_energy_pj": float(en),
+            "window_ns": float(dt),
+            "p50_snr_emit": float(snr_emit),
+            "p50_snr_pd": float(snr_pd),
+            "p50_snr_tia": float(snr_tia),
+        }

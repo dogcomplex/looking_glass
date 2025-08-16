@@ -97,6 +97,23 @@ def quick_crosstalk_sweep(base_sys: SystemParams, trials: int, starts, stops, st
     monotone = all(ys[i] <= ys[i+1] for i in range(len(ys)-1))
     return xs, ys, bool(monotone)
 
+def quick_neighbor_ct_sweep(base_sys: SystemParams, trials: int, starts, stops, steps, *, tia_bw_mhz: float, comp_noise_mV: float):
+    xs, ys = [], []
+    for i in range(steps):
+        x = starts + i*(stops-starts)/(steps-1)
+        emit = EmitterParams(channels=base_sys.channels)
+        optx = OpticsParams(ct_model="neighbor", ct_neighbor_db=float(x))
+        pd = PDParams()
+        tia = TIAParams(bw_mhz=tia_bw_mhz)
+        comp = ComparatorParams(input_noise_mV_rms=comp_noise_mV)
+        clk = ClockParams(window_ns=base_sys.window_ns, jitter_ps_rms=10.0)
+        orch = Orchestrator(base_sys, emit, optx, pd, tia, comp, clk)
+        rows = run_trials(orch, trials)
+        xs.append(x)
+        ys.append(med_ber(rows))
+    monotone = all(ys[i] <= ys[i+1] for i in range(len(ys)-1))
+    return xs, ys, bool(monotone)
+
 
 def main():
     ap = argparse.ArgumentParser()
@@ -204,10 +221,21 @@ def main():
         opt_contrast=(0.8, 0.78),
         opt_transmittance=0.6,
     )
+    nct_range = (-40.0, -20.0, 5)
+    sn_xs, sn_ys, sn_ok = quick_neighbor_ct_sweep(
+        sys_p,
+        trials=args.trials,
+        starts=nct_range[0],
+        stops=nct_range[1],
+        steps=nct_range[2],
+        tia_bw_mhz=sens_tia_bw,
+        comp_noise_mV=sens_comp_noise,
+    )
     sens_effects = {
         "window_ber_improvement": safe_delta(sw_ys),
         "rin_ber_degradation": (sr_ys[-1] - sr_ys[0]) if sr_ys and len(sr_ys) > 1 else 0.0,
         "crosstalk_ber_degradation": (sc_ys[-1] - sc_ys[0]) if sc_ys and len(sc_ys) > 1 else 0.0,
+        "neighbor_crosstalk_ber_degradation": (sn_ys[-1] - sn_ys[0]) if sn_ys and len(sn_ys) > 1 else 0.0,
     }
     summary["sensitivity"] = {
         "config": {
@@ -216,16 +244,19 @@ def main():
             "windows": sens_windows,
             "rin_range": sens_rin,
             "ct_range": sens_ct,
+            "neighbor_ct_range": nct_range,
         },
         "sanity": {
             "window_non_increasing": sw_ok,
             "rin_non_decreasing": sr_ok,
             "crosstalk_non_decreasing": sc_ok,
+            "neighbor_crosstalk_non_decreasing": sn_ok,
         },
         "effects": sens_effects,
         "window_sweep": {"x_window_ns": sw_xs, "p50_ber": sw_ys},
         "rin_sweep": {"x_rin_dbhz": sr_xs, "p50_ber": sr_ys},
         "crosstalk_sweep": {"x_crosstalk_db": sc_xs, "p50_ber": sc_ys},
+        "neighbor_crosstalk_sweep": {"x_ct_neighbor_db": sn_xs, "p50_ber": sn_ys},
     }
     print(json.dumps(summary, indent=2))
     if args.json:

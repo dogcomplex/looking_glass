@@ -8,6 +8,9 @@ class TIAParams:
     in_noise_pA_rthz: float = 5.0
     peaking_q: float = 0.7
     slew_v_per_us: float = 500.0
+    adc_bits: int = 10
+    adc_fullscale_v: float = 1.0
+    adc_read_noise_mV_rms: float = 0.0
 
 class TIA:
     def __init__(self, params: TIAParams, rng=None):
@@ -43,4 +46,13 @@ class TIA:
         delta = np.clip(delta, -max_delta, max_delta)
         out = self._last_out + delta
         self._last_out = out
+        # ADC quantization and read noise
+        if self.p.adc_bits > 0:
+            fs = max(self.p.adc_fullscale_v, 1e-6)
+            levels = 2**self.p.adc_bits
+            step = fs / levels
+            out = np.clip(out, -fs, fs)
+            out = (np.round(out/step) * step)
+        if self.p.adc_read_noise_mV_rms > 0.0:
+            out = out + self.rng.normal(0.0, self.p.adc_read_noise_mV_rms*1e-3, size=out.shape)
         return out

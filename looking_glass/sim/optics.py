@@ -7,6 +7,8 @@ class OpticsParams:
     w_plus_contrast: float = 0.85
     w_minus_contrast: float = 0.84
     crosstalk_db: float = -28.0
+    ct_model: str = "global"  # "global" or "neighbor"
+    ct_neighbor_db: float = -30.0
     stray_floor_db: float = -38.0
     psf_kernel: str = "lorentzian:w=2.5"
     signal_scale: float = 1.0
@@ -116,10 +118,32 @@ class Optics:
 
         out_plus = np.array(out_plus)
         out_minus = np.array(out_minus)
-        # Crosstalk (simple)
-        ct = 10**(self.p.crosstalk_db/10.0)
-        leak_p = out_plus.mean()*ct if out_plus.size else 0.0
-        leak_m = out_minus.mean()*ct if out_minus.size else 0.0
-        out_plus = out_plus + leak_p
-        out_minus = out_minus + leak_m
+        # Crosstalk
+        if self.p.ct_model == "neighbor" and blocks > 1:
+            # build grid arrays with zeros for unused cells
+            size = blocks * blocks
+            pad_p = np.zeros(size)
+            pad_m = np.zeros(size)
+            pad_p[:len(out_plus)] = out_plus
+            pad_m[:len(out_minus)] = out_minus
+            grid_p = pad_p.reshape((blocks, blocks))
+            grid_m = pad_m.reshape((blocks, blocks))
+            # 4-neighbor kernel (no center)
+            nn = 10**(self.p.ct_neighbor_db/10.0)
+            def neighbor_leak(g):
+                up = np.vstack([np.zeros((1, g.shape[1])), g[:-1, :]])
+                dn = np.vstack([g[1:, :], np.zeros((1, g.shape[1]))])
+                lf = np.hstack([np.zeros((g.shape[0], 1)), g[:, :-1]])
+                rt = np.hstack([g[:, 1:], np.zeros((g.shape[0], 1))])
+                return g + nn * (up + dn + lf + rt)
+            grid_p = neighbor_leak(grid_p)
+            grid_m = neighbor_leak(grid_m)
+            out_plus = grid_p.reshape(-1)[:len(out_plus)]
+            out_minus = grid_m.reshape(-1)[:len(out_minus)]
+        else:
+            ct = 10**(self.p.crosstalk_db/10.0)
+            leak_p = out_plus.mean()*ct if out_plus.size else 0.0
+            leak_m = out_minus.mean()*ct if out_minus.size else 0.0
+            out_plus = out_plus + leak_p
+            out_minus = out_minus + leak_m
         return out_plus, out_minus

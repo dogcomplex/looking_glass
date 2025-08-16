@@ -1,13 +1,16 @@
 {
   "config": {
-    "trials": 3000,
+    "trials": 300,
     "seed": 123,
-    "sensitivity": true
+    "sensitivity": false
   },
   "baseline": {
-    "p50_ber": 0.3125,
-    "p50_energy_pj": 46.06028040760005,
-    "window_ns": 7.999680823083988
+    "p50_ber": 0.4375,
+    "p50_energy_pj": 45.764506720958934,
+    "window_ns": 8.000428189260742,
+    "p50_snr_emit": 0.860251943128175,
+    "p50_snr_pd": 2.125089540026541,
+    "p50_snr_tia": 4.487654639710531
   },
   "sanity": {
     "window_non_increasing": true,
@@ -15,7 +18,7 @@
     "crosstalk_non_decreasing": true
   },
   "effects": {
-    "window_ber_improvement": 0.1875,
+    "window_ber_improvement": 0.0,
     "rin_ber_degradation": 0.0,
     "crosstalk_ber_degradation": 0.0
   },
@@ -29,12 +32,12 @@
       25.0
     ],
     "p50_ber": [
-      0.5,
-      0.3125,
-      0.3125,
-      0.3125,
-      0.3125,
-      0.3125
+      0.4375,
+      0.4375,
+      0.4375,
+      0.4375,
+      0.4375,
+      0.4375
     ]
   },
   "rin_sweep": {
@@ -45,10 +48,10 @@
       -135.0
     ],
     "p50_ber": [
-      0.3125,
-      0.3125,
-      0.3125,
-      0.3125
+      0.4375,
+      0.4375,
+      0.4375,
+      0.4375
     ]
   },
   "crosstalk_sweep": {
@@ -59,10 +62,10 @@
       -18.0
     ],
     "p50_ber": [
-      0.3125,
-      0.3125,
-      0.3125,
-      0.3125
+      0.4375,
+      0.4375,
+      0.4375,
+      0.4375
     ]
   },
   "sensitivity": {
@@ -86,17 +89,24 @@
         -40.0,
         -15.0,
         9
+      ],
+      "neighbor_ct_range": [
+        -40.0,
+        -20.0,
+        5
       ]
     },
     "sanity": {
       "window_non_increasing": true,
       "rin_non_decreasing": true,
-      "crosstalk_non_decreasing": true
+      "crosstalk_non_decreasing": true,
+      "neighbor_crosstalk_non_decreasing": true
     },
     "effects": {
-      "window_ber_improvement": 0.3125,
+      "window_ber_improvement": 0.1875,
       "rin_ber_degradation": 0.0,
-      "crosstalk_ber_degradation": 0.0
+      "crosstalk_ber_degradation": 0.0,
+      "neighbor_crosstalk_ber_degradation": 0.0
     },
     "window_sweep": {
       "x_window_ns": [
@@ -109,11 +119,11 @@
       ],
       "p50_ber": [
         0.625,
-        0.375,
-        0.3125,
-        0.3125,
-        0.3125,
-        0.3125
+        0.4375,
+        0.4375,
+        0.4375,
+        0.4375,
+        0.4375
       ]
     },
     "rin_sweep": {
@@ -129,15 +139,15 @@
         -130.0
       ],
       "p50_ber": [
-        0.375,
-        0.375,
-        0.375,
-        0.375,
-        0.375,
-        0.375,
-        0.375,
-        0.375,
-        0.375
+        0.75,
+        0.75,
+        0.75,
+        0.75,
+        0.75,
+        0.75,
+        0.75,
+        0.75,
+        0.75
       ]
     },
     "crosstalk_sweep": {
@@ -162,6 +172,22 @@
         0.3125,
         0.3125,
         0.3125
+      ]
+    },
+    "neighbor_crosstalk_sweep": {
+      "x_ct_neighbor_db": [
+        -40.0,
+        -35.0,
+        -30.0,
+        -25.0,
+        -20.0
+      ],
+      "p50_ber": [
+        0.4375,
+        0.4375,
+        0.4375,
+        0.4375,
+        0.4375
       ]
     }
   }

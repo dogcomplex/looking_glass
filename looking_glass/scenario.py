@@ -124,6 +124,8 @@ def run_scenario_cli(argv: list[str] | None = None) -> int:
                         help="Optional sweep over optics crosstalk_db, format start:stop:steps")
     parser.add_argument("--sweep-sat-I-sat", type=str, default=None,
                         help="Optional sweep over optics sat_I_sat, format start:stop:steps (enable sat_abs_on)")
+    parser.add_argument("--sweep-ct-neighbor-db", type=str, default=None,
+                        help="Optional sweep over neighbor crosstalk (ct_model=neighbor), format start:stop:steps")
     parser.add_argument("--meta", type=str, default=None, help="Optional path to save run metadata JSON")
     parser.add_argument("--plot", type=str, default=None, help="Optional path to save BER vs window_ns PNG plot")
     args = parser.parse_args(argv)
@@ -178,6 +180,12 @@ def run_scenario_cli(argv: list[str] | None = None) -> int:
         orch.optx.p.sat_abs_on = True
         setter = lambda v: setattr(orch.optx.p, "sat_I_sat", float(v))
         xlabel = "sat_I_sat"
+        sweep_kv = (float(start_s), float(stop_s), int(steps_s), setter)
+    elif args.sweep_ct_neighbor_db:
+        start_s, stop_s, steps_s = args.sweep_ct_neighbor_db.split(":")
+        orch.optx.p.ct_model = "neighbor"
+        setter = lambda v: setattr(orch.optx.p, "ct_neighbor_db", float(v))
+        xlabel = "ct_neighbor_db"
         sweep_kv = (float(start_s), float(stop_s), int(steps_s), setter)
 
     if sweep_kv is not None:
