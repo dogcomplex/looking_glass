@@ -152,21 +152,21 @@ def main():
     ap.add_argument("--trials", type=int, default=200)
     ap.add_argument("--seed", type=int, default=321)
     ap.add_argument("--sensitivity", action="store_true")
-    ap.add_argument("--windows", type=str, default="5,7,9,13,17,21")
-    ap.add_argument("--rin-range", type=str, default="-165:-135:4")
-    ap.add_argument("--ct-range", type=str, default="-35:-18:4")
+    ap.add_argument("--windows", type=str, default="3,5,7,9,13,17")
+    ap.add_argument("--rin-range", type=str, default="-170:-140:4")
+    ap.add_argument("--ct-range", type=str, default="-40:-18:4")
     ap.add_argument("--json", type=str, default=None)
     args = ap.parse_args()
 
     # Base system from typ packs inline
     sys_p = SystemParams(channels=16, window_ns=10.0, temp_C=25.0, seed=args.seed)
-    emit = EmitterParams(channels=16)
+    emit = EmitterParams(channels=16, power_mw_per_ch=0.7)
     optx = OpticsParams()
     pd = PDParams()
     # Sensitivity mode tunes TIA BW and comparator noise to amplify trends
     tia_bw = 30.0 if args.sensitivity else 80.0
     comp_noise = 0.3 if args.sensitivity else 0.6
-    tia = TIAParams(bw_mhz=tia_bw)
+    tia = TIAParams(bw_mhz=tia_bw, tia_transimpedance_kohm=5.0)
     comp = ComparatorParams(input_noise_mV_rms=comp_noise)
     clk = ClockParams(window_ns=10.0, jitter_ps_rms=10.0)
     orch = Orchestrator(sys_p, emit, optx, pd, tia, comp, clk)
