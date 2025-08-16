@@ -1,0 +1,8 @@
+qe: 0.6
+wavelength_nm: 850.0
+full_well_e: 20000.0
+read_noise_e_rms: 2.0
+dark_current_e_per_s: 50.0
+prnu_pct: 0.5
+adc_bits: 12
+adc_fullscale_e: 20000.0

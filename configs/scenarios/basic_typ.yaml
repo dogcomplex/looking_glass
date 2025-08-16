@@ -8,3 +8,4 @@ tia_pack: configs/packs/tia_typ.yaml
 comparator_pack: configs/packs/comparator_typ.yaml
 clock_pack: configs/packs/clock_typ.yaml
 thermal_pack: configs/packs/thermal_typ.yaml
+camera_pack: configs/packs/camera_typ.yaml

@@ -7,6 +7,7 @@ from .sim.tia import TIA, TIAParams
 from .sim.comparator import Comparator, ComparatorParams
 from .sim.clock import Clock, ClockParams
 from .sim.thermal import Thermal, ThermalParams
+from .sim.camera import Camera, CameraParams
 
 @dataclass
 class SystemParams:
@@ -25,12 +26,14 @@ class Orchestrator:
                  tia_p: TIAParams,
                  comp_p: ComparatorParams,
                  clk_p: ClockParams,
+                 cam_p: CameraParams | None = None,
                  thermal_p: ThermalParams | None = None):
         self.rng = np.random.default_rng(sys.seed)
         self.sys = sys
         self.emit = EmitterArray(emitter_p, rng=self.rng)
         self.optx = Optics(optics_p, rng=self.rng)
         self.pd = Photodiode(pd_p, rng=self.rng)
+        self.cam = Camera(cam_p, rng=self.rng) if cam_p is not None else None
         self.tia = TIA(tia_p, rng=self.rng)
         self.comp = Comparator(comp_p, rng=self.rng)
         self.clk = Clock(clk_p, rng=self.rng)
@@ -55,8 +58,14 @@ class Orchestrator:
         tern = self.rng.integers(-1, 2, size=N)
         Pp, Pm = self.emit.simulate(tern, dt, self.sys.temp_C)
         Pp2, Pm2, per_tile_p, per_tile_m = self.optx.simulate(Pp, Pm)
-        Ip = self.pd.simulate(Pp2, dt)
-        Im = self.pd.simulate(Pm2, dt)
+        if self.cam is not None:
+            # Camera converts optical power to equivalent current with shot/read noise and quantization
+            Ip = self.cam.simulate(Pp2, dt)
+            Im = self.cam.simulate(Pm2, dt)
+        else:
+            # Direct PD path
+            Ip = self.pd.simulate(Pp2, dt)
+            Im = self.pd.simulate(Pm2, dt)
         Vp = self.tia.simulate(Ip, dt)
         Vm = self.tia.simulate(Im, dt)
         t_out = self.comp.simulate(Vp, Vm, self.sys.temp_C)
