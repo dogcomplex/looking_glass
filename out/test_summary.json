@@ -3,7 +3,11 @@
     "trials": 300,
     "seed": 123,
     "sensitivity": false,
-    "vote3": true
+    "vote3": true,
+    "repeat": 3,
+    "neighbor_ct": false,
+    "base_window_ns": 10.0,
+    "applied_calibration": false
   },
   "baseline": {
     "p50_ber": 0.4375,
@@ -448,6 +452,82 @@
         0.3125,
         0.375
       ]
+    }
+  },
+  "autotune": {
+    "best_ber": 0.3125,
+    "best_summary": {
+      "p50_ber": 0.3125,
+      "p50_energy_pj": 34.60228330872637,
+      "window_ns": 7.0203629123857025,
+      "p50_snr_emit": 0.8613291860259782,
+      "p50_snr_pd": 2.142380207853636,
+      "p50_snr_tia": 2.189248921849308
+    },
+    "params": {
+      "system": {
+        "channels": 16,
+        "window_ns": 10.0,
+        "temp_C": 25.0,
+        "seed": 123,
+        "reset_analog_state_each_frame": true
+      },
+      "emitter": {
+        "wavelength_nm": 850.0,
+        "channels": 16,
+        "power_mw_per_ch": 0.8526014775071651,
+        "extinction_db": 20.0,
+        "rin_dbhz": -150.0,
+        "rise_fall_ns_10_90": 1.0,
+        "temp_coeff_pct_per_C": 0.2,
+        "power_sigma_pct": 2.0
+      },
+      "optics": {
+        "transmittance": 0.7,
+        "w_plus_contrast": 0.85,
+        "w_minus_contrast": 0.84,
+        "crosstalk_db": -26.599185153364377,
+        "ct_model": "global",
+        "ct_neighbor_db": -28.926163654313502,
+        "ct_diag_db": -32.9178056788126,
+        "stray_floor_db": -38.0,
+        "psf_kernel": "lorentzian:w=2.5",
+        "signal_scale": 1.0,
+        "amp_on": false,
+        "amp_gain_db": 10.0,
+        "sat_abs_on": false,
+        "sat_I_sat": 1.0,
+        "sat_alpha": 0.6
+      },
+      "pd": {
+        "responsivity_A_per_W": 0.55,
+        "dark_current_nA": 2.0,
+        "cap_pF": 1.0
+      },
+      "tia": {
+        "tia_transimpedance_kohm": 5.0563613754843315,
+        "bw_mhz": 88.75190934864462,
+        "in_noise_pA_rthz": 3.0,
+        "peaking_q": 0.7,
+        "slew_v_per_us": 500.0,
+        "adc_bits": 10,
+        "adc_fullscale_v": 1.0,
+        "adc_read_noise_mV_rms": 0.0,
+        "gain_sigma_pct": 1.0
+      },
+      "comparator": {
+        "vth_mV": 5.0,
+        "hysteresis_mV": 1.3597892767749202,
+        "input_noise_mV_rms": 0.5,
+        "drift_mV_per_C": 0.05,
+        "prop_delay_ns": 2.0,
+        "saturate_levels": true,
+        "vth_sigma_mV": 0.2
+      },
+      "clock": {
+        "window_ns": 9.022671423940327,
+        "jitter_ps_rms": 10.0
+      }
     }
   }
 }

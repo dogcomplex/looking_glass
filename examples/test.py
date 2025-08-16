@@ -190,20 +190,29 @@ def main():
     ap.add_argument("--rin-range", type=str, default="-170:-140:4")
     ap.add_argument("--ct-range", type=str, default="-40:-18:4")
     ap.add_argument("--vote3", action="store_true", help="Enable 3x temporal voting estimate")
+    ap.add_argument("--repeat", type=int, default=1, help="Temporal repeats for majority vote estimate (overrides --vote3)")
+    ap.add_argument("--autotune", action="store_true", help="Run automatic tuner within realistic bounds")
+    ap.add_argument("--autotune-budget", type=int, default=60)
+    ap.add_argument("--autotune-trials", type=int, default=120)
+    ap.add_argument("--neighbor-ct", action="store_true", help="Use neighbor crosstalk model in baseline")
+    ap.add_argument("--base-window-ns", type=float, default=10.0, help="Baseline clock window (ns)")
+    ap.add_argument("--apply-calibration", action="store_true", help="Apply per-channel vth trims to baseline KPIs")
+    ap.add_argument("--quiet", action="store_true", help="Do not print final JSON to stdout (write file only)")
+    ap.add_argument("--progress", action="store_true", help="Emit coarse progress messages to stdout")
     ap.add_argument("--json", type=str, default=None)
     args = ap.parse_args()
 
     # Base system from typ packs inline
-    sys_p = SystemParams(channels=16, window_ns=10.0, temp_C=25.0, seed=args.seed)
+    sys_p = SystemParams(channels=16, window_ns=float(args.base_window_ns), temp_C=25.0, seed=args.seed)
     emit = EmitterParams(channels=16, power_mw_per_ch=0.7, power_sigma_pct=2.0)
-    optx = OpticsParams()
+    optx = OpticsParams(ct_model=("neighbor" if args.neighbor_ct else "global"))
     pd = PDParams()
     # Sensitivity mode tunes TIA BW and comparator noise to amplify trends
     tia_bw = 30.0 if args.sensitivity else 80.0
     comp_noise = 0.3 if args.sensitivity else 0.5
     tia = TIAParams(bw_mhz=tia_bw, tia_transimpedance_kohm=5.0, in_noise_pA_rthz=3.0, gain_sigma_pct=1.0)
     comp = ComparatorParams(input_noise_mV_rms=comp_noise, vth_sigma_mV=0.2)
-    clk = ClockParams(window_ns=10.0, jitter_ps_rms=10.0)
+    clk = ClockParams(window_ns=float(args.base_window_ns), jitter_ps_rms=10.0)
     orch = Orchestrator(sys_p, emit, optx, pd, tia, comp, clk)
 
     # Parse windows and ranges
@@ -218,11 +227,11 @@ def main():
 
     # Baseline summary at default settings
     base_emit = EmitterParams(channels=16)
-    base_optx = OpticsParams()
+    base_optx = OpticsParams(ct_model=("neighbor" if args.neighbor_ct else "global"))
     base_pd = PDParams()
     base_tia = TIAParams(bw_mhz=tia_bw)
     base_comp = ComparatorParams(input_noise_mV_rms=comp_noise)
-    base_clk = ClockParams(window_ns=10.0, jitter_ps_rms=10.0)
+    base_clk = ClockParams(window_ns=float(args.base_window_ns), jitter_ps_rms=10.0)
     base_orch = Orchestrator(sys_p, base_emit, base_optx, base_pd, base_tia, base_comp, base_clk)
     base_summary = base_orch.run(trials=args.trials)
 
@@ -293,7 +302,8 @@ def main():
             pos_cnt = _np.zeros(sys_p.channels, dtype=float)
             neg_sum = _np.zeros(sys_p.channels, dtype=float)
             neg_cnt = _np.zeros(sys_p.channels, dtype=float)
-            for _ in range(min(400, args.trials*2)):
+            total_cal = min(400, args.trials*2)
+            for idx in range(total_cal):
                 tern = orch_cal.rng.integers(-1, 2, size=sys_p.channels)
                 r = orch_cal.step(force_ternary=tern)
                 dv = _np.array(r.get("dv_mV", [0]*sys_p.channels), dtype=float)
@@ -303,13 +313,20 @@ def main():
                 pos_cnt[pos] += 1.0
                 neg_sum[neg] += dv[neg]
                 neg_cnt[neg] += 1.0
+                if args.progress and (idx+1) % 50 == 0:
+                    print(f"PROGRESS: calibration gather {idx+1}/{total_cal}")
             pos_mean = _np.divide(pos_sum, _np.clip(pos_cnt, 1.0, None))
             neg_mean = _np.divide(neg_sum, _np.clip(neg_cnt, 1.0, None))
             vth_vec = 0.5*(pos_mean + neg_mean)
             # Apply per-channel trims
             orch_cal.comp.set_vth_per_channel(vth_vec)
             # Evaluate post-calibration BER and per-tile BER
-            rows_after = [orch_cal.step() for _ in range(min(200, args.trials))]
+            rows_after = []
+            total_eval = min(200, args.trials)
+            for j in range(total_eval):
+                rows_after.append(orch_cal.step())
+                if args.progress and (j+1) % 50 == 0:
+                    print(f"PROGRESS: calibration evaluate {j+1}/{total_eval}")
             tile_err2 = _np.zeros((blocks, blocks), dtype=float)
             tile_cnt2 = _np.zeros((blocks, blocks), dtype=float)
             for r in rows_after:
@@ -363,19 +380,20 @@ def main():
         scores["comparator"] = {"score": round(s_cn, 3), "input_noise_mV_rms": comp_n}
         return scores
 
-    # Optional 3x temporal voting estimate
+    # Optional temporal voting estimate (repeat > 1)
     vote3_ber = None
-    if args.vote3:
+    rep = max(3 if args.vote3 else 1, int(args.repeat))
+    if rep > 1:
         import numpy as _np
         errs = []
         for _ in range(min(args.trials, 200)):
             # Use a fixed ternary vector per trial to enable meaningful voting
             tern = base_orch.rng.integers(-1, 2, size=base_orch.sys.channels)
-            r1 = base_orch.step(force_ternary=tern)
-            r2 = base_orch.step(force_ternary=tern)
-            r3 = base_orch.step(force_ternary=tern)
+            outs = []
+            for _j in range(rep):
+                outs.append(base_orch.step(force_ternary=tern)["t_out"])
             t = _np.array(tern)
-            O = _np.vstack([r1["t_out"], r2["t_out"], r3["t_out"]])
+            O = _np.vstack(outs)
             vote = _np.sign(_np.sum(O, axis=0))
             errs.append(float(_np.mean(vote != t)))
         vote3_ber = float(_np.median(errs)) if errs else None
@@ -385,7 +403,11 @@ def main():
             "trials": args.trials,
             "seed": args.seed,
             "sensitivity": args.sensitivity,
-            "vote3": bool(args.vote3),
+            "vote3": (rep == 3 and args.vote3),
+            "repeat": rep,
+            "neighbor_ct": bool(args.neighbor_ct),
+            "base_window_ns": float(args.base_window_ns),
+            "applied_calibration": bool(args.apply_calibration),
         },
         "baseline": base_summary,
         "packs": {
@@ -416,6 +438,11 @@ def main():
             "ber_delta": (None if (ber_after is None or base_summary.get("p50_ber") is None) else float(ber_after - base_summary.get("p50_ber")))
         }
     }
+
+    # Optionally apply calibration to make calibrated KPIs the baseline
+    if args.apply_calibration and cal_summary:
+        summary["baseline_raw"] = summary["baseline"]
+        summary["baseline"] = cal_summary
 
     # Always include a sensitivity block with more pronounced ranges for "notable results"
     sens_tia_bw = 30.0
@@ -584,7 +611,30 @@ def main():
         }
     except Exception:
         pass
-    print(json.dumps(summary, indent=2))
+
+    # Autotuner (optional)
+    if args.autotune:
+        from looking_glass.tuner import auto_tune
+        if args.progress:
+            print("PROGRESS: autotune start")
+        tune_res = auto_tune(
+            sys_p,
+            EmitterParams(**emit.__dict__),
+            OpticsParams(**optx.__dict__),
+            PDParams(**pd.__dict__),
+            TIAParams(**tia.__dict__),
+            ComparatorParams(**comp.__dict__),
+            ClockParams(**clk.__dict__),
+            trials=int(args.autotune_trials),
+            budget=int(args.autotune_budget),
+            seed=int(args.seed),
+            use_calibration=True,
+        )
+        summary["autotune"] = tune_res
+        if args.progress:
+            print("PROGRESS: autotune done")
+    if not args.quiet:
+        print(json.dumps(summary, indent=2))
     if args.json:
         os.makedirs(os.path.dirname(args.json), exist_ok=True)
         with open(args.json, "w", encoding="utf-8") as f:

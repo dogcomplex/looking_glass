@@ -24,6 +24,25 @@
   <p>Run: <code>python examples/test.py --json out/test_summary.json</code> then open this page and select the JSON.</p>
 
   <input type="file" id="file" accept="application/json" />
+  <div style="margin:8px 0;">
+    <button id="btn-run">Run Retest</button>
+    <label style="margin-left:8px;">Trials <input id="inp-trials" type="number" value="300" style="width:80px;"/></label>
+    <label style="margin-left:8px;">Seed <input id="inp-seed" type="number" value="123" style="width:80px;"/></label>
+    <label style="margin-left:8px;">Base Window ns <input id="inp-window" type="number" value="10" step="0.5" style="width:80px;"/></label>
+    <label style="margin-left:8px;"><input id="chk-vote" type="checkbox" checked/> Vote3</label>
+    <label style="margin-left:8px;"><input id="chk-autotune" type="checkbox" checked/> Autotune</label>
+    <label style="margin-left:8px;"><input id="chk-sens" type="checkbox"/> Sensitivity</label>
+    <label style="margin-left:8px;"><input id="chk-neigh" type="checkbox"/> Neighbor CT</label>
+  </div>
+  <div class="card" style="margin:8px 0;">
+    <h2>Worker Log</h2>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+      <span>Connection:</span>
+      <span id="conn" style="width:10px;height:10px;border-radius:50%;background:#f44336;display:inline-block;"></span>
+      <span id="connText" style="font-size:12px;color:#555;">Inactive</span>
+    </div>
+    <pre id="log" style="white-space:pre-wrap;height:160px;overflow:auto;border:1px solid #eee;padding:8px;"></pre>
+  </div>
 
   <div class="grid" style="margin-top:12px;">
     <div class="card">
@@ -61,6 +80,10 @@
     <div class="card">
       <h2>Drift vs Time</h2>
       <canvas id="driftChart"></canvas>
+    </div>
+    <div class="card">
+      <h2>Autotuner Result</h2>
+      <table id="table-autotune"></table>
     </div>
     <div class="card">
       <h2>System Diagram</h2>
@@ -191,12 +214,119 @@
             ber_after: data?.calibration?.ber_after,
             ber_delta: data?.calibration?.ber_delta,
           });
+          if (data?.autotune) {
+            renderTable(document.getElementById('table-autotune'), {
+              best_ber: data.autotune.best_ber,
+              best_summary: JSON.stringify(data.autotune.best_summary),
+              tuned_clock_window_ns: data.autotune.params?.clock?.window_ns,
+              tuned_emitter_power_mw_per_ch: data.autotune.params?.emitter?.power_mw_per_ch,
+              tuned_tia_gain_kohm: data.autotune.params?.tia?.tia_transimpedance_kohm,
+              tuned_tia_bw_mhz: data.autotune.params?.tia?.bw_mhz,
+              tuned_comp_hysteresis_mV: data.autotune.params?.comparator?.hysteresis_mV,
+              tuned_optics_ct_db: data.autotune.params?.optics?.crosstalk_db,
+              tuned_optics_ct_neighbor_db: data.autotune.params?.optics?.ct_neighbor_db,
+              tuned_optics_ct_diag_db: data.autotune.params?.optics?.ct_diag_db,
+            });
+          }
         } catch (err) {
           alert('Invalid JSON');
         }
       };
       reader.readAsText(f);
     });
+
+    // Retest controls
+    const logEl = document.getElementById('log');
+    function appendLog(obj) {
+      logEl.textContent += (typeof obj === 'string' ? obj : JSON.stringify(obj)) + "\n";
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+    const evtSrc = new EventSource('/api/events');
+    evtSrc.onmessage = (ev) => {
+      try {
+        const data = JSON.parse(ev.data);
+        if (data.msg === 'connected') {
+          document.getElementById('conn').style.background = '#4caf50';
+          document.getElementById('connText').textContent = 'Active';
+          return;
+        }
+        if (data.ping) return; // quiet heartbeat
+        appendLog(data);
+      } catch { appendLog(ev.data); }
+    };
+    evtSrc.addEventListener('done', (ev) => {
+      try {
+        const data = JSON.parse(ev.data);
+        // Auto-load the finished JSON
+        renderTable(document.getElementById('table-summary'), {
+          p50_ber: data?.baseline?.p50_ber,
+          p50_energy_pj: data?.baseline?.p50_energy_pj,
+          window_ns: data?.baseline?.window_ns,
+          p50_snr_emit: data?.baseline?.p50_snr_emit,
+          p50_snr_pd: data?.baseline?.p50_snr_pd,
+          p50_snr_tia: data?.baseline?.p50_snr_tia,
+        });
+        renderTable(document.getElementById('table-realism'), (data?.realism)||{});
+        renderTable(document.getElementById('table-calibrated'), {
+          p50_ber: data?.baseline_calibrated?.p50_ber,
+          p50_energy_pj: data?.baseline_calibrated?.p50_energy_pj,
+          window_ns: data?.baseline_calibrated?.window_ns,
+          p50_snr_emit: data?.baseline_calibrated?.p50_snr_emit,
+          p50_snr_pd: data?.baseline_calibrated?.p50_snr_pd,
+          p50_snr_tia: data?.baseline_calibrated?.p50_snr_tia,
+        });
+        const hm = data?.ber_per_tile;
+        if (hm && hm.length) drawHeatmap(document.getElementById('tileHeat'), hm);
+        const hma = data?.ber_per_tile_after;
+        if (hma && hma.length) drawHeatmap(document.getElementById('tileHeatAfter'), hma);
+        const xs = data?.window_sweep?.x_window_ns || [];
+        const ys = data?.window_sweep?.p50_ber || [];
+        if (xs.length && ys.length) drawLine(document.getElementById('winChart'), xs, ys, 'p50 BER');
+        renderTable(document.getElementById('table-calib'), {
+          vote3_p50_ber: data?.vote3_p50_ber,
+          vth_suggest_mV: data?.calibration?.vth_suggest_mV,
+          ber_before: data?.calibration?.ber_before,
+          ber_after: data?.calibration?.ber_after,
+          ber_delta: data?.calibration?.ber_delta,
+        });
+        if (data?.autotune) {
+          renderTable(document.getElementById('table-autotune'), {
+            best_ber: data.autotune.best_ber,
+            tuned_clock_window_ns: data.autotune.params?.clock?.window_ns,
+            tuned_emitter_power_mw_per_ch: data.autotune.params?.emitter?.power_mw_per_ch,
+            tuned_tia_gain_kohm: data.autotune.params?.tia?.tia_transimpedance_kohm,
+            tuned_tia_bw_mhz: data.autotune.params?.tia?.bw_mhz,
+            tuned_comp_hysteresis_mV: data.autotune.params?.comparator?.hysteresis_mV,
+            tuned_optics_ct_db: data.autotune.params?.optics?.crosstalk_db,
+            tuned_optics_ct_neighbor_db: data.autotune.params?.optics?.ct_neighbor_db,
+            tuned_optics_ct_diag_db: data.autotune.params?.optics?.ct_diag_db,
+          });
+        }
+        const dx = data?.sensitivity?.diag_crosstalk_sweep?.x_ct_diag_db || [];
+        const dy = data?.sensitivity?.diag_crosstalk_sweep?.p50_ber || [];
+        if (dx.length && dy.length) drawLine(document.getElementById('diagChart'), dx, dy, 'p50 BER vs ct_diag_db');
+        const dno = data?.drift?.no_cal || {};
+        const dfix = data?.drift?.with_cal || {};
+        if ((dno?.x_frame?.length||0) && (dfix?.x_frame?.length||0)) {
+          const ctx = document.getElementById('driftChart').getContext('2d');
+          new Chart(ctx, { type: 'line', data: { labels: dno.x_frame, datasets: [ { label: 'No Cal', data: dno.p50_ber, borderColor: '#f44336', fill: false }, { label: 'With Cal', data: dfix.p50_ber, borderColor: '#2196f3', fill: false } ] }, options: { responsive: true, scales: { y: { suggestedMin: 0, suggestedMax: 1 } } } });
+        }
+      } catch (e) { appendLog({ error: String(e) }); }
+    });
+    document.getElementById('btn-run').onclick = async () => {
+      const trials = document.getElementById('inp-trials').value;
+      const seed = document.getElementById('inp-seed').value;
+      const windowNs = document.getElementById('inp-window').value;
+      const vote = document.getElementById('chk-vote').checked ? '1':'0';
+      const auto = document.getElementById('chk-autotune').checked ? '1':'0';
+      const sens = document.getElementById('chk-sens').checked ? '1':'0';
+      const neigh = document.getElementById('chk-neigh').checked ? '1':'0';
+      appendLog({ msg: 'requesting run' });
+      try {
+        const r = await fetch(`/api/run?trials=${trials}&seed=${seed}&base_window_ns=${windowNs}&vote3=${vote}&autotune=${auto}&sensitivity=${sens}&neighbor_ct=${neigh}`);
+        appendLog(await r.json());
+      } catch (err) { appendLog({ error: String(err) }); }
+    };
   </script>
 </body>
 </html>
