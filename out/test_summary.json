@@ -1,0 +1,168 @@
+{
+  "config": {
+    "trials": 3000,
+    "seed": 123,
+    "sensitivity": true
+  },
+  "baseline": {
+    "p50_ber": 0.3125,
+    "p50_energy_pj": 46.06028040760005,
+    "window_ns": 7.999680823083988
+  },
+  "sanity": {
+    "window_non_increasing": true,
+    "rin_non_decreasing": true,
+    "crosstalk_non_decreasing": true
+  },
+  "effects": {
+    "window_ber_improvement": 0.1875,
+    "rin_ber_degradation": 0.0,
+    "crosstalk_ber_degradation": 0.0
+  },
+  "window_sweep": {
+    "x_window_ns": [
+      5.0,
+      9.0,
+      13.0,
+      17.0,
+      21.0,
+      25.0
+    ],
+    "p50_ber": [
+      0.5,
+      0.3125,
+      0.3125,
+      0.3125,
+      0.3125,
+      0.3125
+    ]
+  },
+  "rin_sweep": {
+    "x_rin_dbhz": [
+      -165.0,
+      -155.0,
+      -145.0,
+      -135.0
+    ],
+    "p50_ber": [
+      0.3125,
+      0.3125,
+      0.3125,
+      0.3125
+    ]
+  },
+  "crosstalk_sweep": {
+    "x_crosstalk_db": [
+      -35.0,
+      -29.333333333333332,
+      -23.666666666666664,
+      -18.0
+    ],
+    "p50_ber": [
+      0.3125,
+      0.3125,
+      0.3125,
+      0.3125
+    ]
+  },
+  "sensitivity": {
+    "config": {
+      "tia_bw_mhz": 30.0,
+      "comp_input_noise_mV_rms": 0.3,
+      "windows": [
+        3,
+        6,
+        10,
+        15,
+        20,
+        30
+      ],
+      "rin_range": [
+        -170.0,
+        -130.0,
+        9
+      ],
+      "ct_range": [
+        -40.0,
+        -15.0,
+        9
+      ]
+    },
+    "sanity": {
+      "window_non_increasing": true,
+      "rin_non_decreasing": true,
+      "crosstalk_non_decreasing": true
+    },
+    "effects": {
+      "window_ber_improvement": 0.3125,
+      "rin_ber_degradation": 0.0,
+      "crosstalk_ber_degradation": 0.0
+    },
+    "window_sweep": {
+      "x_window_ns": [
+        3,
+        6,
+        10,
+        15,
+        20,
+        30
+      ],
+      "p50_ber": [
+        0.625,
+        0.375,
+        0.3125,
+        0.3125,
+        0.3125,
+        0.3125
+      ]
+    },
+    "rin_sweep": {
+      "x_rin_dbhz": [
+        -170.0,
+        -165.0,
+        -160.0,
+        -155.0,
+        -150.0,
+        -145.0,
+        -140.0,
+        -135.0,
+        -130.0
+      ],
+      "p50_ber": [
+        0.375,
+        0.375,
+        0.375,
+        0.375,
+        0.375,
+        0.375,
+        0.375,
+        0.375,
+        0.375
+      ]
+    },
+    "crosstalk_sweep": {
+      "x_crosstalk_db": [
+        -40.0,
+        -36.875,
+        -33.75,
+        -30.625,
+        -27.5,
+        -24.375,
+        -21.25,
+        -18.125,
+        -15.0
+      ],
+      "p50_ber": [
+        0.3125,
+        0.3125,
+        0.3125,
+        0.3125,
+        0.3125,
+        0.3125,
+        0.3125,
+        0.3125,
+        0.3125
+      ]
+    }
+  }
+}

@@ -1,0 +1,12 @@
+transmittance: 0.8
+w_plus_contrast: 0.9
+w_minus_contrast: 0.9
+crosstalk_db: -35.0
+stray_floor_db: -45.0
+psf_kernel: "lorentzian:w=2.0"
+signal_scale: 1.0
+amp_on: false
+amp_gain_db: 8.0
+sat_abs_on: false
+sat_I_sat: 1.0
+sat_alpha: 0.6

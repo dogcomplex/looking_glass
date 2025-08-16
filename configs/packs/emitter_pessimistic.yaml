@@ -1,0 +1,7 @@
+wavelength_nm: 850.0
+channels: 16
+power_mw_per_ch: 0.8
+extinction_db: 15.0
+rin_dbhz: -140.0
+rise_fall_ns_10_90: 1.5
+temp_coeff_pct_per_C: 0.3

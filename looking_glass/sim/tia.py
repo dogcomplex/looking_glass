@@ -7,7 +7,7 @@ class TIAParams:
     bw_mhz: float = 100.0
     in_noise_pA_rthz: float = 5.0
     peaking_q: float = 0.7
-    slew_v_per_us: float = 1.5
+    slew_v_per_us: float = 500.0
 
 class TIA:
     def __init__(self, params: TIAParams, rng=None):

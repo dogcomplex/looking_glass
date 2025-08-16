@@ -118,28 +118,80 @@ def run_scenario_cli(argv: list[str] | None = None) -> int:
     parser.add_argument("--json", type=str, default=None, help="Optional JSON output path for summary")
     parser.add_argument("--sweep-window-ns", type=str, default=None,
                         help="Optional sweep over window_ns, format start:stop:steps (inclusive start/stop)")
+    parser.add_argument("--sweep-rin-db-hz", type=str, default=None,
+                        help="Optional sweep over emitter rin_dbhz, format start:stop:steps")
+    parser.add_argument("--sweep-crosstalk-db", type=str, default=None,
+                        help="Optional sweep over optics crosstalk_db, format start:stop:steps")
+    parser.add_argument("--sweep-sat-I-sat", type=str, default=None,
+                        help="Optional sweep over optics sat_I_sat, format start:stop:steps (enable sat_abs_on)")
+    parser.add_argument("--meta", type=str, default=None, help="Optional path to save run metadata JSON")
     parser.add_argument("--plot", type=str, default=None, help="Optional path to save BER vs window_ns PNG plot")
     args = parser.parse_args(argv)
 
     orch, trials_default, _ = build_orchestrator_from_scenario(args.scenario)
     trials = args.trials if args.trials is not None else trials_default
 
-    # Sweep branch
+    # Optionally save run metadata
+    if args.meta:
+        meta = {
+            "scenario": str(args.scenario),
+            "trials": int(trials),
+            "system": {
+                "channels": int(orch.sys.channels),
+                "temp_C": float(orch.sys.temp_C),
+                "seed": int(orch.sys.seed),
+                "window_ns": float(orch.clk.p.window_ns),
+            },
+            "packs": {
+                "emitter": orch.emit.p.__dict__,
+                "optics": orch.optx.p.__dict__,
+                "sensor": orch.pd.p.__dict__,
+                "tia": orch.tia.p.__dict__,
+                "comparator": orch.comp.p.__dict__,
+                "clock": orch.clk.p.__dict__,
+            },
+        }
+        Path(args.meta).parent.mkdir(parents=True, exist_ok=True)
+        with open(args.meta, "w", encoding="utf-8") as f:
+            json.dump(meta, f, indent=2)
+
+    # Sweep branch (only one at a time)
+    sweep_kv = None
+    xlabel = None
     if args.sweep_window_ns:
         start_s, stop_s, steps_s = args.sweep_window_ns.split(":")
-        start = float(start_s)
-        stop = float(stop_s)
-        steps = int(steps_s)
+        setter = lambda v: setattr(orch.clk.p, "window_ns", float(v))
+        xlabel = "window_ns"
+        sweep_kv = (float(start_s), float(stop_s), int(steps_s), setter)
+    elif args.sweep_rin_db_hz:
+        start_s, stop_s, steps_s = args.sweep_rin_db_hz.split(":")
+        setter = lambda v: setattr(orch.emit.p, "rin_dbhz", float(v))
+        xlabel = "rin_dbhz"
+        sweep_kv = (float(start_s), float(stop_s), int(steps_s), setter)
+    elif args.sweep_crosstalk_db:
+        start_s, stop_s, steps_s = args.sweep_crosstalk_db.split(":")
+        setter = lambda v: setattr(orch.optx.p, "crosstalk_db", float(v))
+        xlabel = "crosstalk_db"
+        sweep_kv = (float(start_s), float(stop_s), int(steps_s), setter)
+    elif args.sweep_sat_I_sat:
+        start_s, stop_s, steps_s = args.sweep_sat_I_sat.split(":")
+        orch.optx.p.sat_abs_on = True
+        setter = lambda v: setattr(orch.optx.p, "sat_I_sat", float(v))
+        xlabel = "sat_I_sat"
+        sweep_kv = (float(start_s), float(stop_s), int(steps_s), setter)
+
+    if sweep_kv is not None:
+        start, stop, steps, setter = sweep_kv
         if steps < 2:
             steps = 2
         xs = [start + i*(stop-start)/(steps-1) for i in range(steps)]
         ys = []
         from .plotting import save_xy_plot
         all_rows = []
-        for w in xs:
-            orch.clk.p.window_ns = float(w)
+        for x in xs:
+            setter(x)
             rows = run_trials(orch, trials)
-            all_rows.extend([{**r, "sweep_window_ns": w} for r in rows])
+            all_rows.extend([{**r, xlabel: x} for r in rows])
             summ = summarize(rows)
             ys.append(summ["p50_ber"]) 
         # Save CSV if requested
@@ -147,20 +199,20 @@ def run_scenario_cli(argv: list[str] | None = None) -> int:
             path = Path(args.csv)
             path.parent.mkdir(parents=True, exist_ok=True)
             with open(path, "w", newline="", encoding="utf-8") as f:
-                w = csv.DictWriter(f, fieldnames=["sweep_window_ns", "ber", "energy_pj", "window_ns"]) 
+                w = csv.DictWriter(f, fieldnames=[xlabel, "ber", "energy_pj", "window_ns"]) 
                 w.writeheader()
                 for r in all_rows:
                     w.writerow(r)
         # Save plot
         if args.plot:
-            save_xy_plot(xs, ys, xlabel="window_ns", ylabel="p50_ber", out_path=args.plot,
-                         title="BER vs window_ns")
+            save_xy_plot(xs, ys, xlabel=xlabel, ylabel="p50_ber", out_path=args.plot,
+                         title=f"BER vs {xlabel}")
         # Save summary list if requested
         if args.json:
             Path(args.json).parent.mkdir(parents=True, exist_ok=True)
             with open(args.json, "w", encoding="utf-8") as f:
-                json.dump({"x_window_ns": xs, "p50_ber": ys}, f, indent=2)
-        print(json.dumps({"x_window_ns": xs, "p50_ber": ys}, indent=2))
+                json.dump({f"x_{xlabel}": xs, "p50_ber": ys}, f, indent=2)
+        print(json.dumps({f"x_{xlabel}": xs, "p50_ber": ys}, indent=2))
         return 0
     else:
         rows = run_trials(orch, trials)

@@ -27,10 +27,13 @@ class EmitterArray:
         Pm = np.where(ternary<0, base, base*ext)
         Pp = Pp * temp_scale
         Pm = Pm * temp_scale
-        # Add RIN: power noise ~ sqrt(BW)
+        # Add RIN: sigma_P ≈ P * sqrt(RIN_lin * BW)
         bw_hz = 1.0/(dt_ns*1e-9 + 1e-18)
         rin_lin = 10**(self.p.rin_dbhz/10.0)
-        sigma = np.sqrt(max(bw_hz,1.0))*rin_lin*base
-        Pp = Pp + self.rng.normal(0.0, sigma, size=Pp.shape)
-        Pm = Pm + self.rng.normal(0.0, sigma, size=Pm.shape)
+        sigma_p = np.sqrt(max(bw_hz, 1.0) * max(rin_lin, 0.0)) * Pp
+        sigma_m = np.sqrt(max(bw_hz, 1.0) * max(rin_lin, 0.0)) * Pm
+        Pp = Pp + self.rng.normal(0.0, sigma_p, size=Pp.shape)
+        Pm = Pm + self.rng.normal(0.0, sigma_m, size=Pm.shape)
+        Pp = np.clip(Pp, 0.0, None)
+        Pm = np.clip(Pm, 0.0, None)
         return Pp, Pm
