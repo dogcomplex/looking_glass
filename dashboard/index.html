@@ -1,0 +1,147 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LookingGlassSim Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .card { border: 1px solid #ddd; border-radius: 8px; padding: 12px; }
+    h2 { margin: 0 0 8px 0; font-size: 18px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #eee; padding: 6px 8px; text-align: left; font-size: 12px; }
+    .score { font-weight: bold; }
+    canvas { width: 100% !important; height: 280px !important; }
+    .diagram { display: flex; align-items: center; justify-content: center; }
+    .box { padding: 6px 10px; border: 1px solid #999; border-radius: 4px; margin: 4px; font-size: 12px; }
+    .arrow { margin: 0 6px; font-size: 16px; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h1>LookingGlassSim Results</h1>
+  <p>Run: <code>python examples/test.py --json out/test_summary.json</code> then open this page and select the JSON.</p>
+
+  <input type="file" id="file" accept="application/json" />
+
+  <div class="grid" style="margin-top:12px;">
+    <div class="card">
+      <h2>Summary KPIs</h2>
+      <table id="table-summary"></table>
+    </div>
+    <div class="card">
+      <h2>Realism Heuristics</h2>
+      <table id="table-realism"></table>
+    </div>
+    <div class="card">
+      <h2>Per-tile BER</h2>
+      <canvas id="tileHeat"></canvas>
+    </div>
+    <div class="card">
+      <h2>Window Sweep (p50 BER)</h2>
+      <canvas id="winChart"></canvas>
+    </div>
+    <div class="card">
+      <h2>System Diagram</h2>
+      <div class="diagram">
+        <div class="box">Emitter</div><div class="arrow">→</div>
+        <div class="box">Optics</div><div class="arrow">→</div>
+        <div class="box">Camera</div><div class="arrow">→</div>
+        <div class="box">TIA</div><div class="arrow">→</div>
+        <div class="box">Comparator</div>
+      </div>
+      <p style="font-size:12px;color:#555;">Clock controls window & jitter. Thermal drift perturbs comparator threshold and optics transmittance.</p>
+    </div>
+    <div class="card">
+      <h2>Pack Parameters</h2>
+      <table id="table-packs"></table>
+    </div>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('file');
+    let winChart, tileChart;
+
+    function renderTable(table, obj) {
+      const keys = Object.keys(obj || {});
+      let html = '<tr><th>Key</th><th>Value</th></tr>';
+      for (const k of keys) {
+        let v = obj[k];
+        if (typeof v === 'object') v = JSON.stringify(v);
+        html += `<tr><td>${k}</td><td>${v}</td></tr>`;
+      }
+      table.innerHTML = html;
+    }
+
+    function renderPacks(table, packs) {
+      let html = '<tr><th>Pack</th><th>Params</th></tr>';
+      for (const [name, vals] of Object.entries(packs || {})) {
+        html += `<tr><td>${name}</td><td><pre style="white-space:pre-wrap;">${JSON.stringify(vals, null, 2)}</pre></td></tr>`;
+      }
+      table.innerHTML = html;
+    }
+
+    function drawHeatmap(canvas, matrix) {
+      if (tileChart) tileChart.destroy();
+      // Flatten matrix into dataset per row; color via gradient plugin surrogate (Chart.js lacks heatmap natively)
+      // We'll approximate using stacked bar per column with opacity by value.
+      const labels = matrix[0].map((_, i) => 'x'+i);
+      const datasets = matrix.map((row, r) => ({
+        label: 'y'+r,
+        data: row,
+        backgroundColor: row.map(v => `rgba(33,150,243,${Math.min(1, Math.max(0.05, v))})`),
+        borderWidth: 0
+      }));
+      tileChart = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          scales: { x: { stacked: true }, y: { stacked: true, suggestedMax: 1.0 } },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    function drawLine(canvas, xs, ys, label) {
+      if (winChart) winChart.destroy();
+      winChart = new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: { labels: xs, datasets: [{ label, data: ys, borderColor: '#4caf50', fill: false }] },
+        options: { responsive: true, scales: { y: { suggestedMin: 0, suggestedMax: 1 } } }
+      });
+    }
+
+    fileInput.addEventListener('change', (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          renderTable(document.getElementById('table-summary'), {
+            p50_ber: data?.baseline?.p50_ber,
+            p50_energy_pj: data?.baseline?.p50_energy_pj,
+            window_ns: data?.baseline?.window_ns,
+            p50_snr_emit: data?.baseline?.p50_snr_emit,
+            p50_snr_pd: data?.baseline?.p50_snr_pd,
+            p50_snr_tia: data?.baseline?.p50_snr_tia,
+          });
+          renderTable(document.getElementById('table-realism'), (data?.realism)||{});
+          renderPacks(document.getElementById('table-packs'), data?.packs || {});
+          const hm = data?.ber_per_tile;
+          if (hm && hm.length) drawHeatmap(document.getElementById('tileHeat'), hm);
+          const xs = data?.window_sweep?.x_window_ns || [];
+          const ys = data?.window_sweep?.p50_ber || [];
+          if (xs.length && ys.length) drawLine(document.getElementById('winChart'), xs, ys, 'p50 BER');
+        } catch (err) {
+          alert('Invalid JSON');
+        }
+      };
+      reader.readAsText(f);
+    });
+  </script>
+</body>
+</html>
+

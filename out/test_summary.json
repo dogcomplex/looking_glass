@@ -2,7 +2,7 @@
   "config": {
     "trials": 300,
     "seed": 123,
-    "sensitivity": true
+    "sensitivity": false
   },
   "baseline": {
     "p50_ber": 0.4375,
@@ -10,32 +10,110 @@
     "window_ns": 8.000428189260742,
     "p50_snr_emit": 0.860251943128175,
     "p50_snr_pd": 2.125089540026541,
-    "p50_snr_tia": 4.740378826572693
+    "p50_snr_tia": 4.533540602065531
+  },
+  "packs": {
+    "emitter": {
+      "wavelength_nm": 850.0,
+      "channels": 16,
+      "power_mw_per_ch": 0.7,
+      "extinction_db": 20.0,
+      "rin_dbhz": -150.0,
+      "rise_fall_ns_10_90": 1.0,
+      "temp_coeff_pct_per_C": 0.2,
+      "power_sigma_pct": 2.0
+    },
+    "optics": {
+      "transmittance": 0.7,
+      "w_plus_contrast": 0.85,
+      "w_minus_contrast": 0.84,
+      "crosstalk_db": -28.0,
+      "ct_model": "global",
+      "ct_neighbor_db": -30.0,
+      "stray_floor_db": -38.0,
+      "psf_kernel": "lorentzian:w=2.5",
+      "signal_scale": 1.0,
+      "amp_on": false,
+      "amp_gain_db": 10.0,
+      "sat_abs_on": false,
+      "sat_I_sat": 1.0,
+      "sat_alpha": 0.6
+    },
+    "tia": {
+      "tia_transimpedance_kohm": 5.0,
+      "bw_mhz": 80.0,
+      "in_noise_pA_rthz": 3.0,
+      "peaking_q": 0.7,
+      "slew_v_per_us": 500.0,
+      "adc_bits": 10,
+      "adc_fullscale_v": 1.0,
+      "adc_read_noise_mV_rms": 0.0,
+      "gain_sigma_pct": 1.0
+    },
+    "comparator": {
+      "vth_mV": 5.0,
+      "hysteresis_mV": 1.0,
+      "input_noise_mV_rms": 0.6,
+      "drift_mV_per_C": 0.05,
+      "prop_delay_ns": 2.0,
+      "saturate_levels": true,
+      "vth_sigma_mV": 0.2
+    },
+    "clock": {
+      "window_ns": 17.0,
+      "jitter_ps_rms": 10.0
+    }
+  },
+  "realism": {
+    "emitter": {
+      "score": 0.8,
+      "rin_dbhz": -150.0,
+      "extinction_db": 20.0
+    },
+    "optics": {
+      "score": 0.5,
+      "crosstalk_db": -28.0,
+      "stray_floor_db": -38.0
+    },
+    "camera": {
+      "score": 0.7,
+      "read_noise_e_rms": 2.0,
+      "full_well_e": 20000.0
+    },
+    "tia": {
+      "score": 0.613,
+      "bw_mhz": 80.0,
+      "in_noise_pA_rthz": 3.0
+    },
+    "comparator": {
+      "score": 0.5,
+      "input_noise_mV_rms": 0.6
+    }
   },
   "ber_per_tile": [
     [
+      0.38,
       0.41,
-      0.445,
-      0.395,
-      0.335
+      0.365,
+      0.37
     ],
     [
-      0.46,
-      0.55,
-      0.515,
-      0.465
+      0.4,
+      0.56,
+      0.475,
+      0.42
     ],
     [
-      0.505,
-      0.53,
-      0.525,
-      0.45
+      0.48,
+      0.51,
+      0.5,
+      0.44
     ],
     [
-      0.395,
-      0.43,
-      0.425,
-      0.335
+      0.335,
+      0.41,
+      0.4,
+      0.38
     ]
   ],
   "sanity": {
@@ -44,7 +122,7 @@
     "crosstalk_non_decreasing": true
   },
   "effects": {
-    "window_ber_improvement": 0.25,
+    "window_ber_improvement": 0.1875,
     "rin_ber_degradation": 0.0,
     "crosstalk_ber_degradation": 0.0
   },
@@ -58,8 +136,8 @@
       17.0
     ],
     "p50_ber": [
-      0.5625,
-      0.4375,
+      0.5,
+      0.3125,
       0.3125,
       0.3125,
       0.3125,

@@ -233,6 +233,36 @@ def main():
     except Exception:
         per_tile = None
 
+    # Realism heuristic scoring (0.0–1.0)
+    def realism_scores():
+        scores = {}
+        # Emitter: extinction, RIN in plausible range
+        rin = float(emit.rin_dbhz if hasattr(emit, 'rin_dbhz') else -150.0)
+        ext = float(emit.extinction_db if hasattr(emit, 'extinction_db') else 20.0)
+        s_rin = min(1.0, max(0.0, (rin + 180.0) / 30.0))  # -180..-150 → 0..1, flatter above
+        s_ext = min(1.0, max(0.0, (ext - 10.0) / 20.0))   # 10..30 dB → 0..1
+        scores["emitter"] = {"score": round(0.6*s_rin + 0.4*s_ext, 3), "rin_dbhz": rin, "extinction_db": ext}
+        # Optics: crosstalk and stray floor
+        ct = float(optx.crosstalk_db if hasattr(optx, 'crosstalk_db') else -28.0)
+        stray = float(optx.stray_floor_db if hasattr(optx, 'stray_floor_db') else -38.0)
+        s_ct = min(1.0, max(0.0, (-ct - 18.0) / 20.0))    # -38..-18 → 1..0
+        s_stray = min(1.0, max(0.0, (-stray - 28.0) / 20.0))
+        scores["optics"] = {"score": round(0.7*s_ct + 0.3*s_stray, 3), "crosstalk_db": ct, "stray_floor_db": stray}
+        # Camera: read noise and full well
+        # Not always present here; approximate typical values
+        scores["camera"] = {"score": 0.7, "read_noise_e_rms": 2.0, "full_well_e": 20000.0}
+        # TIA: bandwidth and input noise
+        bw = float(tia_bw)
+        in_n = float(getattr(tia, 'in_noise_pA_rthz', 5.0))
+        s_bw = min(1.0, max(0.0, (bw - 20.0) / 100.0))
+        s_in = min(1.0, max(0.0, (8.0 - in_n) / 8.0))
+        scores["tia"] = {"score": round(0.5*s_bw + 0.5*s_in, 3), "bw_mhz": bw, "in_noise_pA_rthz": in_n}
+        # Comparator: noise and drift
+        comp_n = float(comp.input_noise_mV_rms)
+        s_cn = min(1.0, max(0.0, (1.2 - comp_n) / 1.2))
+        scores["comparator"] = {"score": round(s_cn, 3), "input_noise_mV_rms": comp_n}
+        return scores
+
     summary = {
         "config": {
             "trials": args.trials,
@@ -240,6 +270,14 @@ def main():
             "sensitivity": args.sensitivity,
         },
         "baseline": base_summary,
+        "packs": {
+            "emitter": emit.__dict__,
+            "optics": optx.__dict__,
+            "tia": tia.__dict__,
+            "comparator": comp.__dict__,
+            "clock": clk.__dict__,
+        },
+        "realism": realism_scores(),
         "ber_per_tile": per_tile,
         "sanity": {
             "window_non_increasing": w_ok,

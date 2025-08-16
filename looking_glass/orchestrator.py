@@ -39,7 +39,7 @@ class Orchestrator:
         self.clk = Clock(clk_p, rng=self.rng)
         self.therm = Thermal(thermal_p, rng=self.rng) if thermal_p is not None else None
 
-    def step(self):
+    def step(self, force_ternary: np.ndarray | None = None):
         N = self.sys.channels
         dt_raw = self.clk.sample_window()
         # Apply comparator propagation delay as lost effective integration time
@@ -54,8 +54,12 @@ class Orchestrator:
             # Apply comparator threshold drift and optics transmittance scale
             self.comp.p.vth_mV = self.comp.p.vth_mV + drift["comp_vth_mV_delta"]
             self.optx.p.transmittance = self.optx.p.transmittance * drift["opt_trans_scale"]
-        # random ternary vector
-        tern = self.rng.integers(-1, 2, size=N)
+        # ternary input vector
+        if force_ternary is None:
+            tern = self.rng.integers(-1, 2, size=N)
+        else:
+            tern = np.asarray(force_ternary, dtype=int)
+            assert tern.shape[0] == N
         Pp, Pm = self.emit.simulate(tern, dt, self.sys.temp_C)
         Pp2, Pm2, per_tile_p, per_tile_m = self.optx.simulate(Pp, Pm)
         if self.cam is not None:
