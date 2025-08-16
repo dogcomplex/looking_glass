@@ -1,0 +1,29 @@
+vendor: Thorlabs
+model: L850P200
+category: emitter
+price_usd_est: 150.0
+sources:
+- https://www.thorlabs.com/thorproduct.cfm?partnumber=L850P200
+notes: 850 nm multimode laser diode. Parameters partly estimated from typical 850
+  nm MM LD class.
+wavelength_nm: 850
+coherence_length_m: 0.001
+max_optical_power_mw: 200
+spectral_drift_pm_per_K: 300
+power_drift_percent_per_hr: 0.2
+polarization: random
+beam_quality_M2: 3.0
+NA: 0.22
+ellipticity_ratio: 1.5
+modulation_bw_Hz: 5000000.0
+RIN_dBc_per_Hz_vs_freq:
+  100k: -150
+  1M: -155
+ESD_sensitive: true
+guessed_fields:
+- coherence_length_m
+- power_drift_percent_per_hr
+- beam_quality_M2
+- RIN_dBc_per_Hz_vs_freq
+- modulation_bw_Hz
+- ellipticity_ratio

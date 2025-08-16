@@ -1,0 +1,17 @@
+vendor: Generic
+model: OM3 MMF 300m
+category: fiber
+price_usd_est: 120.0
+sources:
+- https://en.wikipedia.org/wiki/Multi-mode_optical_fiber
+notes: 850 nm multimode fiber; ~3 dB/km; modal dispersion significant.
+type: multimode
+band_nm:
+- 800
+- 900
+length_m: 300
+attenuation_dB_per_km: 3.0
+modal_dispersion_ps_per_km: 1000.0
+group_index: 1.49
+guessed_fields:
+- modal dispersion

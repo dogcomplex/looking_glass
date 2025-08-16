@@ -1,0 +1,19 @@
+vendor: Generic
+model: K9 glass cube 25mm
+category: optics
+price_usd_est: 20.0
+sources:
+- https://www.amazon.com/
+notes: Decorative cube; acts as random scattering volume; parameters guessed.
+type: volume_scatterer
+thickness_mm: 25.0
+transmittance_percent: 92.0
+group_index: 1.52
+GVD_ps_per_nm_km: 100.0
+Henyey_Greenstein_g: 0.4
+surface_roughness_nm: 20.0
+dn_dT_per_K: 1.0e-05
+guessed_fields:
+- GVD
+- g
+- roughness

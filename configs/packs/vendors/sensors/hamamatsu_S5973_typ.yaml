@@ -1,0 +1,18 @@
+vendor: Hamamatsu
+model: S5973
+category: sensor
+price_usd_est: 45.0
+sources:
+- https://www.hamamatsu.com/resources/pdf/ssd/s597x_kspd1024e.pdf
+notes: 3x3 mm Si PD; lower Cj; good for MHz BW.
+responsivity_A_per_W_at_850nm: 0.55
+active_area_mm2: 9.0
+junction_capacitance_pF_at_Vbias:
+  0: 150
+  5: 60
+max_reverse_bias_V: 30
+dark_current_nA: 0.5
+NEP_W_per_sqrtHz: 3.0e-12
+package: SMD/TO
+window_type: clear
+linearity_percent_FS: 0.5

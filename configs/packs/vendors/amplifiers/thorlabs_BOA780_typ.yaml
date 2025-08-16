@@ -1,0 +1,21 @@
+vendor: Thorlabs
+model: BOA780
+category: soa
+price_usd_est: 2395.0
+sources:
+- https://www.thorlabs.com/newgrouppage9.cfm?objectgroup_id=171
+notes: "Semiconductor optical amplifier ~780\u2013800 nm; borderline for 850 nm; verify\
+  \ gain curve."
+band_nm:
+- 770
+- 810
+small_signal_gain_dB: 20.0
+noise_figure_dB: 7.0
+Psat_out_dBm: 10.0
+polarization_dependence_dB: 1.0
+ASE_density_nW_per_nm: 50.0
+guessed_fields:
+- ASE
+- NF
+- Psat
+- PDL

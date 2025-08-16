@@ -1,0 +1,12 @@
+vendor: Isomet
+model: 232A-2
+category: aom_driver
+price_usd_est: 1000.0
+sources:
+- https://www.isomet.com/
+notes: RF driver for AOMs.
+output_power_W: 2.0
+freq_range_MHz:
+- 70
+- 90
+modulation_bw_Hz: 20000000.0

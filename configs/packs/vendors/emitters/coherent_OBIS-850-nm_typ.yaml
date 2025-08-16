@@ -1,0 +1,25 @@
+vendor: Coherent
+model: OBIS 850 nm
+category: emitter
+price_usd_est: 5500.0
+sources:
+- https://www.coherent.com/lasers/laser/obis-lx-ls
+notes: Integrated low-noise laser module. Many parameters specified; some estimated.
+wavelength_nm: 850
+coherence_length_m: 5.0
+max_optical_power_mw: 150
+spectral_drift_pm_per_K: 20
+power_drift_percent_per_hr: 0.02
+polarization: linear
+beam_quality_M2: 1.1
+NA: 0.1
+ellipticity_ratio: 1.1
+modulation_bw_Hz: 100000000.0
+RIN_dBc_per_Hz_vs_freq:
+  100k: -160
+  1M: -165
+ESD_sensitive: true
+guessed_fields:
+- coherence_length_m
+- NA
+- ellipticity_ratio

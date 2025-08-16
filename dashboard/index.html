@@ -35,8 +35,16 @@
       <table id="table-realism"></table>
     </div>
     <div class="card">
+      <h2>Calibrated Baseline KPIs</h2>
+      <table id="table-calibrated"></table>
+    </div>
+    <div class="card">
       <h2>Per-tile BER</h2>
       <canvas id="tileHeat"></canvas>
+    </div>
+    <div class="card">
+      <h2>Per-tile BER (after calibration)</h2>
+      <canvas id="tileHeatAfter"></canvas>
     </div>
     <div class="card">
       <h2>Window Sweep (p50 BER)</h2>
@@ -45,6 +53,14 @@
     <div class="card">
       <h2>Voting & Calibration</h2>
       <table id="table-calib"></table>
+    </div>
+    <div class="card">
+      <h2>Diag Crosstalk Sweep</h2>
+      <canvas id="diagChart"></canvas>
+    </div>
+    <div class="card">
+      <h2>Drift vs Time</h2>
+      <canvas id="driftChart"></canvas>
     </div>
     <div class="card">
       <h2>System Diagram</h2>
@@ -133,15 +149,47 @@
             p50_snr_tia: data?.baseline?.p50_snr_tia,
           });
           renderTable(document.getElementById('table-realism'), (data?.realism)||{});
+          renderTable(document.getElementById('table-calibrated'), {
+            p50_ber: data?.baseline_calibrated?.p50_ber,
+            p50_energy_pj: data?.baseline_calibrated?.p50_energy_pj,
+            window_ns: data?.baseline_calibrated?.window_ns,
+            p50_snr_emit: data?.baseline_calibrated?.p50_snr_emit,
+            p50_snr_pd: data?.baseline_calibrated?.p50_snr_pd,
+            p50_snr_tia: data?.baseline_calibrated?.p50_snr_tia,
+          });
           renderPacks(document.getElementById('table-packs'), data?.packs || {});
           const hm = data?.ber_per_tile;
           if (hm && hm.length) drawHeatmap(document.getElementById('tileHeat'), hm);
+          const hma = data?.ber_per_tile_after;
+          if (hma && hma.length) drawHeatmap(document.getElementById('tileHeatAfter'), hma);
           const xs = data?.window_sweep?.x_window_ns || [];
           const ys = data?.window_sweep?.p50_ber || [];
           if (xs.length && ys.length) drawLine(document.getElementById('winChart'), xs, ys, 'p50 BER');
+          const dx = data?.sensitivity?.diag_crosstalk_sweep?.x_ct_diag_db || [];
+          const dy = data?.sensitivity?.diag_crosstalk_sweep?.p50_ber || [];
+          if (dx.length && dy.length) drawLine(document.getElementById('diagChart'), dx, dy, 'p50 BER vs ct_diag_db');
+          const dno = data?.drift?.no_cal || {};
+          const dfix = data?.drift?.with_cal || {};
+          if ((dno?.x_frame?.length||0) && (dfix?.x_frame?.length||0)) {
+            const ctx = document.getElementById('driftChart').getContext('2d');
+            new Chart(ctx, {
+              type: 'line',
+              data: {
+                labels: dno.x_frame,
+                datasets: [
+                  { label: 'No Cal', data: dno.p50_ber, borderColor: '#f44336', fill: false },
+                  { label: 'With Cal', data: dfix.p50_ber, borderColor: '#2196f3', fill: false }
+                ]
+              },
+              options: { responsive: true, scales: { y: { suggestedMin: 0, suggestedMax: 1 } } }
+            });
+          }
           renderTable(document.getElementById('table-calib'), {
             vote3_p50_ber: data?.vote3_p50_ber,
             vth_suggest_mV: data?.calibration?.vth_suggest_mV,
+            ber_before: data?.calibration?.ber_before,
+            ber_after: data?.calibration?.ber_after,
+            ber_delta: data?.calibration?.ber_delta,
           });
         } catch (err) {
           alert('Invalid JSON');

@@ -1,0 +1,22 @@
+vendor: Texas Instruments
+model: DLPLCR4500EVM
+category: modulator
+price_usd_est: 999.0
+sources:
+- https://www.ti.com/tool/DLPLCR4500EVM
+notes: LightCrafter 4500 DMD; 912x1140; up to ~4 kHz binary patterns; visible window
+  (usable at 850 nm with reduced efficiency).
+type: DMD
+resolution:
+- 912
+- 1140
+max_binary_rate_Hz: 4000
+wavelength_band_nm:
+- 420
+- 700
+fill_factor_percent: 85
+trigger_latency_us: 50
+trigger_jitter_ns: 500
+guessed_fields:
+- trigger_latency_us
+- trigger_jitter_ns

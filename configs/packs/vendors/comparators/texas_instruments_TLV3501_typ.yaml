@@ -1,0 +1,22 @@
+vendor: Texas Instruments
+model: TLV3501
+category: comparator
+price_usd_est: 2.5
+sources:
+- https://www.ti.com/product/TLV3501
+notes: 4.5 ns R-R comparator; easy/cheap.
+min_overdrive_mV: 10.0
+input_offset_mV: 1.5
+input_common_mode_range_V:
+- 0
+- 5
+prop_delay_ns: 4.5
+prop_delay_vs_overdrive_ns:
+  10mV: 5.0
+  50mV: 4.3
+hysteresis_mV: 5.0
+output_type: CMOS
+supply_range_V:
+- 2.7
+- 5.5
+max_toggle_rate_MHz: 50

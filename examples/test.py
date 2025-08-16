@@ -146,6 +146,40 @@ def quick_neighbor_ct_sweep(
     monotone = all(ys[i] <= ys[i+1] for i in range(len(ys)-1))
     return xs, ys, bool(monotone)
 
+def quick_diag_ct_sweep(
+    base_sys: SystemParams,
+    trials: int,
+    starts,
+    stops,
+    steps,
+    *,
+    tia_bw_mhz: float,
+    comp_noise_mV: float,
+    opt_contrast: tuple[float, float] | None = None,
+    emit_power_mw: float | None = None,
+    tia_R_kohm: float | None = None,
+    comp_vth_mV: float | None = None,
+):
+    xs, ys = [], []
+    for i in range(steps):
+        x = starts + i*(stops-starts)/(steps-1)
+        emit = EmitterParams(channels=base_sys.channels)
+        if emit_power_mw is not None:
+            emit.power_mw_per_ch = float(emit_power_mw)
+        optx = OpticsParams(ct_model="neighbor", ct_diag_db=float(x))
+        if opt_contrast is not None:
+            optx.w_plus_contrast, optx.w_minus_contrast = float(opt_contrast[0]), float(opt_contrast[1])
+        pd = PDParams()
+        tia = TIAParams(bw_mhz=tia_bw_mhz, tia_transimpedance_kohm=(tia_R_kohm if tia_R_kohm is not None else 10.0))
+        comp = ComparatorParams(input_noise_mV_rms=comp_noise_mV, vth_mV=(comp_vth_mV if comp_vth_mV is not None else 5.0))
+        clk = ClockParams(window_ns=base_sys.window_ns, jitter_ps_rms=10.0)
+        orch = Orchestrator(base_sys, emit, optx, pd, tia, comp, clk)
+        rows = run_trials(orch, trials)
+        xs.append(x)
+        ys.append(med_ber(rows))
+    monotone = all(ys[i] <= ys[i+1] for i in range(len(ys)-1))
+    return xs, ys, bool(monotone)
+
 
 def main():
     ap = argparse.ArgumentParser()
@@ -166,7 +200,7 @@ def main():
     pd = PDParams()
     # Sensitivity mode tunes TIA BW and comparator noise to amplify trends
     tia_bw = 30.0 if args.sensitivity else 80.0
-    comp_noise = 0.3 if args.sensitivity else 0.6
+    comp_noise = 0.3 if args.sensitivity else 0.5
     tia = TIAParams(bw_mhz=tia_bw, tia_transimpedance_kohm=5.0, in_noise_pA_rthz=3.0, gain_sigma_pct=1.0)
     comp = ComparatorParams(input_noise_mV_rms=comp_noise, vth_sigma_mV=0.2)
     clk = ClockParams(window_ns=10.0, jitter_ps_rms=10.0)
@@ -203,7 +237,10 @@ def main():
 
     # Per-tile BER heatmap (default run): if tiling is square, compute BER per tile
     per_tile = None
+    per_tile_after = None
     vth_suggest = None
+    ber_after = None
+    cal_summary = None
     try:
         blocks = base_orch.sys.channels
         blocks = int(blocks**0.5)
@@ -240,6 +277,57 @@ def main():
             try:
                 from looking_glass.plotting import save_heatmap as _save_hm
                 _save_hm(per_tile, xlabel="tile-x", ylabel="tile-y", out_path="out/ber_per_tile.png", title="Per-tile BER")
+            except Exception:
+                pass
+            # Calibration pass: collect per-channel dv stats, compute vth per channel, apply and re-run
+            # Build a fresh orchestrator to apply trims
+            cal_emit = EmitterParams(**emit.__dict__)
+            cal_optx = OpticsParams(**optx.__dict__)
+            cal_pd = PDParams(**pd.__dict__)
+            cal_tia = TIAParams(**tia.__dict__)
+            cal_comp = ComparatorParams(**comp.__dict__)
+            cal_clk = ClockParams(**clk.__dict__)
+            orch_cal = Orchestrator(sys_p, cal_emit, cal_optx, cal_pd, cal_tia, cal_comp, cal_clk)
+            # Gather dv per channel given known ternary patterns
+            pos_sum = _np.zeros(sys_p.channels, dtype=float)
+            pos_cnt = _np.zeros(sys_p.channels, dtype=float)
+            neg_sum = _np.zeros(sys_p.channels, dtype=float)
+            neg_cnt = _np.zeros(sys_p.channels, dtype=float)
+            for _ in range(min(400, args.trials*2)):
+                tern = orch_cal.rng.integers(-1, 2, size=sys_p.channels)
+                r = orch_cal.step(force_ternary=tern)
+                dv = _np.array(r.get("dv_mV", [0]*sys_p.channels), dtype=float)
+                pos = tern > 0
+                neg = tern < 0
+                pos_sum[pos] += dv[pos]
+                pos_cnt[pos] += 1.0
+                neg_sum[neg] += dv[neg]
+                neg_cnt[neg] += 1.0
+            pos_mean = _np.divide(pos_sum, _np.clip(pos_cnt, 1.0, None))
+            neg_mean = _np.divide(neg_sum, _np.clip(neg_cnt, 1.0, None))
+            vth_vec = 0.5*(pos_mean + neg_mean)
+            # Apply per-channel trims
+            orch_cal.comp.set_vth_per_channel(vth_vec)
+            # Evaluate post-calibration BER and per-tile BER
+            rows_after = [orch_cal.step() for _ in range(min(200, args.trials))]
+            tile_err2 = _np.zeros((blocks, blocks), dtype=float)
+            tile_cnt2 = _np.zeros((blocks, blocks), dtype=float)
+            for r in rows_after:
+                t_out = r.get("t_out", [])
+                truth = r.get("truth", [])
+                for ch, (o, z) in enumerate(zip(t_out, truth)):
+                    by = ch // blocks
+                    bx = ch % blocks
+                    tile_err2[by, bx] += 1.0 if int(o) != int(z) else 0.0
+                    tile_cnt2[by, bx] += 1.0
+            with _np.errstate(divide='ignore', invalid='ignore'):
+                per_tile_after = (tile_err2 / _np.clip(tile_cnt2, 1.0, None)).tolist()
+            # Full-run BER after applying trims
+            cal_summary = orch_cal.run(trials=args.trials)
+            ber_after = float(cal_summary.get("p50_ber", None))
+            try:
+                from looking_glass.plotting import save_heatmap as _save_hm
+                _save_hm(per_tile_after, xlabel="tile-x", ylabel="tile-y", out_path="out/ber_per_tile_after.png", title="Per-tile BER (after calib)")
             except Exception:
                 pass
     except Exception:
@@ -281,10 +369,12 @@ def main():
         import numpy as _np
         errs = []
         for _ in range(min(args.trials, 200)):
-            r1 = base_orch.step()
-            r2 = base_orch.step()
-            r3 = base_orch.step()
-            t = _np.array(r1["truth"])
+            # Use a fixed ternary vector per trial to enable meaningful voting
+            tern = base_orch.rng.integers(-1, 2, size=base_orch.sys.channels)
+            r1 = base_orch.step(force_ternary=tern)
+            r2 = base_orch.step(force_ternary=tern)
+            r3 = base_orch.step(force_ternary=tern)
+            t = _np.array(tern)
             O = _np.vstack([r1["t_out"], r2["t_out"], r3["t_out"]])
             vote = _np.sign(_np.sum(O, axis=0))
             errs.append(float(_np.mean(vote != t)))
@@ -307,6 +397,8 @@ def main():
         },
         "realism": realism_scores(),
         "ber_per_tile": per_tile,
+        "ber_per_tile_after": per_tile_after,
+        "baseline_calibrated": (cal_summary or {}),
         "vote3_p50_ber": vote3_ber,
         "sanity": {
             "window_non_increasing": w_ok,
@@ -318,7 +410,10 @@ def main():
         "rin_sweep": {"x_rin_dbhz": r_xs, "p50_ber": r_ys},
         "crosstalk_sweep": {"x_crosstalk_db": c_xs, "p50_ber": c_ys},
         "calibration": {
-            "vth_suggest_mV": vth_suggest
+            "vth_suggest_mV": vth_suggest,
+            "ber_before": base_summary.get("p50_ber"),
+            "ber_after": ber_after,
+            "ber_delta": (None if (ber_after is None or base_summary.get("p50_ber") is None) else float(ber_after - base_summary.get("p50_ber")))
         }
     }
 
@@ -374,6 +469,21 @@ def main():
         tia_R_kohm=1.0,
         comp_vth_mV=5.0,
     )
+    # Diagonal crosstalk sweep
+    dct_range = (-45.0, -20.0, 6)
+    sd_xs, sd_ys, sd_ok = quick_diag_ct_sweep(
+        sys_p,
+        trials=args.trials,
+        starts=dct_range[0],
+        stops=dct_range[1],
+        steps=dct_range[2],
+        tia_bw_mhz=sens_tia_bw,
+        comp_noise_mV=sens_comp_noise,
+        opt_contrast=(0.8, 0.78),
+        emit_power_mw=0.05,
+        tia_R_kohm=1.0,
+        comp_vth_mV=5.0,
+    )
     sens_effects = {
         "window_ber_improvement": safe_delta(sw_ys),
         "rin_ber_degradation": (sr_ys[-1] - sr_ys[0]) if sr_ys and len(sr_ys) > 1 else 0.0,
@@ -400,6 +510,7 @@ def main():
         "rin_sweep": {"x_rin_dbhz": sr_xs, "p50_ber": sr_ys},
         "crosstalk_sweep": {"x_crosstalk_db": sc_xs, "p50_ber": sc_ys},
         "neighbor_crosstalk_sweep": {"x_ct_neighbor_db": sn_xs, "p50_ber": sn_ys},
+        "diag_crosstalk_sweep": {"x_ct_diag_db": sd_xs, "p50_ber": sd_ys},
     }
 
     # Optional: Per-tile heatmap in sensitivity mode if tiling is square (blocks^2 == channels)
@@ -411,6 +522,67 @@ def main():
             save_heatmap(_one["per_tile"]["plus"], xlabel="tile-x", ylabel="tile-y", out_path="out/per_tile_plus.png", title="Per-tile Plus Intensity")
             save_heatmap(_one["per_tile"]["minus"], xlabel="tile-x", ylabel="tile-y", out_path="out/per_tile_minus.png", title="Per-tile Minus Intensity")
     except (ImportError, RuntimeError, ValueError):
+        pass
+
+    # Drift calibration demo: BER vs time with/without periodic vth re-centering
+    try:
+        import numpy as _np
+        from looking_glass.sim.thermal import ThermalParams as _Therm
+        drift_frames = 600
+        chunk = 30
+        # No calibration
+        orch_drift = Orchestrator(
+            sys_p,
+            EmitterParams(channels=16, power_mw_per_ch=0.7),
+            OpticsParams(),
+            PDParams(),
+            TIAParams(bw_mhz=tia_bw, tia_transimpedance_kohm=5.0),
+            ComparatorParams(input_noise_mV_rms=comp_noise),
+            ClockParams(window_ns=10.0, jitter_ps_rms=10.0),
+            cam_p=None,
+            thermal_p=_Therm(drift_scale=0.05, corner_hz=0.01),
+        )
+        ber_no = []
+        xs_no = []
+        tmp = []
+        for i in range(drift_frames):
+            tmp.append(orch_drift.step()["ber"])
+            if (i+1) % chunk == 0:
+                ber_no.append(float(_np.median(tmp))); xs_no.append(i+1); tmp = []
+        # With periodic re-centering
+        orch_fix = Orchestrator(
+            sys_p,
+            EmitterParams(channels=16, power_mw_per_ch=0.7),
+            OpticsParams(),
+            PDParams(),
+            TIAParams(bw_mhz=tia_bw, tia_transimpedance_kohm=5.0),
+            ComparatorParams(input_noise_mV_rms=comp_noise),
+            ClockParams(window_ns=10.0, jitter_ps_rms=10.0),
+            cam_p=None,
+            thermal_p=_Therm(drift_scale=0.05, corner_hz=0.01),
+        )
+        ber_fix = []
+        xs_fix = []
+        tmp = []
+        calib_interval = 5  # chunks
+        for i in range(drift_frames):
+            tmp.append(orch_fix.step()["ber"])
+            if (i+1) % chunk == 0:
+                k = (i+1)//chunk
+                # periodic re-centering using last chunk's dv
+                rows = [orch_fix.step() for _ in range(100)]
+                dv = _np.array([r.get("dv_mV", [0]*sys_p.channels) for r in rows])
+                truth = _np.array([r.get("truth", [0]*sys_p.channels) for r in rows])
+                pos_mean = _np.mean(_np.where(truth>0, dv, _np.nan), axis=0)
+                neg_mean = _np.mean(_np.where(truth<0, dv, _np.nan), axis=0)
+                vth_vec = _np.nan_to_num(0.5*(pos_mean + neg_mean))
+                orch_fix.comp.set_vth_per_channel(vth_vec)
+                ber_fix.append(float(_np.median(tmp))); xs_fix.append(i+1); tmp = []
+        summary["drift"] = {
+            "no_cal": {"x_frame": xs_no, "p50_ber": ber_no},
+            "with_cal": {"x_frame": xs_fix, "p50_ber": ber_fix},
+        }
+    except Exception:
         pass
     print(json.dumps(summary, indent=2))
     if args.json:

@@ -1,0 +1,21 @@
+vendor: ams OSRAM
+model: SPL PL85
+category: emitter
+price_usd_est: 35.0
+sources:
+- https://ams-osram.com/products/laser-diodes/spl-pl85
+notes: Pulsed 850 nm LD; intended for high-peak LiDAR pulses; CW use limited.
+wavelength_nm: 850
+coherence_length_m: 0.005
+max_optical_power_mw: 1.0
+peak_power_W: 25.0
+pulse_width_ns: 10.0
+rep_rate_kHz: 100
+spectral_drift_pm_per_K: 300
+polarization: linear
+modulation_bw_Hz: 50000000.0
+ESD_sensitive: true
+guessed_fields:
+- coherence_length_m
+- CW safe power
+- modulation_bw_Hz

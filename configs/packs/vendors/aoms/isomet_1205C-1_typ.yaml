@@ -1,0 +1,17 @@
+vendor: Isomet
+model: 1205C-1
+category: aom
+price_usd_est: 2000.0
+sources:
+- https://www.isomet.com/
+notes: "AOM for 700\u2013900 nm; similar performance."
+center_frequency_MHz: 80.0
+aperture_mm: 1.0
+rise_time_ns: 120.0
+fall_time_ns: 120.0
+diff_efficiency_percent_at_full_RF: 75.0
+insertion_loss_dB: 3.5
+driver_power_W: 2.0
+guessed_fields:
+- times
+- efficiency

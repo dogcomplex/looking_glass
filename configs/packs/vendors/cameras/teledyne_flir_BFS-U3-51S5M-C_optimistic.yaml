@@ -1,0 +1,34 @@
+vendor: Teledyne FLIR
+model: BFS-U3-51S5M-C
+category: camera
+price_usd_est: 700.0
+sources:
+- https://www.flir.com/products/blackfly-s-usb3/
+notes: Sony IMX250 5MP GS; generalist. QE at 850 nm estimated from IMX250 curves.
+  (optimistic envelope)
+pixel_pitch_um: 3.45
+resolution:
+- 2448
+- 2048
+sensor_format: 2/3"
+global_shutter: true
+bit_depth_modes:
+- 8
+- 10
+- 12
+max_fps: 97.5
+exposure_min_us: 10.0
+exposure_max_ms: 1000.0
+qe_at_850nm: 0.325
+read_noise_e: 1.5
+fixed_pattern_noise_e: 0.7
+analog_gain_range_dB:
+- 0
+- 24
+trigger_latency_us: 20
+trigger_jitter_ns: 200
+ir_cut_filter: false
+notes_additional: Use NIR AR lens; disable auto-exposure for deterministic timing.
+guessed_fields:
+- qe_at_850nm
+- trigger figures

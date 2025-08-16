@@ -1,0 +1,17 @@
+vendor: Edmund Optics
+model: "Light Shaping Diffuser 10\xB0"
+category: optics
+price_usd_est: 135.0
+sources:
+- https://www.edmundoptics.com/c/light-shaping-diffusers/1430/
+notes: Engineered microstructure; repeatable patterns.
+type: engineered_diffuser
+scatter_angle_deg_FWHM: 10.0
+transmittance_percent: 90.0
+thickness_mm: 1.0
+dn_dT_per_K: 1.0e-05
+surface_roughness_nm: 10.0
+Henyey_Greenstein_g: 0.65
+guessed_fields:
+- g
+- roughness

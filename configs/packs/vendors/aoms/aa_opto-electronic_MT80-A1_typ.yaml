@@ -1,0 +1,17 @@
+vendor: AA Opto-Electronic
+model: MT80-A1
+category: aom
+price_usd_est: 2100.0
+sources:
+- https://www.aaoptoelectronic.com/
+notes: "80 MHz AOM; similar performance; 700\u2013900 nm options."
+center_frequency_MHz: 80.0
+aperture_mm: 1.0
+rise_time_ns: 90.0
+fall_time_ns: 90.0
+diff_efficiency_percent_at_full_RF: 80.0
+insertion_loss_dB: 3.0
+driver_power_W: 2.0
+guessed_fields:
+- times
+- efficiency

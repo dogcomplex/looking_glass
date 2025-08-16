@@ -1,0 +1,31 @@
+vendor: Basler
+model: acA1920-155um
+category: camera
+price_usd_est: 850.0
+sources:
+- https://www.baslerweb.com/en/products/cameras/area-scan-cameras/ace/
+notes: Sony IMX174 2.3MP GS; high fps; large pixels; great full-well.
+pixel_pitch_um: 5.86
+resolution:
+- 1920
+- 1200
+sensor_format: 1/1.2"
+global_shutter: true
+bit_depth_modes:
+- 8
+- 12
+max_fps: 155.0
+exposure_min_us: 12.0
+exposure_max_ms: 1000.0
+qe_at_850nm: 0.2
+read_noise_e: 3.0
+fixed_pattern_noise_e: 1.2
+analog_gain_range_dB:
+- 0
+- 24
+trigger_latency_us: 15
+trigger_jitter_ns: 150
+ir_cut_filter: false
+guessed_fields:
+- qe_at_850nm
+- trigger figures

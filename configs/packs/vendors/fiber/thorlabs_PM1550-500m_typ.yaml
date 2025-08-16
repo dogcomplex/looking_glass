@@ -1,0 +1,16 @@
+vendor: Thorlabs
+model: PM1550 500m
+category: fiber
+price_usd_est: 899.0
+sources:
+- https://www.thorlabs.com/newgrouppage9.cfm?objectgroup_id=252
+notes: Polarization-maintaining fiber; useful for coherent loops.
+type: PM_single_mode
+band_nm:
+- 1520
+- 1570
+length_m: 500
+attenuation_dB_per_km: 0.5
+dispersion_ps_per_nm_km: 17.0
+group_index: 1.468
+beat_length_mm: 3.5

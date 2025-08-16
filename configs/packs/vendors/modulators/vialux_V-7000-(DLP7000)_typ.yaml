@@ -1,0 +1,22 @@
+vendor: Vialux
+model: V-7000 (DLP7000)
+category: modulator
+price_usd_est: 8000.0
+sources:
+- https://www.vialux.de/en/
+notes: High-speed DMD controller for DLP7000; tens of kHz binary patterns.
+type: DMD
+resolution:
+- 1024
+- 768
+max_binary_rate_Hz: 32000
+wavelength_band_nm:
+- 400
+- 700
+fill_factor_percent: 92
+trigger_latency_us: 10
+trigger_jitter_ns: 100
+guessed_fields:
+- trigger_latency_us
+- trigger_jitter_ns
+- max_binary_rate_Hz

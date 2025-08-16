@@ -1,0 +1,18 @@
+vendor: Vishay
+model: BPW34
+category: sensor
+price_usd_est: 2.0
+sources:
+- https://www.vishay.com/docs/81521/bpw34.pdf
+notes: Tiny Si PD; low cost; Cj ~70 pF; good for prototyping.
+responsivity_A_per_W_at_850nm: 0.5
+active_area_mm2: 7.5
+junction_capacitance_pF_at_Vbias:
+  0: 70
+  5: 15
+max_reverse_bias_V: 60
+dark_current_nA: 0.1
+NEP_W_per_sqrtHz: 1.0e-12
+package: leaded
+window_type: clear
+linearity_percent_FS: 1.0

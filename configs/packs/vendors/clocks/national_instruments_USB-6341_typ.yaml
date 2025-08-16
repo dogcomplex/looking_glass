@@ -1,0 +1,13 @@
+vendor: National Instruments
+model: USB-6341
+category: clock
+price_usd_est: 1999.0
+sources:
+- https://www.ni.com/en/support/model.usb-6341.html
+notes: DAQ timing and IO; moderate-speed triggers.
+level: TTL_5V
+min_pulse_ns: 20.0
+rise_time_ns: 10.0
+fanout: 8
+skew_ps: 200.0
+ext_trig_supported: true

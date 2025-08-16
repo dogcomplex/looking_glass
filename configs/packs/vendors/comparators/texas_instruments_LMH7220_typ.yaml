@@ -1,0 +1,21 @@
+vendor: Texas Instruments
+model: LMH7220
+category: comparator
+price_usd_est: 4.5
+sources:
+- https://www.ti.com/product/LMH7220
+notes: 800 ps window comparator; LVDS out.
+min_overdrive_mV: 5.0
+input_offset_mV: 1.0
+input_common_mode_range_V:
+- 0
+- 5
+prop_delay_ns: 0.8
+output_type: LVDS
+supply_range_V:
+- 2.7
+- 5.0
+max_toggle_rate_MHz: 400
+hysteresis_mV: 2.0
+guessed_fields:
+- toggle rate

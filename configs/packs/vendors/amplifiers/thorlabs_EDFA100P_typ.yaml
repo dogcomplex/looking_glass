@@ -1,0 +1,14 @@
+vendor: Thorlabs
+model: EDFA100P
+category: edfa
+price_usd_est: 6995.0
+sources:
+- https://www.thorlabs.com/newgrouppage9.cfm?objectgroup_id=1549
+notes: "Bench-top EDFA; 20\u201330 dB gain; C-band."
+band_nm:
+- 1530
+- 1565
+small_signal_gain_dB: 25.0
+noise_figure_dB: 5.0
+Psat_out_dBm: 20.0
+pump_power_W: 2.0

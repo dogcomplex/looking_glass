@@ -1,0 +1,13 @@
+vendor: Analog Devices
+model: AD9910 DDS Eval Board
+category: clock
+price_usd_est: 350.0
+sources:
+- https://www.analog.com/en/products/ad9910.html
+notes: DDS for precise RF clocking (AOM drive source reference).
+level: LVDS
+min_pulse_ns: 2.0
+rise_time_ns: 1.0
+fanout: 4
+skew_ps: 50.0
+ext_trig_supported: true

@@ -1,0 +1,32 @@
+vendor: IDS
+model: UI-3280CP Rev.2
+category: camera
+price_usd_est: 700.0
+sources:
+- https://en.ids-imaging.com/store/products/cameras/ui-3280cp-rev2.html
+notes: IMX264/265 class GS; robust SDK; mid fps.
+pixel_pitch_um: 3.45
+resolution:
+- 2448
+- 2048
+sensor_format: 2/3"
+global_shutter: true
+bit_depth_modes:
+- 8
+- 10
+- 12
+max_fps: 40.0
+exposure_min_us: 15.0
+exposure_max_ms: 1000.0
+qe_at_850nm: 0.23
+read_noise_e: 2.6
+fixed_pattern_noise_e: 1.1
+analog_gain_range_dB:
+- 0
+- 24
+trigger_latency_us: 25
+trigger_jitter_ns: 250
+ir_cut_filter: false
+guessed_fields:
+- qe_at_850nm
+- trigger figures

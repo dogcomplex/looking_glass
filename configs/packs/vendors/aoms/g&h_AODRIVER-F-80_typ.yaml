@@ -1,0 +1,12 @@
+vendor: G&H
+model: AODRIVER-F-80
+category: aom_driver
+price_usd_est: 1200.0
+sources:
+- https://www.goochandhousego.com/
+notes: Matched 80 MHz RF driver.
+output_power_W: 3.0
+freq_range_MHz:
+- 70
+- 90
+modulation_bw_Hz: 30000000.0

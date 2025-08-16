@@ -1,0 +1,13 @@
+vendor: Pico Technology
+model: PicoScope 5444D (AWG)
+category: clock
+price_usd_est: 1590.0
+sources:
+- https://www.picotech.com/
+notes: Scope with AWG; handy during bring-up.
+level: TTL_3V3
+min_pulse_ns: 10.0
+rise_time_ns: 5.0
+fanout: 2
+skew_ps: 200.0
+ext_trig_supported: true

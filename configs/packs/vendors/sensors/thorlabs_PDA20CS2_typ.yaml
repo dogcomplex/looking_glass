@@ -1,0 +1,23 @@
+vendor: Thorlabs
+model: PDA20CS2
+category: sensor
+price_usd_est: 465.0
+sources:
+- https://www.thorlabs.com/thorproduct.cfm?partnumber=PDA20CS2
+notes: Amplified Si photodetector module 200-1000 nm; includes TIA; use as shortcut.
+responsivity_A_per_W_at_850nm: 0.45
+active_area_mm2: 10.0
+built_in_TIA: true
+max_reverse_bias_V: 10
+dark_current_nA: 2.0
+bandwidth_Hz: 1900000.0
+gain_settings:
+- 0 dB
+- +20 dB
+- +40 dB
+package: module
+window_type: integrated
+linearity_percent_FS: 1.0
+guessed_fields:
+- responsivity
+- bandwidth

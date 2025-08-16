@@ -1,0 +1,15 @@
+vendor: Thorlabs
+model: SOA1013S (C-band)
+category: soa
+price_usd_est: 1995.0
+sources:
+- https://www.thorlabs.com/newgrouppage9.cfm?objectgroup_id=171
+notes: C-band SOA; if pivot to 1550 nm; easier ecosystem.
+band_nm:
+- 1525
+- 1565
+small_signal_gain_dB: 20.0
+noise_figure_dB: 6.0
+Psat_out_dBm: 12.0
+polarization_dependence_dB: 1.0
+ASE_density_nW_per_nm: 40.0

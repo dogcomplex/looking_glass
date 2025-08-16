@@ -1,0 +1,15 @@
+vendor: Corning
+model: SMF-28e+ 1km
+category: fiber
+price_usd_est: 350.0
+sources:
+- https://www.corning.com/optical-communications/worldwide/en/home/products/fiber/smf-28.html
+notes: Classic telecom single-mode.
+type: single_mode
+band_nm:
+- 1260
+- 1625
+length_m: 1000
+attenuation_dB_per_km: 0.2
+dispersion_ps_per_nm_km: 17.0
+group_index: 1.468

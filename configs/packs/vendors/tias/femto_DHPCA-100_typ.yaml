@@ -1,0 +1,22 @@
+vendor: FEMTO
+model: DHPCA-100
+category: tia
+price_usd_est: 1950.0
+sources:
+- https://www.femto.de/products/current-amplifiers/dhpca-100.html
+notes: Wideband current amplifier up to 200 MHz; fast loops.
+gain_settings:
+- transimpedance_V_per_A: 1000.0
+  bandwidth_Hz: 200000000.0
+- transimpedance_V_per_A: 10000.0
+  bandwidth_Hz: 50000000.0
+input_bias_current_pA: 10.0
+input_referred_voltage_noise_nV_per_sqrtHz: 4.5
+supply_V:
+- -12
+- 12
+output_swing_Vpp: 2.0
+stability_margin_deg: 40
+min_load_ohm: 1000
+guessed_fields:
+- stability_margin_deg

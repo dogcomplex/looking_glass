@@ -1,0 +1,32 @@
+vendor: FEMTO
+model: DLPCA-200
+category: tia
+price_usd_est: 1750.0
+sources:
+- https://www.femto.de/products/current-amplifiers/dlpca-200.html
+notes: "Variable gain 200 \u03A9 to 2e11 \u03A9; BW from Hz to MHz; lab standard."
+gain_settings:
+- Rf_ohm: 200
+  Cf_F: 1.0e-11
+  bandwidth_Hz: 2000000.0
+- Rf_ohm: 2000.0
+  Cf_F: 1.0e-11
+  bandwidth_Hz: 1500000.0
+- Rf_ohm: 2000000.0
+  Cf_F: 1.0e-11
+  bandwidth_Hz: 1000.0
+- Rf_ohm: 2000000000.0
+  Cf_F: 1.0e-11
+  bandwidth_Hz: 1.0
+input_bias_current_pA: 5.0
+input_referred_voltage_noise_nV_per_sqrtHz: 4.0
+supply_V:
+- -12
+- 12
+output_swing_Vpp: 4.0
+stability_margin_deg: 45
+suggested_input_cap_pF: 1.0
+min_load_ohm: 1000
+guessed_fields:
+- stability_margin_deg
+- suggested_input_cap_pF

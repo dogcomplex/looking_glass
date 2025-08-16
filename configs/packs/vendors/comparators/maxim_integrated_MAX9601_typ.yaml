@@ -1,0 +1,19 @@
+vendor: Maxim Integrated
+model: MAX9601
+category: comparator
+price_usd_est: 3.5
+sources:
+- https://www.analog.com/en/products/max9601.html
+notes: 4.5 ns; TTL/CMOS; robust generalist.
+min_overdrive_mV: 10.0
+input_offset_mV: 2.0
+input_common_mode_range_V:
+- 0
+- 5
+prop_delay_ns: 4.5
+output_type: CMOS
+supply_range_V:
+- 2.7
+- 5.5
+max_toggle_rate_MHz: 60
+hysteresis_mV: 5.0

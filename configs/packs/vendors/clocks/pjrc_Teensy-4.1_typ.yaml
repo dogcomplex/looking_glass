@@ -1,0 +1,13 @@
+vendor: PJRC
+model: Teensy 4.1
+category: clock
+price_usd_est: 29.0
+sources:
+- https://www.pjrc.com/store/teensy41.html
+notes: 600 MHz MCU; GPIO up to ~100+ MHz; good general trigger/clock.
+level: TTL_3V3
+min_pulse_ns: 10.0
+rise_time_ns: 5.0
+fanout: 8
+skew_ps: 100.0
+ext_trig_supported: true

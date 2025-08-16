@@ -1,0 +1,31 @@
+vendor: The Imaging Source
+model: DMK 33UX264
+category: camera
+price_usd_est: 600.0
+sources:
+- https://www.theimagingsource.com/products/industrial-cameras/usb-3.0-monochrome/
+notes: Sony IMX264 mono GS; good value; NIR usable.
+pixel_pitch_um: 3.45
+resolution:
+- 2448
+- 2048
+sensor_format: 2/3"
+global_shutter: true
+bit_depth_modes:
+- 8
+- 12
+max_fps: 35.0
+exposure_min_us: 20.0
+exposure_max_ms: 1000.0
+qe_at_850nm: 0.22
+read_noise_e: 3.0
+fixed_pattern_noise_e: 1.3
+analog_gain_range_dB:
+- 0
+- 24
+trigger_latency_us: 30
+trigger_jitter_ns: 300
+ir_cut_filter: false
+guessed_fields:
+- qe_at_850nm
+- trigger figures

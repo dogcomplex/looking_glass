@@ -1,0 +1,15 @@
+vendor: Thorlabs
+model: SMF-28 Ultra 5km
+category: fiber
+price_usd_est: 1199.0
+sources:
+- https://www.thorlabs.com/newgrouppage9.cfm?objectgroup_id=353
+notes: "C-band single-mode; 0.2 dB/km; dispersion ~17 ps/(nm\xB7km)."
+type: single_mode
+band_nm:
+- 1260
+- 1625
+length_m: 5000
+attenuation_dB_per_km: 0.2
+dispersion_ps_per_nm_km: 17.0
+group_index: 1.468

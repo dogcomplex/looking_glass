@@ -1,0 +1,14 @@
+vendor: Thorlabs
+model: TED200C
+category: thermal
+price_usd_est: 1098.0
+sources:
+- https://www.thorlabs.com/thorproduct.cfm?partnumber=TED200C
+notes: "Bench-top TEC, \xB12 A; lab staple."
+controller_type: PID
+temp_setpoint_C: 25.0
+settle_time_s: 90.0
+TEC_current_max_A: 2.0
+sensor_type: NTC/RTD
+temp_noise_rms_mK: 2.0
+ambient_coupling_W_per_K: 0.7

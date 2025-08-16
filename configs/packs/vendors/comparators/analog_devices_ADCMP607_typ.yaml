@@ -1,0 +1,19 @@
+vendor: Analog Devices
+model: ADCMP607
+category: comparator
+price_usd_est: 6.0
+sources:
+- https://www.analog.com/en/products/adcmp607.html
+notes: 1.25 ns; LVDS/CML; precise.
+min_overdrive_mV: 5.0
+input_offset_mV: 1.0
+input_common_mode_range_V:
+- 0
+- 5
+prop_delay_ns: 1.25
+output_type: LVDS
+supply_range_V:
+- 2.7
+- 5.5
+max_toggle_rate_MHz: 250
+hysteresis_mV: 2.0

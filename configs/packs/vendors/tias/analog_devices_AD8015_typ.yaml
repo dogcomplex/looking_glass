@@ -1,0 +1,21 @@
+vendor: Analog Devices
+model: AD8015
+category: tia
+price_usd_est: 7.0
+sources:
+- https://www.analog.com/en/products/ad8015.html
+notes: TIA for fiber receivers; high speed; requires external design.
+gain_settings:
+- Rf_ohm: 1000.0
+  bandwidth_Hz: 1000000000.0
+input_bias_current_pA: 1.0
+input_referred_voltage_noise_nV_per_sqrtHz: 2.0
+supply_V:
+- 5.0
+output_swing_Vpp: 1.0
+stability_margin_deg: 45
+min_load_ohm: 1000
+guessed_fields:
+- Rf/BW mapping
+- noise
+- margin

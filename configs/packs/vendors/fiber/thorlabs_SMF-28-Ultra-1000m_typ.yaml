@@ -1,0 +1,15 @@
+vendor: Thorlabs
+model: SMF-28 Ultra 1000m
+category: fiber
+price_usd_est: 399.0
+sources:
+- https://www.thorlabs.com/newgrouppage9.cfm?objectgroup_id=353
+notes: Shorter spool; same params.
+type: single_mode
+band_nm:
+- 1260
+- 1625
+length_m: 1000
+attenuation_dB_per_km: 0.2
+dispersion_ps_per_nm_km: 17.0
+group_index: 1.468

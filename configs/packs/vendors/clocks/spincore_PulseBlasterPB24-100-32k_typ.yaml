@@ -1,0 +1,13 @@
+vendor: SpinCore
+model: PulseBlasterPB24-100-32k
+category: clock
+price_usd_est: 2490.0
+sources:
+- https://spinapi.com/
+notes: Deterministic pulse programmer; sub-ns resolution models available.
+level: TTL_5V
+min_pulse_ns: 5.0
+rise_time_ns: 2.0
+fanout: 16
+skew_ps: 20.0
+ext_trig_supported: true

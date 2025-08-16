@@ -1,0 +1,15 @@
+vendor: BATOP
+model: SESAM @ 850 nm (custom)
+category: saturable_absorber
+price_usd_est: 1200.0
+sources:
+- https://www.batop.com/products/saturable-absorbers/
+notes: SESAM parameters vary; pick modulation depth and recovery time.
+center_wavelength_nm: 850
+modulation_depth_percent: 10.0
+saturation_fluence_uJ_per_cm2: 50.0
+non_saturable_loss_percent: 3.0
+recovery_time_ps: 5.0
+guessed_fields:
+- exact availability at 850 nm
+- parameters

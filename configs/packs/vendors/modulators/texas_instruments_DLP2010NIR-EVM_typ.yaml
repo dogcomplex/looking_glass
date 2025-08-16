@@ -1,0 +1,21 @@
+vendor: Texas Instruments
+model: DLP2010NIR EVM
+category: modulator
+price_usd_est: 799.0
+sources:
+- https://www.ti.com/tool/DLPNIRNANOEVM
+notes: "NIR micromirror modulator; 854x480; band 700\u20132500 nm."
+type: DMD
+resolution:
+- 854
+- 480
+max_binary_rate_Hz: 4000
+wavelength_band_nm:
+- 700
+- 2500
+fill_factor_percent: 92
+trigger_latency_us: 40
+trigger_jitter_ns: 300
+guessed_fields:
+- trigger_latency_us
+- trigger_jitter_ns

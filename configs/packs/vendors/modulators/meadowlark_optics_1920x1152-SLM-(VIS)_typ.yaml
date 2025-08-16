@@ -1,0 +1,22 @@
+vendor: Meadowlark Optics
+model: 1920x1152 SLM (VIS)
+category: modulator
+price_usd_est: 28000.0
+sources:
+- https://www.meadowlark.com/spatial-light-modulators
+notes: High-performance phase SLM; analog phase; fast response.
+type: SLM_phase
+resolution:
+- 1920
+- 1152
+phase_depth_rad: 6.28
+max_analog_rate_Hz: 2000
+wavelength_band_nm:
+- 400
+- 1100
+fill_factor_percent: 95
+trigger_latency_us: 150
+trigger_jitter_ns: 800
+guessed_fields:
+- max_analog_rate_Hz
+- trigger figures

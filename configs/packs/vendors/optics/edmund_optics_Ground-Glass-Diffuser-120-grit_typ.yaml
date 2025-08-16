@@ -1,0 +1,18 @@
+vendor: Edmund Optics
+model: Ground Glass Diffuser 120-grit
+category: optics
+price_usd_est: 89.0
+sources:
+- https://www.edmundoptics.com/
+notes: Inexpensive random diffuser; more speckle.
+type: ground_glass
+scatter_angle_deg_FWHM: 10.0
+transmittance_percent: 85.0
+thickness_mm: 1.5
+dn_dT_per_K: 1.0e-05
+surface_roughness_nm: 100.0
+Henyey_Greenstein_g: 0.5
+guessed_fields:
+- angle
+- roughness
+- g

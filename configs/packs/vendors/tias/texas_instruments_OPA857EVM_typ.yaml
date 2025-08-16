@@ -1,0 +1,25 @@
+vendor: Texas Instruments
+model: OPA857EVM
+category: tia
+price_usd_est: 149.0
+sources:
+- https://www.ti.com/tool/OPA857EVM
+notes: "5 k\u03A9 / 20 k\u03A9 selectable; up to ~1 GHz with small PD capacitance."
+gain_settings:
+- Rf_ohm: 5000.0
+  Cf_F: 2.0e-12
+  bandwidth_Hz: 1000000000.0
+- Rf_ohm: 20000.0
+  Cf_F: 2.0e-12
+  bandwidth_Hz: 500000000.0
+input_bias_current_pA: 1.0
+input_referred_voltage_noise_nV_per_sqrtHz: 2.5
+supply_V:
+- 3.3
+- 5.0
+output_swing_Vpp: 1.5
+stability_margin_deg: 60
+min_load_ohm: 1000
+guessed_fields:
+- stability_margin_deg
+- Cf_F

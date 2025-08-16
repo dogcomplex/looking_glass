@@ -1,0 +1,22 @@
+vendor: HOLOEYE
+model: LETO-3
+category: modulator
+price_usd_est: 13000.0
+sources:
+- https://holoeye.com/spatial-light-modulators/leto/
+notes: "Reflective phase SLM 1920x1080; 420\u20131100 nm; kHz range."
+type: SLM_phase
+resolution:
+- 1920
+- 1080
+phase_depth_rad: 6.28
+max_analog_rate_Hz: 1500
+wavelength_band_nm:
+- 420
+- 1100
+fill_factor_percent: 93
+trigger_latency_us: 200
+trigger_jitter_ns: 1000
+guessed_fields:
+- max_analog_rate_Hz
+- trigger figures

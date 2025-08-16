@@ -1,0 +1,14 @@
+vendor: Amonics
+model: AEDFA-23-B-FA
+category: edfa
+price_usd_est: 6500.0
+sources:
+- https://www.amonics.com/product/erbium-doped-fiber-amplifier-edfa/
+notes: Bench-top EDFA; telecom-grade.
+band_nm:
+- 1530
+- 1565
+small_signal_gain_dB: 23.0
+noise_figure_dB: 4.5
+Psat_out_dBm: 21.0
+pump_power_W: 2.0
