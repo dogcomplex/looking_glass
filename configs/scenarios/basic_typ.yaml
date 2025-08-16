@@ -1,0 +1,10 @@
+name: basic_typ
+channels: 16
+trials: 200
+emitter_pack: configs/packs/emitter_typ.yaml
+optics_pack: configs/packs/optics_typ.yaml
+sensor_pack: configs/packs/sensor_typ.yaml
+tia_pack: configs/packs/tia_typ.yaml
+comparator_pack: configs/packs/comparator_typ.yaml
+clock_pack: configs/packs/clock_typ.yaml
+thermal_pack: configs/packs/thermal_typ.yaml

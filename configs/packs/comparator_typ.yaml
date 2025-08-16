@@ -1,0 +1,5 @@
+vth_mV: 5.0
+hysteresis_mV: 1.0
+input_noise_mV_rms: 0.8
+drift_mV_per_C: 0.05
+prop_delay_ns: 2.0
