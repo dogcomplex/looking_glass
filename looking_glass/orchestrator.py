@@ -13,6 +13,7 @@ class SystemParams:
     window_ns: float = 10.0
     temp_C: float = 25.0
     seed: int = 42
+    reset_analog_state_each_frame: bool = True
 
 class Orchestrator:
     def __init__(self,
@@ -34,7 +35,13 @@ class Orchestrator:
 
     def step(self):
         N = self.sys.channels
-        dt = self.clk.sample_window()
+        dt_raw = self.clk.sample_window()
+        # Apply comparator propagation delay as lost effective integration time
+        dt = max(0.1, float(dt_raw) - float(self.comp.p.prop_delay_ns))
+        if self.sys.reset_analog_state_each_frame:
+            # Reset analog state to avoid inter-frame memory when desired
+            self.tia.reset()
+            self.comp.reset()
         # random ternary vector
         tern = self.rng.integers(-1, 2, size=N)
         Pp, Pm = self.emit.simulate(tern, dt, self.sys.temp_C)

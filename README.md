@@ -31,3 +31,8 @@ python -m looking_glass.scenario configs/scenarios/basic_typ.yaml --trials 200 -
 python examples/run_sanity.py
 ```
 Runs a few checks (emitter noise scaling, sensor mean, end-to-end BER vs window); returns non-zero on failure.
+
+Notes on model realism:
+- TIA now includes a first-order bandwidth limit and a slew-rate limit (`slew_v_per_us`).
+- Comparator includes hysteresis and propagation delay (delay reduces effective integration window in orchestrator).
+- Scenario sweep shows expected monotonic improvement in BER as `window_ns` increases.

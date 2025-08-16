@@ -8,11 +8,15 @@ class ComparatorParams:
     input_noise_mV_rms: float = 0.8
     drift_mV_per_C: float = 0.05
     prop_delay_ns: float = 2.0
+    saturate_levels: bool = True
 
 class Comparator:
     def __init__(self, params: ComparatorParams, rng=None):
         self.p = params
         self.rng = np.random.default_rng() if rng is None else rng
+        self._last_out = None
+
+    def reset(self) -> None:
         self._last_out = None
 
     def simulate(self, Vp: np.ndarray, Vm: np.ndarray, temp_C: float):
@@ -27,5 +31,7 @@ class Comparator:
         dn_th = vth - 0.5*hyst
         out = np.where(eff > up_th, 1, np.where(eff < -up_th, -1, self._last_out))
         out = np.where((eff < dn_th) & (eff > -dn_th), 0, out)
+        if self.p.saturate_levels:
+            out = np.clip(out, -1, 1)
         self._last_out = out
         return out.astype(int)

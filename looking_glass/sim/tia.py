@@ -7,12 +7,18 @@ class TIAParams:
     bw_mhz: float = 100.0
     in_noise_pA_rthz: float = 5.0
     peaking_q: float = 0.7
+    slew_v_per_us: float = 1.5
 
 class TIA:
     def __init__(self, params: TIAParams, rng=None):
         self.p = params
         self.rng = np.random.default_rng() if rng is None else rng
         self._last = None
+        self._last_out = None
+
+    def reset(self) -> None:
+        self._last = None
+        self._last_out = None
 
     def simulate(self, I: np.ndarray, dt_ns: float):
         I = np.array(I)
@@ -28,4 +34,13 @@ class TIA:
         # Input-referred noise to output
         in_noise_A = self.p.in_noise_pA_rthz*1e-12*np.sqrt(1.0/(dt_ns*1e-9 + 1e-18))
         noise = self.rng.normal(0.0, in_noise_A*R, size=V.shape)
-        return V_f + noise
+        Vn = V_f + noise
+        # Slew limit
+        if self._last_out is None:
+            self._last_out = np.zeros_like(Vn)
+        max_delta = self.p.slew_v_per_us * (dt_ns * 1e-3)
+        delta = Vn - self._last_out
+        delta = np.clip(delta, -max_delta, max_delta)
+        out = self._last_out + delta
+        self._last_out = out
+        return out
