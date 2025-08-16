@@ -17,6 +17,7 @@ class EmitterArray:
         self.rng = np.random.default_rng() if rng is None else rng
 
     def simulate(self, ternary: np.ndarray, dt_ns: float, temp_C: float) -> tuple[np.ndarray, np.ndarray]:
+        ternary = np.asarray(ternary)
         assert len(ternary) == self.p.channels
         # Map ternary to two rails (W+ and W-)
         base = self.p.power_mw_per_ch

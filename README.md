@@ -19,3 +19,15 @@ Install optional deps:
 ```
 pip install pyyaml
 ```
+
+3) Sweep and plot (requires matplotlib):
+```
+pip install matplotlib
+python -m looking_glass.scenario configs/scenarios/basic_typ.yaml --trials 200 --sweep-window-ns 5:25:6 --plot out/ber_vs_window.png --csv out/sweep_trials.csv --json out/sweep_summary.json
+```
+
+4) Sanity checks (quick physics sanity):
+```
+python examples/run_sanity.py
+```
+Runs a few checks (emitter noise scaling, sensor mean, end-to-end BER vs window); returns non-zero on failure.

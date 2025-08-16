@@ -116,22 +116,66 @@ def run_scenario_cli(argv: list[str] | None = None) -> int:
     parser.add_argument("--trials", type=int, default=None, help="Override trials count")
     parser.add_argument("--csv", type=str, default=None, help="Optional CSV output path for per-trial rows")
     parser.add_argument("--json", type=str, default=None, help="Optional JSON output path for summary")
+    parser.add_argument("--sweep-window-ns", type=str, default=None,
+                        help="Optional sweep over window_ns, format start:stop:steps (inclusive start/stop)")
+    parser.add_argument("--plot", type=str, default=None, help="Optional path to save BER vs window_ns PNG plot")
     args = parser.parse_args(argv)
 
     orch, trials_default, _ = build_orchestrator_from_scenario(args.scenario)
     trials = args.trials if args.trials is not None else trials_default
-    rows = run_trials(orch, trials)
-    summary = summarize(rows)
 
-    if args.csv:
-        save_csv(rows, args.csv)
-    if args.json:
-        Path(args.json).parent.mkdir(parents=True, exist_ok=True)
-        with open(args.json, "w", encoding="utf-8") as f:
-            json.dump(summary, f, indent=2)
-
-    print(json.dumps(summary, indent=2))
-    return 0
+    # Sweep branch
+    if args.sweep_window_ns:
+        start_s, stop_s, steps_s = args.sweep_window_ns.split(":")
+        start = float(start_s)
+        stop = float(stop_s)
+        steps = int(steps_s)
+        if steps < 2:
+            steps = 2
+        xs = [start + i*(stop-start)/(steps-1) for i in range(steps)]
+        ys = []
+        from .plotting import save_xy_plot
+        all_rows = []
+        for w in xs:
+            orch.clk.p.window_ns = float(w)
+            rows = run_trials(orch, trials)
+            all_rows.extend([{**r, "sweep_window_ns": w} for r in rows])
+            summ = summarize(rows)
+            ys.append(summ["p50_ber"]) 
+        # Save CSV if requested
+        if args.csv:
+            path = Path(args.csv)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with open(path, "w", newline="", encoding="utf-8") as f:
+                w = csv.DictWriter(f, fieldnames=["sweep_window_ns", "ber", "energy_pj", "window_ns"]) 
+                w.writeheader()
+                for r in all_rows:
+                    w.writerow(r)
+        # Save plot
+        if args.plot:
+            save_xy_plot(xs, ys, xlabel="window_ns", ylabel="p50_ber", out_path=args.plot,
+                         title="BER vs window_ns")
+        # Save summary list if requested
+        if args.json:
+            Path(args.json).parent.mkdir(parents=True, exist_ok=True)
+            with open(args.json, "w", encoding="utf-8") as f:
+                json.dump({"x_window_ns": xs, "p50_ber": ys}, f, indent=2)
+        print(json.dumps({"x_window_ns": xs, "p50_ber": ys}, indent=2))
+        return 0
+    else:
+        rows = run_trials(orch, trials)
+        summary = summarize(rows)
+        if args.csv:
+            save_csv(rows, args.csv)
+        if args.json:
+            Path(args.json).parent.mkdir(parents=True, exist_ok=True)
+            with open(args.json, "w", encoding="utf-8") as f:
+                json.dump(summary, f, indent=2)
+        if args.plot:
+            # No sweep, plot is not meaningful; ignore silently
+            pass
+        print(json.dumps(summary, indent=2))
+        return 0
 
 
 if __name__ == "__main__":
