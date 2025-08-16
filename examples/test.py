@@ -200,6 +200,39 @@ def main():
         "crosstalk_ber_degradation": (c_ys[-1] - c_ys[0]) if c_ys and len(c_ys) > 1 else 0.0,
     }
 
+    # Per-tile BER heatmap (default run): if tiling is square, compute BER per tile
+    per_tile = None
+    try:
+        blocks = base_orch.sys.channels
+        blocks = int(blocks**0.5)
+        if blocks*blocks == base_orch.sys.channels:
+            # Run one frame to get tile mapping, then accumulate per-tile BER
+            # Use a small additional run to estimate per-tile BER robustly
+            rows = [base_orch.step() for _ in range(min(200, args.trials))]
+            # Map channel -> tile index
+            # Tiles are filled row-major in optics.simulate(); two rails per tile (plus/minus)
+            # Here we approximate channel→tile as index // 1 (one channel per tile in current mapping)
+            import numpy as _np
+            tile_err = _np.zeros((blocks, blocks), dtype=float)
+            tile_cnt = _np.zeros((blocks, blocks), dtype=float)
+            for r in rows:
+                t_out = r.get("t_out", [])
+                truth = r.get("truth", [])
+                for ch, (o, z) in enumerate(zip(t_out, truth)):
+                    by = ch // blocks
+                    bx = ch % blocks
+                    tile_err[by, bx] += 1.0 if int(o) != int(z) else 0.0
+                    tile_cnt[by, bx] += 1.0
+            with _np.errstate(divide='ignore', invalid='ignore'):
+                per_tile = (tile_err / _np.clip(tile_cnt, 1.0, None)).tolist()
+            try:
+                from looking_glass.plotting import save_heatmap as _save_hm
+                _save_hm(per_tile, xlabel="tile-x", ylabel="tile-y", out_path="out/ber_per_tile.png", title="Per-tile BER")
+            except Exception:
+                pass
+    except Exception:
+        per_tile = None
+
     summary = {
         "config": {
             "trials": args.trials,
@@ -207,6 +240,7 @@ def main():
             "sensitivity": args.sensitivity,
         },
         "baseline": base_summary,
+        "ber_per_tile": per_tile,
         "sanity": {
             "window_non_increasing": w_ok,
             "rin_non_decreasing": r_ok,

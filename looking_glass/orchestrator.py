@@ -76,6 +76,9 @@ class Orchestrator:
             "snr_emit": snr_emit,
             "snr_pd": snr_pd,
             "snr_tia": snr_tia,
+            "t_out": t_out.tolist(),
+            "truth": truth.tolist(),
+            "blocks": int(np.sqrt(N)) if int(np.sqrt(N))**2 == N else None,
             "per_tile": {
                 "plus": per_tile_p.tolist() if per_tile_p is not None else None,
                 "minus": per_tile_m.tolist() if per_tile_m is not None else None,
