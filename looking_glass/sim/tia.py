@@ -11,6 +11,7 @@ class TIAParams:
     adc_bits: int = 10
     adc_fullscale_v: float = 1.0
     adc_read_noise_mV_rms: float = 0.0
+    gain_sigma_pct: float = 0.0
 
 class TIA:
     def __init__(self, params: TIAParams, rng=None):
@@ -18,6 +19,8 @@ class TIA:
         self.rng = np.random.default_rng() if rng is None else rng
         self._last = None
         self._last_out = None
+        # Channel gain mismatch can be represented as per-sample multiplier for simplicity
+        self._gain_scale = None
 
     def reset(self) -> None:
         self._last = None
@@ -26,6 +29,11 @@ class TIA:
     def simulate(self, I: np.ndarray, dt_ns: float):
         I = np.array(I)
         R = self.p.tia_transimpedance_kohm * 1e3
+        if self._gain_scale is None and self.p.gain_sigma_pct > 0.0:
+            sigma = self.p.gain_sigma_pct/100.0
+            self._gain_scale = self.rng.normal(1.0, sigma, size=I.shape)
+        if self._gain_scale is not None:
+            R = R * self._gain_scale
         V = I * R
         # First-order LPF
         bw = self.p.bw_mhz * 1e6

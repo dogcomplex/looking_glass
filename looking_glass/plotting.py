@@ -35,3 +35,32 @@ def save_xy_plot(x: t.Sequence[float],
     plt.close(fig)
     return True
 
+
+def save_heatmap(matrix: t.Sequence[t.Sequence[float]],
+                 xlabel: str,
+                 ylabel: str,
+                 out_path: str | Path,
+                 title: str | None = None,
+                 cmap: str = "viridis") -> bool:
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        import numpy as np
+    except (ModuleNotFoundError, RuntimeError):
+        return False
+    out_path = Path(out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    arr = np.array(matrix, dtype=float)
+    fig, ax = plt.subplots(figsize=(4, 3.6), dpi=120)
+    im = ax.imshow(arr, cmap=cmap, origin="upper", aspect="auto")
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    if title:
+        ax.set_title(title)
+    fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+    fig.tight_layout()
+    fig.savefig(out_path)
+    plt.close(fig)
+    return True
+

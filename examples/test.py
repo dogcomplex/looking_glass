@@ -160,14 +160,14 @@ def main():
 
     # Base system from typ packs inline
     sys_p = SystemParams(channels=16, window_ns=10.0, temp_C=25.0, seed=args.seed)
-    emit = EmitterParams(channels=16, power_mw_per_ch=0.7)
+    emit = EmitterParams(channels=16, power_mw_per_ch=0.7, power_sigma_pct=2.0)
     optx = OpticsParams()
     pd = PDParams()
     # Sensitivity mode tunes TIA BW and comparator noise to amplify trends
     tia_bw = 30.0 if args.sensitivity else 80.0
     comp_noise = 0.3 if args.sensitivity else 0.6
-    tia = TIAParams(bw_mhz=tia_bw, tia_transimpedance_kohm=5.0)
-    comp = ComparatorParams(input_noise_mV_rms=comp_noise)
+    tia = TIAParams(bw_mhz=tia_bw, tia_transimpedance_kohm=5.0, in_noise_pA_rthz=3.0, gain_sigma_pct=1.0)
+    comp = ComparatorParams(input_noise_mV_rms=comp_noise, vth_sigma_mV=0.2)
     clk = ClockParams(window_ns=10.0, jitter_ps_rms=10.0)
     orch = Orchestrator(sys_p, emit, optx, pd, tia, comp, clk)
 
@@ -297,6 +297,17 @@ def main():
         "crosstalk_sweep": {"x_crosstalk_db": sc_xs, "p50_ber": sc_ys},
         "neighbor_crosstalk_sweep": {"x_ct_neighbor_db": sn_xs, "p50_ber": sn_ys},
     }
+
+    # Optional: Per-tile heatmap in sensitivity mode if tiling is square (blocks^2 == channels)
+    try:
+        from looking_glass.plotting import save_heatmap
+        # Run one sensitivity frame to capture per-tile average maps
+        _one = sens_orch.step()
+        if _one.get("per_tile", {}).get("plus") is not None:
+            save_heatmap(_one["per_tile"]["plus"], xlabel="tile-x", ylabel="tile-y", out_path="out/per_tile_plus.png", title="Per-tile Plus Intensity")
+            save_heatmap(_one["per_tile"]["minus"], xlabel="tile-x", ylabel="tile-y", out_path="out/per_tile_minus.png", title="Per-tile Minus Intensity")
+    except (ImportError, RuntimeError, ValueError):
+        pass
     print(json.dumps(summary, indent=2))
     if args.json:
         os.makedirs(os.path.dirname(args.json), exist_ok=True)

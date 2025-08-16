@@ -9,19 +9,26 @@ class ComparatorParams:
     drift_mV_per_C: float = 0.05
     prop_delay_ns: float = 2.0
     saturate_levels: bool = True
+    vth_sigma_mV: float = 0.0
 
 class Comparator:
     def __init__(self, params: ComparatorParams, rng=None):
         self.p = params
         self.rng = np.random.default_rng() if rng is None else rng
         self._last_out = None
+        self._vth_offset = None
 
     def reset(self) -> None:
         self._last_out = None
+        self._vth_offset = None
 
     def simulate(self, Vp: np.ndarray, Vm: np.ndarray, temp_C: float):
         dv = (np.array(Vp) - np.array(Vm))*1e3  # mV
-        vth = self.p.vth_mV + (temp_C-25.0)*self.p.drift_mV_per_C
+        if self._vth_offset is None and self.p.vth_sigma_mV > 0.0:
+            self._vth_offset = float(self.rng.normal(0.0, self.p.vth_sigma_mV))
+        else:
+            self._vth_offset = self._vth_offset or 0.0
+        vth = self.p.vth_mV + (temp_C-25.0)*self.p.drift_mV_per_C + self._vth_offset
         hyst = self.p.hysteresis_mV
         noise = self.rng.normal(0.0, self.p.input_noise_mV_rms, size=dv.shape)
         eff = dv + noise

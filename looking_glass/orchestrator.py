@@ -54,7 +54,7 @@ class Orchestrator:
         # random ternary vector
         tern = self.rng.integers(-1, 2, size=N)
         Pp, Pm = self.emit.simulate(tern, dt, self.sys.temp_C)
-        Pp2, Pm2 = self.optx.simulate(Pp, Pm)
+        Pp2, Pm2, per_tile_p, per_tile_m = self.optx.simulate(Pp, Pm)
         Ip = self.pd.simulate(Pp2, dt)
         Im = self.pd.simulate(Pm2, dt)
         Vp = self.tia.simulate(Ip, dt)
@@ -76,6 +76,10 @@ class Orchestrator:
             "snr_emit": snr_emit,
             "snr_pd": snr_pd,
             "snr_tia": snr_tia,
+            "per_tile": {
+                "plus": per_tile_p.tolist() if per_tile_p is not None else None,
+                "minus": per_tile_m.tolist() if per_tile_m is not None else None,
+            },
         }
 
     def run(self, trials=100):
