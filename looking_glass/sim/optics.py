@@ -9,6 +9,7 @@ class OpticsParams:
     crosstalk_db: float = -28.0
     ct_model: str = "global"  # "global" or "neighbor"
     ct_neighbor_db: float = -30.0
+    ct_diag_db: float = -35.0
     stray_floor_db: float = -38.0
     psf_kernel: str = "lorentzian:w=2.5"
     signal_scale: float = 1.0
@@ -139,12 +140,22 @@ class Optics:
             grid_m = pad_m.reshape((blocks, blocks))
             # 4-neighbor kernel (no center)
             nn = 10**(self.p.ct_neighbor_db/10.0)
+            nd = 10**(self.p.ct_diag_db/10.0)
             def neighbor_leak(g):
                 up = np.vstack([np.zeros((1, g.shape[1])), g[:-1, :]])
                 dn = np.vstack([g[1:, :], np.zeros((1, g.shape[1]))])
                 lf = np.hstack([np.zeros((g.shape[0], 1)), g[:, :-1]])
                 rt = np.hstack([g[:, 1:], np.zeros((g.shape[0], 1))])
-                return g + nn * (up + dn + lf + rt)
+                # diagonals
+                ul = np.vstack([np.zeros((1, g.shape[1])), g[:-1, :]])
+                ul = np.hstack([np.zeros((g.shape[0], 1)), ul[:, :-1]])
+                ur = np.vstack([np.zeros((1, g.shape[1])), g[:-1, :]])
+                ur = np.hstack([ur[:, 1:], np.zeros((g.shape[0], 1))])
+                dl = np.vstack([g[1:, :], np.zeros((1, g.shape[1]))])
+                dl = np.hstack([np.zeros((g.shape[0], 1)), dl[:, :-1]])
+                dr = np.vstack([g[1:, :], np.zeros((1, g.shape[1]))])
+                dr = np.hstack([dr[:, 1:], np.zeros((g.shape[0], 1))])
+                return g + nn * (up + dn + lf + rt) + nd * (ul + ur + dl + dr)
             grid_p = neighbor_leak(grid_p)
             grid_m = neighbor_leak(grid_m)
             out_plus = grid_p.reshape(-1)[:len(out_plus)]

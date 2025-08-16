@@ -43,6 +43,10 @@
       <canvas id="winChart"></canvas>
     </div>
     <div class="card">
+      <h2>Voting & Calibration</h2>
+      <table id="table-calib"></table>
+    </div>
+    <div class="card">
       <h2>System Diagram</h2>
       <div class="diagram">
         <div class="box">Emitter</div><div class="arrow">→</div>
@@ -135,6 +139,10 @@
           const xs = data?.window_sweep?.x_window_ns || [];
           const ys = data?.window_sweep?.p50_ber || [];
           if (xs.length && ys.length) drawLine(document.getElementById('winChart'), xs, ys, 'p50 BER');
+          renderTable(document.getElementById('table-calib'), {
+            vote3_p50_ber: data?.vote3_p50_ber,
+            vth_suggest_mV: data?.calibration?.vth_suggest_mV,
+          });
         } catch (err) {
           alert('Invalid JSON');
         }

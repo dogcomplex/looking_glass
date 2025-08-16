@@ -155,6 +155,7 @@ def main():
     ap.add_argument("--windows", type=str, default="3,5,7,9,13,17")
     ap.add_argument("--rin-range", type=str, default="-170:-140:4")
     ap.add_argument("--ct-range", type=str, default="-40:-18:4")
+    ap.add_argument("--vote3", action="store_true", help="Enable 3x temporal voting estimate")
     ap.add_argument("--json", type=str, default=None)
     args = ap.parse_args()
 
@@ -202,6 +203,7 @@ def main():
 
     # Per-tile BER heatmap (default run): if tiling is square, compute BER per tile
     per_tile = None
+    vth_suggest = None
     try:
         blocks = base_orch.sys.channels
         blocks = int(blocks**0.5)
@@ -215,16 +217,26 @@ def main():
             import numpy as _np
             tile_err = _np.zeros((blocks, blocks), dtype=float)
             tile_cnt = _np.zeros((blocks, blocks), dtype=float)
+            dv_pos = []
+            dv_neg = []
             for r in rows:
                 t_out = r.get("t_out", [])
                 truth = r.get("truth", [])
+                dv = _np.array(r.get("dv_mV", [0]*len(t_out)), dtype=float)
                 for ch, (o, z) in enumerate(zip(t_out, truth)):
                     by = ch // blocks
                     bx = ch % blocks
                     tile_err[by, bx] += 1.0 if int(o) != int(z) else 0.0
                     tile_cnt[by, bx] += 1.0
+                    if z > 0:
+                        dv_pos.append(dv[ch])
+                    elif z < 0:
+                        dv_neg.append(dv[ch])
             with _np.errstate(divide='ignore', invalid='ignore'):
                 per_tile = (tile_err / _np.clip(tile_cnt, 1.0, None)).tolist()
+            # Suggest per-channel vth: midpoint between class means (global suggestion for now)
+            if dv_pos and dv_neg:
+                vth_suggest = float(0.5*(float(_np.mean(dv_pos)) + float(_np.mean(dv_neg))))
             try:
                 from looking_glass.plotting import save_heatmap as _save_hm
                 _save_hm(per_tile, xlabel="tile-x", ylabel="tile-y", out_path="out/ber_per_tile.png", title="Per-tile BER")
@@ -263,11 +275,27 @@ def main():
         scores["comparator"] = {"score": round(s_cn, 3), "input_noise_mV_rms": comp_n}
         return scores
 
+    # Optional 3x temporal voting estimate
+    vote3_ber = None
+    if args.vote3:
+        import numpy as _np
+        errs = []
+        for _ in range(min(args.trials, 200)):
+            r1 = base_orch.step()
+            r2 = base_orch.step()
+            r3 = base_orch.step()
+            t = _np.array(r1["truth"])
+            O = _np.vstack([r1["t_out"], r2["t_out"], r3["t_out"]])
+            vote = _np.sign(_np.sum(O, axis=0))
+            errs.append(float(_np.mean(vote != t)))
+        vote3_ber = float(_np.median(errs)) if errs else None
+
     summary = {
         "config": {
             "trials": args.trials,
             "seed": args.seed,
             "sensitivity": args.sensitivity,
+            "vote3": bool(args.vote3),
         },
         "baseline": base_summary,
         "packs": {
@@ -279,6 +307,7 @@ def main():
         },
         "realism": realism_scores(),
         "ber_per_tile": per_tile,
+        "vote3_p50_ber": vote3_ber,
         "sanity": {
             "window_non_increasing": w_ok,
             "rin_non_decreasing": r_ok,
@@ -288,6 +317,9 @@ def main():
         "window_sweep": {"x_window_ns": w_xs, "p50_ber": w_ys},
         "rin_sweep": {"x_rin_dbhz": r_xs, "p50_ber": r_ys},
         "crosstalk_sweep": {"x_crosstalk_db": c_xs, "p50_ber": c_ys},
+        "calibration": {
+            "vth_suggest_mV": vth_suggest
+        }
     }
 
     # Always include a sensitivity block with more pronounced ranges for "notable results"

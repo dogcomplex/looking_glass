@@ -30,6 +30,7 @@
       "crosstalk_db": -28.0,
       "ct_model": "global",
       "ct_neighbor_db": -30.0,
+      "ct_diag_db": -35.0,
       "stray_floor_db": -38.0,
       "psf_kernel": "lorentzian:w=2.5",
       "signal_scale": 1.0,
@@ -171,6 +172,9 @@
       0.4375,
       0.4375
     ]
+  },
+  "calibration": {
+    "vth_suggest_mV": -0.059951153403779114
   },
   "sensitivity": {
     "config": {

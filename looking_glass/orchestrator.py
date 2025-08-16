@@ -96,6 +96,7 @@ class Orchestrator:
                 "plus": per_tile_p.tolist() if per_tile_p is not None else None,
                 "minus": per_tile_m.tolist() if per_tile_m is not None else None,
             },
+            "dv_mV": (Vp - Vm).tolist(),
         }
 
     def run(self, trials=100):
