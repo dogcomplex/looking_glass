@@ -6,6 +6,7 @@ from .sim.sensor import Photodiode, PDParams
 from .sim.tia import TIA, TIAParams
 from .sim.comparator import Comparator, ComparatorParams
 from .sim.clock import Clock, ClockParams
+from .sim.thermal import Thermal, ThermalParams
 
 @dataclass
 class SystemParams:
@@ -23,7 +24,8 @@ class Orchestrator:
                  pd_p: PDParams,
                  tia_p: TIAParams,
                  comp_p: ComparatorParams,
-                 clk_p: ClockParams):
+                 clk_p: ClockParams,
+                 thermal_p: ThermalParams | None = None):
         self.rng = np.random.default_rng(sys.seed)
         self.sys = sys
         self.emit = EmitterArray(emitter_p, rng=self.rng)
@@ -32,6 +34,7 @@ class Orchestrator:
         self.tia = TIA(tia_p, rng=self.rng)
         self.comp = Comparator(comp_p, rng=self.rng)
         self.clk = Clock(clk_p, rng=self.rng)
+        self.therm = Thermal(thermal_p, rng=self.rng) if thermal_p is not None else None
 
     def step(self):
         N = self.sys.channels
@@ -42,6 +45,12 @@ class Orchestrator:
             # Reset analog state to avoid inter-frame memory when desired
             self.tia.reset()
             self.comp.reset()
+        # Slow drift
+        if self.therm is not None:
+            drift = self.therm.step(frame_period_s=dt*1e-9)
+            # Apply comparator threshold drift and optics transmittance scale
+            self.comp.p.vth_mV = self.comp.p.vth_mV + drift["comp_vth_mV_delta"]
+            self.optx.p.transmittance = self.optx.p.transmittance * drift["opt_trans_scale"]
         # random ternary vector
         tern = self.rng.integers(-1, 2, size=N)
         Pp, Pm = self.emit.simulate(tern, dt, self.sys.temp_C)

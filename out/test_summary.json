@@ -2,7 +2,7 @@
   "config": {
     "trials": 300,
     "seed": 123,
-    "sensitivity": false
+    "sensitivity": true
   },
   "baseline": {
     "p50_ber": 0.4375,
@@ -10,7 +10,7 @@
     "window_ns": 8.000428189260742,
     "p50_snr_emit": 0.860251943128175,
     "p50_snr_pd": 2.125089540026541,
-    "p50_snr_tia": 4.487654639710531
+    "p50_snr_tia": 4.740378826572693
   },
   "sanity": {
     "window_non_increasing": true,
@@ -18,21 +18,21 @@
     "crosstalk_non_decreasing": true
   },
   "effects": {
-    "window_ber_improvement": 0.0,
+    "window_ber_improvement": 0.0625,
     "rin_ber_degradation": 0.0,
     "crosstalk_ber_degradation": 0.0
   },
   "window_sweep": {
     "x_window_ns": [
       5.0,
+      7.0,
       9.0,
       13.0,
       17.0,
-      21.0,
-      25.0
+      21.0
     ],
     "p50_ber": [
-      0.4375,
+      0.5,
       0.4375,
       0.4375,
       0.4375,
@@ -103,7 +103,7 @@
       "neighbor_crosstalk_non_decreasing": true
     },
     "effects": {
-      "window_ber_improvement": 0.1875,
+      "window_ber_improvement": 0.375,
       "rin_ber_degradation": 0.0,
       "crosstalk_ber_degradation": 0.0,
       "neighbor_crosstalk_ber_degradation": 0.0
@@ -118,12 +118,12 @@
         30
       ],
       "p50_ber": [
-        0.625,
+        0.6875,
+        0.6875,
+        0.5625,
         0.4375,
-        0.4375,
-        0.4375,
-        0.4375,
-        0.4375
+        0.375,
+        0.3125
       ]
     },
     "rin_sweep": {
@@ -139,15 +139,15 @@
         -130.0
       ],
       "p50_ber": [
-        0.75,
-        0.75,
-        0.75,
-        0.75,
-        0.75,
-        0.75,
-        0.75,
-        0.75,
-        0.75
+        0.625,
+        0.625,
+        0.625,
+        0.625,
+        0.625,
+        0.625,
+        0.625,
+        0.625,
+        0.625
       ]
     },
     "crosstalk_sweep": {
@@ -183,11 +183,11 @@
         -20.0
       ],
       "p50_ber": [
-        0.4375,
-        0.4375,
-        0.4375,
-        0.4375,
-        0.4375
+        0.625,
+        0.625,
+        0.625,
+        0.625,
+        0.625
       ]
     }
   }

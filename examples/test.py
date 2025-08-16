@@ -53,7 +53,20 @@ def quick_window_sweep(orch: Orchestrator, trials: int, windows):
     return xs, ys, bool(monotone)
 
 
-def quick_rin_sweep(base_sys: SystemParams, trials: int, starts, stops, steps, *, tia_bw_mhz: float, comp_noise_mV: float, emit_ext_db: float | None = None):
+def quick_rin_sweep(
+    base_sys: SystemParams,
+    trials: int,
+    starts,
+    stops,
+    steps,
+    *,
+    tia_bw_mhz: float,
+    comp_noise_mV: float,
+    emit_ext_db: float | None = None,
+    emit_power_mw: float | None = None,
+    tia_R_kohm: float | None = None,
+    comp_vth_mV: float | None = None,
+):
     xs, ys = [], []
     for i in range(steps):
         x = starts + i*(stops-starts)/(steps-1)
@@ -61,10 +74,12 @@ def quick_rin_sweep(base_sys: SystemParams, trials: int, starts, stops, steps, *
         emit = EmitterParams(channels=base_sys.channels, rin_dbhz=float(x))
         if emit_ext_db is not None:
             emit.extinction_db = float(emit_ext_db)
+        if emit_power_mw is not None:
+            emit.power_mw_per_ch = float(emit_power_mw)
         optx = OpticsParams()
         pd = PDParams()
-        tia = TIAParams(bw_mhz=tia_bw_mhz)
-        comp = ComparatorParams(input_noise_mV_rms=comp_noise_mV)
+        tia = TIAParams(bw_mhz=tia_bw_mhz, tia_transimpedance_kohm=(tia_R_kohm if tia_R_kohm is not None else 10.0))
+        comp = ComparatorParams(input_noise_mV_rms=comp_noise_mV, vth_mV=(comp_vth_mV if comp_vth_mV is not None else 5.0))
         clk = ClockParams(window_ns=base_sys.window_ns, jitter_ps_rms=10.0)
         orch = Orchestrator(base_sys, emit, optx, pd, tia, comp, clk)
         rows = run_trials(orch, trials)
@@ -97,15 +112,32 @@ def quick_crosstalk_sweep(base_sys: SystemParams, trials: int, starts, stops, st
     monotone = all(ys[i] <= ys[i+1] for i in range(len(ys)-1))
     return xs, ys, bool(monotone)
 
-def quick_neighbor_ct_sweep(base_sys: SystemParams, trials: int, starts, stops, steps, *, tia_bw_mhz: float, comp_noise_mV: float):
+def quick_neighbor_ct_sweep(
+    base_sys: SystemParams,
+    trials: int,
+    starts,
+    stops,
+    steps,
+    *,
+    tia_bw_mhz: float,
+    comp_noise_mV: float,
+    opt_contrast: tuple[float, float] | None = None,
+    emit_power_mw: float | None = None,
+    tia_R_kohm: float | None = None,
+    comp_vth_mV: float | None = None,
+):
     xs, ys = [], []
     for i in range(steps):
         x = starts + i*(stops-starts)/(steps-1)
         emit = EmitterParams(channels=base_sys.channels)
+        if emit_power_mw is not None:
+            emit.power_mw_per_ch = float(emit_power_mw)
         optx = OpticsParams(ct_model="neighbor", ct_neighbor_db=float(x))
+        if opt_contrast is not None:
+            optx.w_plus_contrast, optx.w_minus_contrast = float(opt_contrast[0]), float(opt_contrast[1])
         pd = PDParams()
-        tia = TIAParams(bw_mhz=tia_bw_mhz)
-        comp = ComparatorParams(input_noise_mV_rms=comp_noise_mV)
+        tia = TIAParams(bw_mhz=tia_bw_mhz, tia_transimpedance_kohm=(tia_R_kohm if tia_R_kohm is not None else 10.0))
+        comp = ComparatorParams(input_noise_mV_rms=comp_noise_mV, vth_mV=(comp_vth_mV if comp_vth_mV is not None else 5.0))
         clk = ClockParams(window_ns=base_sys.window_ns, jitter_ps_rms=10.0)
         orch = Orchestrator(base_sys, emit, optx, pd, tia, comp, clk)
         rows = run_trials(orch, trials)
@@ -120,7 +152,7 @@ def main():
     ap.add_argument("--trials", type=int, default=200)
     ap.add_argument("--seed", type=int, default=321)
     ap.add_argument("--sensitivity", action="store_true")
-    ap.add_argument("--windows", type=str, default="5,9,13,17,21,25")
+    ap.add_argument("--windows", type=str, default="5,7,9,13,17,21")
     ap.add_argument("--rin-range", type=str, default="-165:-135:4")
     ap.add_argument("--ct-range", type=str, default="-35:-18:4")
     ap.add_argument("--json", type=str, default=None)
@@ -132,8 +164,8 @@ def main():
     optx = OpticsParams()
     pd = PDParams()
     # Sensitivity mode tunes TIA BW and comparator noise to amplify trends
-    tia_bw = 30.0 if args.sensitivity else 100.0
-    comp_noise = 0.3 if args.sensitivity else 0.8
+    tia_bw = 30.0 if args.sensitivity else 80.0
+    comp_noise = 0.3 if args.sensitivity else 0.6
     tia = TIAParams(bw_mhz=tia_bw)
     comp = ComparatorParams(input_noise_mV_rms=comp_noise)
     clk = ClockParams(window_ns=10.0, jitter_ps_rms=10.0)
@@ -192,11 +224,11 @@ def main():
     sens_windows = [3, 6, 10, 15, 20, 30]
     sens_rin = (-170.0, -130.0, 9)
     sens_ct = (-40.0, -15.0, 9)
-    sens_emit = EmitterParams(channels=16)
+    sens_emit = EmitterParams(channels=16, power_mw_per_ch=0.05)
     sens_optx = OpticsParams()
     sens_pd = PDParams()
-    sens_tia = TIAParams(bw_mhz=sens_tia_bw)
-    sens_comp = ComparatorParams(input_noise_mV_rms=sens_comp_noise)
+    sens_tia = TIAParams(bw_mhz=sens_tia_bw, tia_transimpedance_kohm=1.0)
+    sens_comp = ComparatorParams(input_noise_mV_rms=sens_comp_noise, vth_mV=5.0)
     sens_clk = ClockParams(window_ns=10.0, jitter_ps_rms=10.0)
     sens_orch = Orchestrator(sys_p, sens_emit, sens_optx, sens_pd, sens_tia, sens_comp, sens_clk)
     sw_xs, sw_ys, sw_ok = quick_window_sweep(sens_orch, trials=args.trials, windows=sens_windows)
@@ -209,6 +241,9 @@ def main():
         tia_bw_mhz=sens_tia_bw,
         comp_noise_mV=sens_comp_noise,
         emit_ext_db=6.0,
+        emit_power_mw=0.05,
+        tia_R_kohm=1.0,
+        comp_vth_mV=5.0,
     )
     sc_xs, sc_ys, sc_ok = quick_crosstalk_sweep(
         sys_p,
@@ -230,6 +265,10 @@ def main():
         steps=nct_range[2],
         tia_bw_mhz=sens_tia_bw,
         comp_noise_mV=sens_comp_noise,
+        opt_contrast=(0.8, 0.78),
+        emit_power_mw=0.05,
+        tia_R_kohm=1.0,
+        comp_vth_mV=5.0,
     )
     sens_effects = {
         "window_ber_improvement": safe_delta(sw_ys),

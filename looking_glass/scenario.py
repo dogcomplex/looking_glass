@@ -13,6 +13,7 @@ from .sim.sensor import PDParams
 from .sim.tia import TIAParams
 from .sim.comparator import ComparatorParams
 from .sim.clock import ClockParams
+from .sim.thermal import ThermalParams
 
 
 def _load_yaml(path: t.Union[str, Path]) -> dict:
@@ -73,12 +74,13 @@ def build_orchestrator_from_scenario(scenario_yaml_path: t.Union[str, Path]) -> 
     tia_p = _instantiate(TIAParams, _load_yaml(scn["tia_pack"]))
     comp_p = _instantiate(ComparatorParams, _load_yaml(scn["comparator_pack"]))
     clk_p = _instantiate(ClockParams, _load_yaml(scn["clock_pack"]))
+    therm_p = _instantiate(ThermalParams, _load_yaml(scn.get("thermal_pack", {})))
 
     # Enforce channel count from scenario on relevant packs
     emit_p.channels = channels
 
     sys_p = SystemParams(channels=channels, window_ns=clk_p.window_ns, temp_C=temp_C, seed=seed)
-    orch = Orchestrator(sys_p, emit_p, optx_p, pd_p, tia_p, comp_p, clk_p)
+    orch = Orchestrator(sys_p, emit_p, optx_p, pd_p, tia_p, comp_p, clk_p, therm_p)
     return orch, trials, scn
 
 
