@@ -16,6 +16,8 @@ class SystemParams:
     temp_C: float = 25.0
     seed: int = 42
     reset_analog_state_each_frame: bool = True
+    normalize_dv: bool = False
+    normalize_eps_v: float = 1e-6
 
 class Orchestrator:
     def __init__(self,
@@ -72,6 +74,11 @@ class Orchestrator:
             Im = self.pd.simulate(Pm2, dt)
         Vp = self.tia.simulate(Ip, dt)
         Vm = self.tia.simulate(Im, dt)
+        if getattr(self.sys, "normalize_dv", False):
+            # Per-channel normalization to suppress multiplicative noise (AGC-like)
+            denom = np.clip(np.abs(Vp) + np.abs(Vm), self.sys.normalize_eps_v, None)
+            Vp = Vp / denom
+            Vm = Vm / denom
         t_out = self.comp.simulate(Vp, Vm, self.sys.temp_C)
         # crude "true" comparing to sign with 0 threshold
         truth = tern
@@ -97,6 +104,7 @@ class Orchestrator:
                 "minus": per_tile_m.tolist() if per_tile_m is not None else None,
             },
             "dv_mV": (Vp - Vm).tolist(),
+            "vsum_mV": (np.abs(Vp) + np.abs(Vm)).tolist(),
         }
 
     def run(self, trials=100):

@@ -219,10 +219,15 @@ def run_scenario_cli(argv: list[str] | None = None) -> int:
             path = Path(args.csv)
             path.parent.mkdir(parents=True, exist_ok=True)
             with open(path, "w", newline="", encoding="utf-8") as f:
-                w = csv.DictWriter(f, fieldnames=[xlabel, "ber", "energy_pj", "window_ns"]) 
+                w = csv.DictWriter(f, fieldnames=[xlabel, "ber", "energy_pj", "window_ns"])
                 w.writeheader()
                 for r in all_rows:
-                    w.writerow(r)
+                    w.writerow({
+                        xlabel: r.get(xlabel),
+                        "ber": r.get("ber"),
+                        "energy_pj": r.get("energy_pj"),
+                        "window_ns": r.get("window_ns"),
+                    })
         # Save plot
         if args.plot:
             save_xy_plot(xs, ys, xlabel=xlabel, ylabel="p50_ber", out_path=args.plot,

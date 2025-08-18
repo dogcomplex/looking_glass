@@ -197,21 +197,27 @@ def main():
     ap.add_argument("--neighbor-ct", action="store_true", help="Use neighbor crosstalk model in baseline")
     ap.add_argument("--base-window-ns", type=float, default=10.0, help="Baseline clock window (ns)")
     ap.add_argument("--apply-calibration", action="store_true", help="Apply per-channel vth trims to baseline KPIs")
+    ap.add_argument("--spatial-oversample", type=int, default=1, help="Pseudo spatial oversampling vote (runs per input)")
+    ap.add_argument("--lockin", action="store_true", help="Estimate lock-in subtraction by subtracting a dark frame dv")
+    ap.add_argument("--chop", action="store_true", help="Chopper stabilization: use +x and -x frames, subtract dv before threshold")
+    ap.add_argument("--avg-frames", type=int, default=1, help="Average dv over N frames per input before thresholding (noise ~ 1/sqrt(N))")
+    ap.add_argument("--soft-thresh", action="store_true", help="Bypass comparator: software threshold dv using per-channel vth (upper bound for Path A)")
+    ap.add_argument("--mitigated", action="store_true", help="Compute mitigated BER using (chop, avg-frames, linear per-channel calibration)")
     ap.add_argument("--quiet", action="store_true", help="Do not print final JSON to stdout (write file only)")
     ap.add_argument("--progress", action="store_true", help="Emit coarse progress messages to stdout")
     ap.add_argument("--json", type=str, default=None)
     args = ap.parse_args()
 
     # Base system from typ packs inline
-    sys_p = SystemParams(channels=16, window_ns=float(args.base_window_ns), temp_C=25.0, seed=args.seed)
-    emit = EmitterParams(channels=16, power_mw_per_ch=0.7, power_sigma_pct=2.0)
+    sys_p = SystemParams(channels=16, window_ns=float(args.base_window_ns), temp_C=25.0, seed=args.seed, normalize_dv=False)
+    emit = EmitterParams(channels=16, power_mw_per_ch=0.7, power_sigma_pct=2.0, modulation_mode="pushpull", pushpull_alpha=0.9)
     optx = OpticsParams(ct_model=("neighbor" if args.neighbor_ct else "global"))
     pd = PDParams()
     # Sensitivity mode tunes TIA BW and comparator noise to amplify trends
     tia_bw = 30.0 if args.sensitivity else 80.0
     comp_noise = 0.3 if args.sensitivity else 0.5
     tia = TIAParams(bw_mhz=tia_bw, tia_transimpedance_kohm=5.0, in_noise_pA_rthz=3.0, gain_sigma_pct=1.0)
-    comp = ComparatorParams(input_noise_mV_rms=comp_noise, vth_sigma_mV=0.2)
+    comp = ComparatorParams(input_noise_mV_rms=comp_noise, vth_mV=5.0, vth_sigma_mV=0.2)
     clk = ClockParams(window_ns=float(args.base_window_ns), jitter_ps_rms=10.0)
     orch = Orchestrator(sys_p, emit, optx, pd, tia, comp, clk)
 
@@ -226,11 +232,11 @@ def main():
     c_xs, c_ys, c_ok = quick_crosstalk_sweep(sys_p, trials=args.trials, starts=float(ct_s), stops=float(ct_e), steps=int(ct_n), tia_bw_mhz=tia_bw, comp_noise_mV=comp_noise)
 
     # Baseline summary at default settings
-    base_emit = EmitterParams(channels=16)
+    base_emit = EmitterParams(channels=16, modulation_mode="pushpull", pushpull_alpha=0.9)
     base_optx = OpticsParams(ct_model=("neighbor" if args.neighbor_ct else "global"))
     base_pd = PDParams()
     base_tia = TIAParams(bw_mhz=tia_bw)
-    base_comp = ComparatorParams(input_noise_mV_rms=comp_noise)
+    base_comp = ComparatorParams(input_noise_mV_rms=comp_noise, vth_mV=5.0, vth_sigma_mV=0.2)
     base_clk = ClockParams(window_ns=float(args.base_window_ns), jitter_ps_rms=10.0)
     base_orch = Orchestrator(sys_p, base_emit, base_optx, base_pd, base_tia, base_comp, base_clk)
     base_summary = base_orch.run(trials=args.trials)
@@ -249,6 +255,8 @@ def main():
     per_tile_after = None
     vth_suggest = None
     ber_after = None
+    lin_scale = None
+    lin_offset = None
     cal_summary = None
     try:
         blocks = base_orch.sys.channels
@@ -318,6 +326,10 @@ def main():
             pos_mean = _np.divide(pos_sum, _np.clip(pos_cnt, 1.0, None))
             neg_mean = _np.divide(neg_sum, _np.clip(neg_cnt, 1.0, None))
             vth_vec = 0.5*(pos_mean + neg_mean)
+            # Linear per-channel calibration: scale/offset dv so classes map to ±1
+            eps = 1e-6
+            lin_scale = 2.0/_np.clip((pos_mean - neg_mean), eps, None)
+            lin_offset = -0.5*(pos_mean + neg_mean)
             # Apply per-channel trims
             orch_cal.comp.set_vth_per_channel(vth_vec)
             # Evaluate post-calibration BER and per-tile BER
@@ -398,6 +410,124 @@ def main():
             errs.append(float(_np.mean(vote != t)))
         vote3_ber = float(_np.median(errs)) if errs else None
 
+    # Pseudo spatial oversampling (S>1): majority vote across S repeats per input
+    spatial_ber = None
+    S = max(1, int(args.spatial_oversample))
+    if S > 1:
+        import numpy as _np
+        errs = []
+        for _ in range(min(args.trials, 200)):
+            tern = base_orch.rng.integers(-1, 2, size=base_orch.sys.channels)
+            outs = []
+            for _j in range(S):
+                outs.append(base_orch.step(force_ternary=tern)["t_out"])
+            t = _np.array(tern)
+            O = _np.vstack(outs)
+            vote = _np.sign(_np.sum(O, axis=0))
+            errs.append(float(_np.mean(vote != t)))
+        spatial_ber = float(_np.median(errs)) if errs else None
+
+    # Lock-in estimate: subtract a dark dv per trial and threshold on sign
+    lockin_ber = None
+    if args.lockin:
+        import numpy as _np
+        errs = []
+        for _ in range(min(args.trials, 200)):
+            tern = base_orch.rng.integers(-1, 2, size=base_orch.sys.channels)
+            r_sig = base_orch.step(force_ternary=tern)
+            r_dark = base_orch.step(force_ternary=_np.zeros_like(tern))
+            dv_sig = _np.array(r_sig.get("dv_mV", [0]*base_orch.sys.channels))
+            dv_dark = _np.array(r_dark.get("dv_mV", [0]*base_orch.sys.channels))
+            dv_diff = dv_sig - dv_dark
+            pred = _np.sign(dv_diff)
+            errs.append(float(_np.mean(pred != tern)))
+        lockin_ber = float(_np.median(errs)) if errs else None
+
+    # Chopper stabilization: use +x and -x frames, subtract, then threshold
+    chop_ber = None
+    if args.chop:
+        import numpy as _np
+        errs = []
+        for _ in range(min(args.trials, 200)):
+            tern = base_orch.rng.integers(-1, 2, size=base_orch.sys.channels)
+            r_pos = base_orch.step(force_ternary=tern)
+            r_neg = base_orch.step(force_ternary=-tern)
+            dv_pos = _np.array(r_pos.get("dv_mV", [0]*base_orch.sys.channels))
+            dv_neg = _np.array(r_neg.get("dv_mV", [0]*base_orch.sys.channels))
+            dv_diff = dv_pos - dv_neg
+            pred = _np.sign(dv_diff)
+            errs.append(float(_np.mean(pred != tern)))
+        chop_ber = float(_np.median(errs)) if errs else None
+
+    # Frame averaging on dv: average N frames per input, then threshold
+    avg_frames_ber = None
+    if int(args.avg_frames) > 1:
+        import numpy as _np
+        N = int(args.avg_frames)
+        errs = []
+        for _ in range(min(args.trials, 200)):
+            tern = base_orch.rng.integers(-1, 2, size=base_orch.sys.channels)
+            acc = _np.zeros(base_orch.sys.channels, dtype=float)
+            for _j in range(N):
+                r = base_orch.step(force_ternary=tern)
+                acc += _np.array(r.get("dv_mV", [0]*base_orch.sys.channels))
+            pred = _np.sign(acc)
+            errs.append(float(_np.mean(pred != tern)))
+        avg_frames_ber = float(_np.median(errs)) if errs else None
+
+    # Software threshold (upper bound Path A): learn per-channel vth, then classify dv
+    soft_thresh_ber = None
+    if args.soft_thresh:
+        import numpy as _np
+        # Learn per-channel vth from a short calibration set
+        pos_sum = _np.zeros(sys_p.channels, dtype=float)
+        pos_cnt = _np.zeros(sys_p.channels, dtype=float)
+        neg_sum = _np.zeros(sys_p.channels, dtype=float)
+        neg_cnt = _np.zeros(sys_p.channels, dtype=float)
+        for _ in range(min(300, max(100, args.trials))):
+            tern = base_orch.rng.integers(-1, 2, size=sys_p.channels)
+            r = base_orch.step(force_ternary=tern)
+            dv = _np.array(r.get("dv_mV", [0]*sys_p.channels), dtype=float)
+            pos = tern > 0
+            neg = tern < 0
+            pos_sum[pos] += dv[pos]; pos_cnt[pos] += 1
+            neg_sum[neg] += dv[neg]; neg_cnt[neg] += 1
+        pos_mean = _np.divide(pos_sum, _np.clip(pos_cnt, 1.0, None))
+        neg_mean = _np.divide(neg_sum, _np.clip(neg_cnt, 1.0, None))
+        vth_vec = 0.5*(pos_mean + neg_mean)
+        errs = []
+        for _ in range(min(args.trials, 200)):
+            tern = base_orch.rng.integers(-1, 2, size=sys_p.channels)
+            r = base_orch.step(force_ternary=tern)
+            dv = _np.array(r.get("dv_mV", [0]*sys_p.channels), dtype=float)
+            pred = _np.sign(dv - vth_vec)
+            errs.append(float(_np.mean(pred != tern)))
+        soft_thresh_ber = float(_np.median(errs)) if errs else None
+
+    # Mitigated pipeline: chopper + frame averaging + linear per-channel calibration, then sign
+    mitigated_ber = None
+    if args.mitigated and (lin_scale is not None) and (lin_offset is not None):
+        import numpy as _np
+        errs = []
+        N = max(1, int(args.avg_frames))
+        for _ in range(min(args.trials, 200)):
+            tern = base_orch.rng.integers(-1, 2, size=base_orch.sys.channels)
+            acc = _np.zeros(base_orch.sys.channels, dtype=float)
+            for _j in range(N):
+                if args.chop:
+                    r_pos = base_orch.step(force_ternary=tern)
+                    r_neg = base_orch.step(force_ternary=-tern)
+                    dv = _np.array(r_pos.get("dv_mV", [0]*base_orch.sys.channels)) - _np.array(r_neg.get("dv_mV", [0]*base_orch.sys.channels))
+                else:
+                    r = base_orch.step(force_ternary=tern)
+                    dv = _np.array(r.get("dv_mV", [0]*base_orch.sys.channels))
+                acc += dv
+            dv_avg = acc/float(N)
+            dv_lin = lin_scale*(dv_avg + lin_offset)
+            pred = _np.sign(dv_lin)
+            errs.append(float(_np.mean(pred != tern)))
+        mitigated_ber = float(_np.median(errs)) if errs else None
+
     summary = {
         "config": {
             "trials": args.trials,
@@ -422,6 +552,12 @@ def main():
         "ber_per_tile_after": per_tile_after,
         "baseline_calibrated": (cal_summary or {}),
         "vote3_p50_ber": vote3_ber,
+        "spatial_oversample_p50_ber": spatial_ber,
+        "lockin_p50_ber": lockin_ber,
+        "chop_p50_ber": chop_ber,
+        "avg_frames_p50_ber": avg_frames_ber,
+        "soft_thresh_p50_ber": soft_thresh_ber,
+        "mitigated_p50_ber": mitigated_ber,
         "sanity": {
             "window_non_increasing": w_ok,
             "rin_non_decreasing": r_ok,
@@ -450,7 +586,7 @@ def main():
     sens_windows = [3, 6, 10, 15, 20, 30]
     sens_rin = (-170.0, -130.0, 9)
     sens_ct = (-40.0, -15.0, 9)
-    sens_emit = EmitterParams(channels=16, power_mw_per_ch=0.05)
+    sens_emit = EmitterParams(channels=16, power_mw_per_ch=0.05, modulation_mode="pushpull", pushpull_alpha=0.9)
     sens_optx = OpticsParams()
     sens_pd = PDParams()
     sens_tia = TIAParams(bw_mhz=sens_tia_bw, tia_transimpedance_kohm=1.0)

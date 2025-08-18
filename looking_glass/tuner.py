@@ -20,12 +20,18 @@ class TuneSpace:
         self.bounds = {
             ("clock", "window_ns"): (8.0, 30.0),
             ("emitter", "power_mw_per_ch"): (0.3, 2.0),
+            ("emitter", "extinction_db"): (15.0, 35.0),
             ("tia", "tia_transimpedance_kohm"): (2.0, 20.0),
             ("tia", "bw_mhz"): (20.0, 120.0),
+            ("tia", "in_noise_pA_rthz"): (2.0, 8.0),
             ("comparator", "hysteresis_mV"): (0.5, 2.0),
+            ("comparator", "input_noise_mV_rms"): (0.2, 1.0),
             ("optics", "crosstalk_db"): (-38.0, -20.0),
             ("optics", "ct_neighbor_db"): (-40.0, -25.0),
             ("optics", "ct_diag_db"): (-45.0, -30.0),
+            ("optics", "w_plus_contrast"): (0.75, 0.95),
+            ("optics", "w_minus_contrast"): (0.75, 0.95),
+            ("optics", "stray_floor_db"): (-48.0, -30.0),
         }
 
     def clip(self, key: Tuple[str, str], val: float) -> float:
@@ -99,15 +105,23 @@ def auto_tune(system: SystemParams,
         def jitter(val, scale):
             return val + rnd.uniform(-scale, scale)
         cl2 = replace(cl2, window_ns=space.clip(("clock","window_ns"), jitter(cl2.window_ns, 2.0)))
-        em2 = replace(em2, power_mw_per_ch=space.clip(("emitter","power_mw_per_ch"), jitter(em2.power_mw_per_ch, 0.2)))
+        em2 = replace(em2,
+                      power_mw_per_ch=space.clip(("emitter","power_mw_per_ch"), jitter(em2.power_mw_per_ch, 0.2)),
+                      extinction_db=space.clip(("emitter","extinction_db"), jitter(em2.extinction_db, 2.0)))
         ti2 = replace(ti2,
                       tia_transimpedance_kohm=space.clip(("tia","tia_transimpedance_kohm"), jitter(ti2.tia_transimpedance_kohm, 2.0)),
-                      bw_mhz=space.clip(("tia","bw_mhz"), jitter(ti2.bw_mhz, 10.0)))
-        co2 = replace(co2, hysteresis_mV=space.clip(("comparator","hysteresis_mV"), jitter(co2.hysteresis_mV, 0.2)))
+                      bw_mhz=space.clip(("tia","bw_mhz"), jitter(ti2.bw_mhz, 10.0)),
+                      in_noise_pA_rthz=space.clip(("tia","in_noise_pA_rthz"), jitter(ti2.in_noise_pA_rthz, 0.8)))
+        co2 = replace(co2,
+                      hysteresis_mV=space.clip(("comparator","hysteresis_mV"), jitter(co2.hysteresis_mV, 0.2)),
+                      input_noise_mV_rms=space.clip(("comparator","input_noise_mV_rms"), jitter(co2.input_noise_mV_rms, 0.1)))
         ox2 = replace(ox2,
                       crosstalk_db=space.clip(("optics","crosstalk_db"), jitter(ox2.crosstalk_db, 2.0)),
                       ct_neighbor_db=space.clip(("optics","ct_neighbor_db"), jitter(ox2.ct_neighbor_db, 2.0)),
-                      ct_diag_db=space.clip(("optics","ct_diag_db"), jitter(ox2.ct_diag_db, 2.0)))
+                      ct_diag_db=space.clip(("optics","ct_diag_db"), jitter(ox2.ct_diag_db, 2.0)),
+                      w_plus_contrast=space.clip(("optics","w_plus_contrast"), jitter(ox2.w_plus_contrast, 0.03)),
+                      w_minus_contrast=space.clip(("optics","w_minus_contrast"), jitter(ox2.w_minus_contrast, 0.03)),
+                      stray_floor_db=space.clip(("optics","stray_floor_db"), jitter(ox2.stray_floor_db, 2.0)))
         cand_cfg = (sys2, em2, ox2, pd2, ti2, co2, cl2)
         cand = evaluate(*cand_cfg, trials=trials, use_calibration=use_calibration)
         cost = cand.get("ber_calibrated", cand["ber"]) 

@@ -48,8 +48,8 @@ class Comparator:
             self._last_out = _np.zeros_like(eff)
         up_th = vth_vec + 0.5*hyst
         dn_th = vth_vec - 0.5*hyst
-        out = _np.where(eff > up_th, 1, _np.where(eff < -up_th, -1, self._last_out))
-        out = _np.where((eff < dn_th) & (eff > -dn_th), 0, out)
+        # Symmetric ternary thresholding; prefer zero near the origin
+        out = _np.where(eff > up_th, 1, _np.where(eff < -up_th, -1, 0))
         if self.p.saturate_levels:
             out = _np.clip(out, -1, 1)
         self._last_out = out

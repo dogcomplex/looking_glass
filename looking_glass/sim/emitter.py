@@ -11,6 +11,8 @@ class EmitterParams:
     rise_fall_ns_10_90: float = 1.0
     temp_coeff_pct_per_C: float = 0.2
     power_sigma_pct: float = 0.0
+    modulation_mode: str = "extinction"  # "extinction" or "pushpull"
+    pushpull_alpha: float = 0.8  # 0..1, fraction of differential modulation depth
 
 class EmitterArray:
     def __init__(self, params: EmitterParams, rng=None):
@@ -32,19 +34,35 @@ class EmitterArray:
             base_vec = np.full_like(ternary, base, dtype=float) * self._ch_scale
         else:
             base_vec = np.full_like(ternary, base, dtype=float)
-        ext = 10**(-self.p.extinction_db/10.0)
         temp_scale = 1.0 + (temp_C-25.0)*self.p.temp_coeff_pct_per_C/100.0
-        Pp = np.where(ternary>0, base_vec, base_vec*ext)
-        Pm = np.where(ternary<0, base_vec, base_vec*ext)
+        if self.p.modulation_mode == "pushpull":
+            # Constant total per channel; differential encodes sign
+            alpha = float(np.clip(self.p.pushpull_alpha, 0.0, 1.0))
+            total = base_vec * temp_scale
+            half = 0.5 * total
+            add = 0.5 * alpha * total
+            Pp = np.where(ternary>0, half+add, np.where(ternary<0, half-add, half))
+            Pm = np.where(ternary>0, half-add, np.where(ternary<0, half+add, half))
+        else:
+            # Extinction-based on/off per rail
+            ext = 10**(-self.p.extinction_db/10.0)
+            Pp = np.where(ternary>0, base_vec, base_vec*ext) * temp_scale
+            Pm = np.where(ternary<0, base_vec, base_vec*ext) * temp_scale
         Pp = Pp * temp_scale
         Pm = Pm * temp_scale
-        # Add RIN: sigma_P ≈ P * sqrt(RIN_lin * BW)
+        # Add RIN with a common-mode component per channel (correlated across rails)
         bw_hz = 1.0/(dt_ns*1e-9 + 1e-18)
-        rin_lin = 10**(self.p.rin_dbhz/10.0)
-        sigma_p = np.sqrt(max(bw_hz, 1.0) * max(rin_lin, 0.0)) * Pp
-        sigma_m = np.sqrt(max(bw_hz, 1.0) * max(rin_lin, 0.0)) * Pm
-        Pp = Pp + self.rng.normal(0.0, sigma_p, size=Pp.shape)
-        Pm = Pm + self.rng.normal(0.0, sigma_m, size=Pm.shape)
+        rin_lin = max(0.0, 10**(self.p.rin_dbhz/10.0))
+        sigma_rel = np.sqrt(max(bw_hz, 1.0) * rin_lin)
+        # Common-mode multiplicative fluctuation per channel
+        g = self.rng.normal(0.0, sigma_rel, size=Pp.shape)
+        Pp = Pp * (1.0 + g)
+        Pm = Pm * (1.0 + g)
+        # Residual uncorrelated component (e.g., rail-specific speckle)
+        resid = 0.3 * sigma_rel
+        if resid > 0:
+            Pp = Pp + self.rng.normal(0.0, resid * np.maximum(Pp, 0.0))
+            Pm = Pm + self.rng.normal(0.0, resid * np.maximum(Pm, 0.0))
         Pp = np.clip(Pp, 0.0, None)
         Pm = np.clip(Pm, 0.0, None)
         return Pp, Pm

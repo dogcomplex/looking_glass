@@ -209,6 +209,12 @@
           }
           renderTable(document.getElementById('table-calib'), {
             vote3_p50_ber: data?.vote3_p50_ber,
+            spatial_oversample_p50_ber: data?.spatial_oversample_p50_ber,
+            lockin_p50_ber: data?.lockin_p50_ber,
+            chop_p50_ber: data?.chop_p50_ber,
+            avg_frames_p50_ber: data?.avg_frames_p50_ber,
+            soft_thresh_p50_ber: data?.soft_thresh_p50_ber,
+            mitigated_p50_ber: data?.mitigated_p50_ber,
             vth_suggest_mV: data?.calibration?.vth_suggest_mV,
             ber_before: data?.calibration?.ber_before,
             ber_after: data?.calibration?.ber_after,
@@ -284,6 +290,12 @@
         if (xs.length && ys.length) drawLine(document.getElementById('winChart'), xs, ys, 'p50 BER');
         renderTable(document.getElementById('table-calib'), {
           vote3_p50_ber: data?.vote3_p50_ber,
+          spatial_oversample_p50_ber: data?.spatial_oversample_p50_ber,
+          lockin_p50_ber: data?.lockin_p50_ber,
+          chop_p50_ber: data?.chop_p50_ber,
+          avg_frames_p50_ber: data?.avg_frames_p50_ber,
+          soft_thresh_p50_ber: data?.soft_thresh_p50_ber,
+          mitigated_p50_ber: data?.mitigated_p50_ber,
           vth_suggest_mV: data?.calibration?.vth_suggest_mV,
           ber_before: data?.calibration?.ber_before,
           ber_after: data?.calibration?.ber_after,
