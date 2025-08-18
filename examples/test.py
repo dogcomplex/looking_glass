@@ -26,6 +26,7 @@ import argparse
 
 from looking_glass.orchestrator import Orchestrator, SystemParams
 from looking_glass.sim.emitter import EmitterParams
+from looking_glass.sim.cold_storage import ColdParams, ColdReader
 from looking_glass.sim.optics import OpticsParams
 from looking_glass.sim.sensor import PDParams
 from looking_glass.sim.tia import TIAParams
@@ -202,6 +203,9 @@ def main():
     ap.add_argument("--chop", action="store_true", help="Chopper stabilization: use +x and -x frames, subtract dv before threshold")
     ap.add_argument("--avg-frames", type=int, default=1, help="Average dv over N frames per input before thresholding (noise ~ 1/sqrt(N))")
     ap.add_argument("--soft-thresh", action="store_true", help="Bypass comparator: software threshold dv using per-channel vth (upper bound for Path A)")
+    ap.add_argument("--path-b-depth", type=int, default=0, help="If >0, run Path B cascaded for N stages and report per-stage BER")
+    ap.add_argument("--path-b-sweep", action="store_true", help="Run Path B sweeps (amp_gain_db, sat_I_sat) and report BER curves")
+    ap.add_argument("--path-b-analog-depth", type=int, default=-1, help="If -1, use --path-b-depth; if >0, run analog cascade (optics SA+amp per hop, single final threshold)")
     ap.add_argument("--mitigated", action="store_true", help="Compute mitigated BER using (chop, avg-frames, linear per-channel calibration)")
     ap.add_argument("--quiet", action="store_true", help="Do not print final JSON to stdout (write file only)")
     ap.add_argument("--progress", action="store_true", help="Emit coarse progress messages to stdout")
@@ -240,6 +244,106 @@ def main():
     base_clk = ClockParams(window_ns=float(args.base_window_ns), jitter_ps_rms=10.0)
     base_orch = Orchestrator(sys_p, base_emit, base_optx, base_pd, base_tia, base_comp, base_clk)
     base_summary = base_orch.run(trials=args.trials)
+
+    # Cold-storage input path (parallel baseline): swap emitter with ColdReader and measure KPIs
+    cold_summary = None
+    try:
+        cold_emit = ColdReader(ColdParams(channels=sys_p.channels))
+        cold_orch = Orchestrator(sys_p, cold_emit, base_optx, base_pd, base_tia, base_comp, base_clk)
+        cold_summary = cold_orch.run(trials=args.trials)
+    except Exception:
+        cold_summary = None
+
+    # Path B estimate (enable saturable absorber + optical amplifier in optics)
+    path_b_summary = None
+    path_b_chain = None
+    path_b_sweeps = None
+    try:
+        b_emit = EmitterParams(**emit.__dict__)
+        b_optx = OpticsParams(**optx.__dict__)
+        b_optx.sat_abs_on = True
+        b_optx.amp_on = True
+        b_pd = PDParams(**pd.__dict__)
+        b_tia = TIAParams(**tia.__dict__)
+        b_comp = ComparatorParams(**comp.__dict__)
+        b_clk = ClockParams(**clk.__dict__)
+        b_orch = Orchestrator(sys_p, b_emit, b_optx, b_pd, b_tia, b_comp, b_clk)
+        path_b_summary = b_orch.run(trials=args.trials)
+
+        # Optional cascaded Path B chain: feed ternary outputs of stage k as inputs to k+1
+        if int(getattr(args, "path_b_depth", 0)) > 0:
+            import numpy as _np
+            depth = int(args.path_b_depth)
+            T = min(args.trials, 200)
+            stage_errs = [[0.0]*T for _ in range(depth)]
+            stage_cum_errs = [[0.0]*T for _ in range(depth)]
+            for t_idx in range(T):
+                in_vec = b_orch.rng.integers(-1, 2, size=b_orch.sys.channels)
+                ref = in_vec.copy()
+                for k in range(depth):
+                    r = b_orch.step(force_ternary=in_vec)
+                    out = _np.array(r.get("t_out", in_vec), dtype=int)
+                    stage_errs[k][t_idx] = float(_np.mean(out != in_vec))
+                    stage_cum_errs[k][t_idx] = float(_np.mean(out != ref))
+                    in_vec = out
+            per_stage_med_ber = [float(_np.median(stage_errs[k])) for k in range(depth)]
+            per_stage_med_cum = [float(_np.median(stage_cum_errs[k])) for k in range(depth)]
+            path_b_chain = {
+                "depth": depth,
+                "per_stage_p50_ber_vs_prev": per_stage_med_ber,
+                "per_stage_p50_ber_vs_initial": per_stage_med_cum,
+            }
+        # Optional Path B sweeps for realism: amplifier gain and SA I_sat
+        if bool(getattr(args, "path_b_sweep", False)):
+            import numpy as _np
+            # Sweep amplifier gain in dB
+            gain_vals = [0, 5, 10, 15, 20]
+            ber_vs_gain = []
+            for g in gain_vals:
+                b_optx.amp_on = True
+                b_optx.amp_gain_db = float(g)
+                b_orch2 = Orchestrator(sys_p, b_emit, b_optx, b_pd, b_tia, b_comp, b_clk)
+                ber_vs_gain.append(float(b_orch2.run(trials=min(args.trials, 200)).get("p50_ber", None)))
+            # Sweep SA I_sat (lower I_sat = stronger nonlinearity at lower current)
+            isat_vals = [0.5, 1.0, 1.5, 2.0, 3.0]
+            ber_vs_isat = []
+            for s in isat_vals:
+                b_optx.sat_abs_on = True
+                b_optx.sat_I_sat = float(s)
+                b_orch3 = Orchestrator(sys_p, b_emit, b_optx, b_pd, b_tia, b_comp, b_clk)
+                ber_vs_isat.append(float(b_orch3.run(trials=min(args.trials, 200)).get("p50_ber", None)))
+            path_b_sweeps = {
+                "amp_gain_db": gain_vals,
+                "p50_ber_vs_gain": ber_vs_gain,
+                "sat_I_sat": isat_vals,
+                "p50_ber_vs_isat": ber_vs_isat,
+            }
+        # Analog cascade (realistic accumulation): propagate analog intensities SA+amp per hop, O/E at end
+        analog_depth = int(getattr(args, "path_b_analog_depth", -1))
+        if analog_depth == -1:
+            analog_depth = int(getattr(args, "path_b_depth", 0))
+        if analog_depth > 0:
+            import numpy as _np
+            T = min(args.trials, 200)
+            errs = []
+            for _ in range(T):
+                tern0 = b_orch.rng.integers(-1, 2, size=b_orch.sys.channels)
+                Pp, Pm = b_orch.emit.simulate(tern0, b_orch.clk.sample_window(), b_orch.sys.temp_C)
+                for _k in range(analog_depth):
+                    op, om, _, _ = b_orch.optx.simulate(Pp, Pm)
+                    Pp, Pm = op, om
+                Ip = b_orch.pd.simulate(Pp, b_orch.clk.sample_window())
+                Im = b_orch.pd.simulate(Pm, b_orch.clk.sample_window())
+                Vp = b_orch.tia.simulate(Ip, b_orch.clk.sample_window())
+                Vm = b_orch.tia.simulate(Im, b_orch.clk.sample_window())
+                dv_mV = (Vp - Vm)*1e3
+                out = b_orch.comp.simulate(Vp, Vm, b_orch.sys.temp_C, dv_mV=dv_mV)
+                errs.append(float(_np.mean(out != tern0)))
+            path_b_summary = dict(path_b_summary or {})
+            path_b_summary["analog_depth"] = analog_depth
+            path_b_summary["analog_p50_ber"] = float(_np.median(errs)) if errs else None
+    except Exception:
+        path_b_summary = None
 
     # Notable effects across sweeps
     def safe_delta(arr):
@@ -540,6 +644,11 @@ def main():
             "applied_calibration": bool(args.apply_calibration),
         },
         "baseline": base_summary,
+        "path_a": base_summary,
+        "path_b": path_b_summary,
+        "path_b_chain": path_b_chain,
+        "path_b_sweeps": path_b_sweeps,
+        "cold_input": cold_summary,
         "packs": {
             "emitter": emit.__dict__,
             "optics": optx.__dict__,

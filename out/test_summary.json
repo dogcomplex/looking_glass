@@ -1,21 +1,77 @@
 {
   "config": {
-    "trials": 200,
+    "trials": 300,
     "seed": 123,
-    "sensitivity": false,
-    "vote3": false,
-    "repeat": 1,
-    "neighbor_ct": false,
+    "sensitivity": true,
+    "vote3": true,
+    "repeat": 3,
+    "neighbor_ct": true,
     "base_window_ns": 10.0,
     "applied_calibration": false
   },
   "baseline": {
-    "p50_ber": 0.25,
-    "p50_energy_pj": 66.86687656923651,
-    "window_ns": 8.000583754459154,
-    "p50_snr_emit": 1.423269244543813,
-    "p50_snr_pd": 3.541465223197629,
-    "p50_snr_tia": 14.33548691207758
+    "p50_ber": 0.375,
+    "p50_energy_pj": 67.03606903368612,
+    "window_ns": 8.000073666678947,
+    "p50_snr_emit": 1.4098953171190134,
+    "p50_snr_pd": 3.51062908913869,
+    "p50_snr_tia": 11.346874824541962
+  },
+  "path_a": {
+    "p50_ber": 0.375,
+    "p50_energy_pj": 67.03606903368612,
+    "window_ns": 8.000073666678947,
+    "p50_snr_emit": 1.4098953171190134,
+    "p50_snr_pd": 3.51062908913869,
+    "p50_snr_tia": 11.346874824541962
+  },
+  "path_b": null,
+  "path_b_chain": {
+    "depth": 5,
+    "per_stage_p50_ber_vs_prev": [
+      0.6875,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "per_stage_p50_ber_vs_initial": [
+      0.6875,
+      0.6875,
+      0.6875,
+      0.6875,
+      0.6875
+    ]
+  },
+  "path_b_sweeps": {
+    "amp_gain_db": [
+      0,
+      5,
+      10,
+      15,
+      20
+    ],
+    "p50_ber_vs_gain": [
+      0.3125,
+      0.25,
+      0.625,
+      0.625,
+      0.625
+    ],
+    "sat_I_sat": [
+      0.5,
+      1.0,
+      1.5,
+      2.0,
+      3.0
+    ],
+    "p50_ber_vs_isat": [
+      0.625,
+      0.625,
+      0.625,
+      0.625,
+      0.625
+    ]
   },
   "packs": {
     "emitter": {
@@ -35,7 +91,7 @@
       "w_plus_contrast": 0.85,
       "w_minus_contrast": 0.84,
       "crosstalk_db": -28.0,
-      "ct_model": "global",
+      "ct_model": "neighbor",
       "ct_neighbor_db": -30.0,
       "ct_diag_db": -35.0,
       "stray_floor_db": -38.0,
@@ -43,13 +99,14 @@
       "signal_scale": 1.0,
       "amp_on": false,
       "amp_gain_db": 10.0,
+      "amp_ase_sigma": 0.01,
       "sat_abs_on": false,
       "sat_I_sat": 1.0,
       "sat_alpha": 0.6
     },
     "tia": {
       "tia_transimpedance_kohm": 5.0,
-      "bw_mhz": 80.0,
+      "bw_mhz": 30.0,
       "in_noise_pA_rthz": 3.0,
       "peaking_q": 0.7,
       "slew_v_per_us": 500.0,
@@ -61,7 +118,7 @@
     "comparator": {
       "vth_mV": 5.0,
       "hysteresis_mV": 1.0,
-      "input_noise_mV_rms": 0.5,
+      "input_noise_mV_rms": 0.3,
       "drift_mV_per_C": 0.05,
       "prop_delay_ns": 2.0,
       "saturate_levels": true,
@@ -89,89 +146,89 @@
       "full_well_e": 20000.0
     },
     "tia": {
-      "score": 0.613,
-      "bw_mhz": 80.0,
+      "score": 0.362,
+      "bw_mhz": 30.0,
       "in_noise_pA_rthz": 3.0
     },
     "comparator": {
-      "score": 0.583,
-      "input_noise_mV_rms": 0.5
+      "score": 0.75,
+      "input_noise_mV_rms": 0.3
     }
   },
   "ber_per_tile": [
     [
-      0.075,
-      0.22,
-      0.23,
-      0.025
-    ],
-    [
-      0.29,
-      0.465,
-      0.475,
-      0.165
-    ],
-    [
-      0.265,
-      0.425,
-      0.5,
-      0.24
-    ],
-    [
-      0.105,
-      0.25,
+      0.47,
       0.345,
-      0.08
+      0.35,
+      0.155
+    ],
+    [
+      0.505,
+      0.335,
+      0.38,
+      0.29
+    ],
+    [
+      0.45,
+      0.38,
+      0.41,
+      0.315
+    ],
+    [
+      0.48,
+      0.295,
+      0.345,
+      0.12
     ]
   ],
   "ber_per_tile_after": [
     [
-      0.31,
-      0.28,
-      0.23,
-      0.255
-    ],
-    [
       0.315,
-      0.27,
-      0.31,
-      0.4
+      0.275,
+      0.25,
+      0.205
     ],
     [
-      0.345,
-      0.255,
-      0.335,
-      0.345
+      0.32,
+      0.28,
+      0.32,
+      0.395
     ],
     [
-      0.29,
-      0.3,
-      0.295,
+      0.37,
+      0.26,
+      0.36,
       0.335
+    ],
+    [
+      0.3,
+      0.305,
+      0.33,
+      0.295
     ]
   ],
   "baseline_calibrated": {
     "p50_ber": 0.3125,
-    "p50_energy_pj": 87.8491814066083,
-    "window_ns": 15.000929834004397,
-    "p50_snr_emit": 1.4005796828734578,
-    "p50_snr_pd": 3.4621138929231643,
-    "p50_snr_tia": 3.474312174530304
+    "p50_energy_pj": 88.0735235036598,
+    "window_ns": 15.000447657301699,
+    "p50_snr_emit": 1.4011426769971975,
+    "p50_snr_pd": 3.464030825366203,
+    "p50_snr_tia": 3.6881392060583447
   },
-  "vote3_p50_ber": null,
+  "vote3_p50_ber": 0.375,
   "spatial_oversample_p50_ber": null,
   "lockin_p50_ber": null,
-  "chop_p50_ber": 0.125,
-  "avg_frames_p50_ber": 0.25,
-  "soft_thresh_p50_ber": 0.4375,
-  "mitigated_p50_ber": 0.375,
+  "chop_p50_ber": null,
+  "avg_frames_p50_ber": null,
+  "soft_thresh_p50_ber": null,
+  "mitigated_p50_ber": null,
   "sanity": {
     "window_non_increasing": true,
     "rin_non_decreasing": true,
     "crosstalk_non_decreasing": true
   },
   "effects": {
-    "window_ber_improvement": 0.3125,
+    "window_ber_improvement": 0.375,
     "rin_ber_degradation": 0.0,
     "crosstalk_ber_degradation": 0.0
   },
@@ -185,9 +242,9 @@
       17.0
     ],
     "p50_ber": [
-      0.625,
-      0.3125,
-      0.3125,
+      0.6875,
+      0.5625,
+      0.375,
       0.3125,
       0.3125,
       0.3125
@@ -222,10 +279,10 @@
     ]
   },
   "calibration": {
-    "vth_suggest_mV": -0.0403358778806151,
-    "ber_before": 0.25,
+    "vth_suggest_mV": -0.14024675008652498,
+    "ber_before": 0.375,
     "ber_after": 0.3125,
-    "ber_delta": 0.0625
+    "ber_delta": -0.0625
   },
   "sensitivity": {
     "config": {
@@ -259,13 +316,13 @@
       "window_non_increasing": true,
       "rin_non_decreasing": true,
       "crosstalk_non_decreasing": true,
-      "neighbor_crosstalk_non_decreasing": false
+      "neighbor_crosstalk_non_decreasing": true
     },
     "effects": {
-      "window_ber_improvement": 0.3125,
+      "window_ber_improvement": 0.25,
       "rin_ber_degradation": 0.0,
       "crosstalk_ber_degradation": 0.0,
-      "neighbor_crosstalk_ber_degradation": -0.0625
+      "neighbor_crosstalk_ber_degradation": 0.0
     },
     "window_sweep": {
       "x_window_ns": [
@@ -282,7 +339,7 @@
         0.5625,
         0.5,
         0.4375,
-        0.375
+        0.4375
       ]
     },
     "rin_sweep": {
@@ -346,7 +403,7 @@
         0.625,
         0.625,
         0.625,
-        0.5625
+        0.625
       ]
     },
     "diag_crosstalk_sweep": {
@@ -394,24 +451,24 @@
       ],
       "p50_ber": [
         0.25,
+        0.3125,
         0.34375,
-        0.3125,
-        0.3125,
-        0.375,
-        0.3125,
-        0.3125,
-        0.3125,
-        0.375,
-        0.3125,
-        0.3125,
-        0.3125,
-        0.3125,
         0.3125,
         0.34375,
         0.3125,
         0.3125,
+        0.28125,
+        0.34375,
         0.3125,
         0.3125,
+        0.28125,
+        0.3125,
+        0.3125,
+        0.34375,
+        0.3125,
+        0.3125,
+        0.3125,
+        0.25,
         0.3125
       ]
     },
@@ -443,34 +500,34 @@
         0.375,
         0.3125,
         0.3125,
+        0.25,
         0.3125,
         0.3125,
+        0.3125,
+        0.375,
+        0.28125,
+        0.3125,
+        0.3125,
+        0.375,
+        0.3125,
+        0.28125,
+        0.28125,
         0.3125,
         0.3125,
         0.34375,
-        0.3125,
-        0.3125,
-        0.3125,
-        0.34375,
-        0.3125,
-        0.3125,
-        0.3125,
-        0.3125,
-        0.3125,
-        0.3125,
-        0.34375
+        0.3125
       ]
     }
   },
   "autotune": {
-    "best_ber": 0.25,
+    "best_ber": 0.3125,
     "best_summary": {
-      "p50_ber": 0.25,
-      "p50_energy_pj": 55.78342170220253,
-      "window_ns": 16.1844908661839,
-      "p50_snr_emit": 1.3919521199115439,
-      "p50_snr_pd": 3.4174036720967287,
-      "p50_snr_tia": 5.687216190818081
+      "p50_ber": 0.3125,
+      "p50_energy_pj": 100.69686428959487,
+      "window_ns": 12.804900430307157,
+      "p50_snr_emit": 1.3919477148304813,
+      "p50_snr_pd": 3.448108686308511,
+      "p50_snr_tia": 3.530556993962687
     },
     "params": {
       "system": {
@@ -485,8 +542,8 @@
       "emitter": {
         "wavelength_nm": 850.0,
         "channels": 16,
-        "power_mw_per_ch": 0.41585966002390573,
-        "extinction_db": 17.59635403086376,
+        "power_mw_per_ch": 0.9205486708211206,
+        "extinction_db": 15.513585185646214,
         "rin_dbhz": -150.0,
         "rise_fall_ns_10_90": 1.0,
         "temp_coeff_pct_per_C": 0.2,
@@ -496,17 +553,18 @@
       },
       "optics": {
         "transmittance": 0.7,
-        "w_plus_contrast": 0.8286942450057386,
-        "w_minus_contrast": 0.8473699765014147,
-        "crosstalk_db": -32.732978105280516,
-        "ct_model": "global",
-        "ct_neighbor_db": -39.29998732611104,
-        "ct_diag_db": -38.431856016558314,
-        "stray_floor_db": -34.260527172172786,
+        "w_plus_contrast": 0.9258098554996079,
+        "w_minus_contrast": 0.7964194754675757,
+        "crosstalk_db": -35.65632214502225,
+        "ct_model": "neighbor",
+        "ct_neighbor_db": -33.571282642403276,
+        "ct_diag_db": -33.644615596915486,
+        "stray_floor_db": -43.10067793045562,
         "psf_kernel": "lorentzian:w=2.5",
         "signal_scale": 1.0,
         "amp_on": false,
         "amp_gain_db": 10.0,
+        "amp_ase_sigma": 0.01,
         "sat_abs_on": false,
         "sat_I_sat": 1.0,
         "sat_alpha": 0.6
@@ -517,9 +575,9 @@
         "cap_pF": 1.0
       },
       "tia": {
-        "tia_transimpedance_kohm": 16.928520985594076,
-        "bw_mhz": 25.092436322140465,
-        "in_noise_pA_rthz": 3.252538566992567,
+        "tia_transimpedance_kohm": 2.2174555371516,
+        "bw_mhz": 47.202667680620436,
+        "in_noise_pA_rthz": 4.01092214939763,
         "peaking_q": 0.7,
         "slew_v_per_us": 500.0,
         "adc_bits": 10,
@@ -529,15 +587,15 @@
       },
       "comparator": {
         "vth_mV": 5.0,
-        "hysteresis_mV": 2.0,
-        "input_noise_mV_rms": 0.5394235190052034,
+        "hysteresis_mV": 1.8704031626844275,
+        "input_noise_mV_rms": 0.2858196013385913,
         "drift_mV_per_C": 0.05,
         "prop_delay_ns": 2.0,
         "saturate_levels": true,
         "vth_sigma_mV": 0.2
       },
       "clock": {
-        "window_ns": 18.18351804070839,
+        "window_ns": 14.80392760483165,
         "jitter_ps_rms": 10.0
       }
     }

@@ -35,6 +35,13 @@ See `DESIGN.md` for system goals, staged builds, KPIs, risks, and roadmap.
 - Python 3.10+ (uses PEP 604 types like `X | None`)
 - Windows 10/11 CMD (preferred), macOS or Linux also work
 
+Environment:
+
+```
+python -m venv .venv
+.venv\Scripts\activate
+```
+
 Base deps are minimal:
 
 ```
@@ -51,13 +58,6 @@ pip install flask
 pip install matplotlib
 ```
 
-Tip (Windows CMD) create/activate a venv:
-
-```
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-```
 
 ---
 

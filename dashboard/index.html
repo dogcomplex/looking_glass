@@ -31,8 +31,10 @@
     <label style="margin-left:8px;">Base Window ns <input id="inp-window" type="number" value="10" step="0.5" style="width:80px;"/></label>
     <label style="margin-left:8px;"><input id="chk-vote" type="checkbox" checked/> Vote3</label>
     <label style="margin-left:8px;"><input id="chk-autotune" type="checkbox" checked/> Autotune</label>
-    <label style="margin-left:8px;"><input id="chk-sens" type="checkbox"/> Sensitivity</label>
-    <label style="margin-left:8px;"><input id="chk-neigh" type="checkbox"/> Neighbor CT</label>
+    <label style="margin-left:8px;"><input id="chk-sens" type="checkbox" checked/> Sensitivity</label>
+    <label style="margin-left:8px;"><input id="chk-neigh" type="checkbox" checked/> Neighbor CT</label>
+    <label style="margin-left:8px;">Path B depth <input id="inp-pathb-depth" type="number" value="5" min="0" max="8" style="width:60px;"/></label>
+    <label style="margin-left:8px;"><input id="chk-pathb-sweep" type="checkbox" checked/> Path B sweeps</label>
   </div>
   <div class="card" style="margin:8px 0;">
     <h2>Worker Log</h2>
@@ -48,6 +50,14 @@
     <div class="card">
       <h2>Summary KPIs</h2>
       <table id="table-summary"></table>
+    </div>
+    <div class="card">
+      <h2>Path A vs Path B</h2>
+      <table id="table-paths"></table>
+    </div>
+    <div class="card">
+      <h2>Input Path Comparison</h2>
+      <table id="table-inputs"></table>
     </div>
     <div class="card">
       <h2>Realism Heuristics</h2>
@@ -104,7 +114,11 @@
 
   <script>
     const fileInput = document.getElementById('file');
-    let winChart, tileChart;
+    let winChart, diagChart, driftChart, tileChartA, tileChartB;
+
+    function safeDestroy(ch) {
+      try { if (ch && typeof ch.destroy === 'function') ch.destroy(); } catch (e) {}
+    }
 
     function renderTable(table, obj) {
       const keys = Object.keys(obj || {});
@@ -125,8 +139,11 @@
       table.innerHTML = html;
     }
 
-    function drawHeatmap(canvas, matrix) {
-      if (tileChart) tileChart.destroy();
+    function drawHeatmap(canvas, existingChart, matrix) {
+      if (!matrix || !Array.isArray(matrix) || matrix.length === 0 || !Array.isArray(matrix[0])) {
+        return existingChart || null;
+      }
+      safeDestroy(existingChart);
       // Flatten matrix into dataset per row; color via gradient plugin surrogate (Chart.js lacks heatmap natively)
       // We'll approximate using stacked bar per column with opacity by value.
       const labels = matrix[0].map((_, i) => 'x'+i);
@@ -136,7 +153,7 @@
         backgroundColor: row.map(v => `rgba(33,150,243,${Math.min(1, Math.max(0.05, v))})`),
         borderWidth: 0
       }));
-      tileChart = new Chart(canvas.getContext('2d'), {
+      const chart = new Chart(canvas.getContext('2d'), {
         type: 'bar',
         data: { labels, datasets },
         options: {
@@ -145,15 +162,20 @@
           plugins: { legend: { display: false } }
         }
       });
+      return chart;
     }
 
-    function drawLine(canvas, xs, ys, label) {
-      if (winChart) winChart.destroy();
-      winChart = new Chart(canvas.getContext('2d'), {
+    function drawLine(canvas, existingChart, xs, ys, label) {
+      if (!Array.isArray(xs) || !Array.isArray(ys) || xs.length === 0 || ys.length === 0) {
+        return existingChart || null;
+      }
+      safeDestroy(existingChart);
+      const chart = new Chart(canvas.getContext('2d'), {
         type: 'line',
         data: { labels: xs, datasets: [{ label, data: ys, borderColor: '#4caf50', fill: false }] },
         options: { responsive: true, scales: { y: { suggestedMin: 0, suggestedMax: 1 } } }
       });
+      return chart;
     }
 
     fileInput.addEventListener('change', (e) => {
@@ -172,6 +194,26 @@
             p50_snr_tia: data?.baseline?.p50_snr_tia,
           });
           renderTable(document.getElementById('table-realism'), (data?.realism)||{});
+          if (data?.path_a || data?.path_b) {
+            renderTable(document.getElementById('table-paths'), {
+              path_a_p50_ber: data?.path_a?.p50_ber,
+              path_b_p50_ber: data?.path_b?.p50_ber,
+              path_b_chain_depth: data?.path_b_chain?.depth,
+              path_b_chain_p50_ber_vs_prev: data?.path_b_chain?.per_stage_p50_ber_vs_prev,
+              path_b_chain_p50_ber_vs_initial: data?.path_b_chain?.per_stage_p50_ber_vs_initial,
+              path_b_sweep_amp_gain_db: data?.path_b_sweeps?.amp_gain_db,
+              path_b_sweep_p50_ber_vs_gain: data?.path_b_sweeps?.p50_ber_vs_gain,
+              path_b_sweep_sat_I_sat: data?.path_b_sweeps?.sat_I_sat,
+              path_b_sweep_p50_ber_vs_isat: data?.path_b_sweeps?.p50_ber_vs_isat,
+            });
+          }
+          if (data?.cold_input || data?.baseline) {
+            renderTable(document.getElementById('table-inputs'), {
+              dlp_input_p50_ber: data?.baseline?.p50_ber,
+              cold_input_p50_ber: data?.cold_input?.p50_ber,
+              cold_input_window_ns: data?.cold_input?.window_ns,
+            });
+          }
           renderTable(document.getElementById('table-calibrated'), {
             p50_ber: data?.baseline_calibrated?.p50_ber,
             p50_energy_pj: data?.baseline_calibrated?.p50_energy_pj,
@@ -181,21 +223,30 @@
             p50_snr_tia: data?.baseline_calibrated?.p50_snr_tia,
           });
           renderPacks(document.getElementById('table-packs'), data?.packs || {});
-          const hm = data?.ber_per_tile;
-          if (hm && hm.length) drawHeatmap(document.getElementById('tileHeat'), hm);
-          const hma = data?.ber_per_tile_after;
-          if (hma && hma.length) drawHeatmap(document.getElementById('tileHeatAfter'), hma);
-          const xs = data?.window_sweep?.x_window_ns || [];
-          const ys = data?.window_sweep?.p50_ber || [];
-          if (xs.length && ys.length) drawLine(document.getElementById('winChart'), xs, ys, 'p50 BER');
-          const dx = data?.sensitivity?.diag_crosstalk_sweep?.x_ct_diag_db || [];
-          const dy = data?.sensitivity?.diag_crosstalk_sweep?.p50_ber || [];
-          if (dx.length && dy.length) drawLine(document.getElementById('diagChart'), dx, dy, 'p50 BER vs ct_diag_db');
+          try {
+            const hm = data?.ber_per_tile;
+            tileChartA = drawHeatmap(document.getElementById('tileHeat'), tileChartA, hm);
+          } catch {}
+          try {
+            const hma = data?.ber_per_tile_after;
+            tileChartB = drawHeatmap(document.getElementById('tileHeatAfter'), tileChartB, hma);
+          } catch {}
+          try {
+            const xs = data?.window_sweep?.x_window_ns || [];
+            const ys = data?.window_sweep?.p50_ber || [];
+            winChart = drawLine(document.getElementById('winChart'), winChart, xs, ys, 'p50 BER');
+          } catch {}
+          try {
+            const dx = data?.sensitivity?.diag_crosstalk_sweep?.x_ct_diag_db || [];
+            const dy = data?.sensitivity?.diag_crosstalk_sweep?.p50_ber || [];
+            diagChart = drawLine(document.getElementById('diagChart'), diagChart, dx, dy, 'p50 BER vs ct_diag_db');
+          } catch {}
           const dno = data?.drift?.no_cal || {};
           const dfix = data?.drift?.with_cal || {};
           if ((dno?.x_frame?.length||0) && (dfix?.x_frame?.length||0)) {
             const ctx = document.getElementById('driftChart').getContext('2d');
-            new Chart(ctx, {
+            safeDestroy(driftChart);
+            driftChart = new Chart(ctx, {
               type: 'line',
               data: {
                 labels: dno.x_frame,
@@ -273,6 +324,26 @@
           p50_snr_tia: data?.baseline?.p50_snr_tia,
         });
         renderTable(document.getElementById('table-realism'), (data?.realism)||{});
+        if (data?.path_a || data?.path_b) {
+          renderTable(document.getElementById('table-paths'), {
+            path_a_p50_ber: data?.path_a?.p50_ber,
+            path_b_p50_ber: data?.path_b?.p50_ber,
+            path_b_chain_depth: data?.path_b_chain?.depth,
+            path_b_chain_p50_ber_vs_prev: data?.path_b_chain?.per_stage_p50_ber_vs_prev,
+            path_b_chain_p50_ber_vs_initial: data?.path_b_chain?.per_stage_p50_ber_vs_initial,
+            path_b_sweep_amp_gain_db: data?.path_b_sweeps?.amp_gain_db,
+            path_b_sweep_p50_ber_vs_gain: data?.path_b_sweeps?.p50_ber_vs_gain,
+            path_b_sweep_sat_I_sat: data?.path_b_sweeps?.sat_I_sat,
+            path_b_sweep_p50_ber_vs_isat: data?.path_b_sweeps?.p50_ber_vs_isat,
+          });
+        }
+        if (data?.cold_input || data?.baseline) {
+          renderTable(document.getElementById('table-inputs'), {
+            dlp_input_p50_ber: data?.baseline?.p50_ber,
+            cold_input_p50_ber: data?.cold_input?.p50_ber,
+            cold_input_window_ns: data?.cold_input?.window_ns,
+          });
+        }
         renderTable(document.getElementById('table-calibrated'), {
           p50_ber: data?.baseline_calibrated?.p50_ber,
           p50_energy_pj: data?.baseline_calibrated?.p50_energy_pj,
@@ -281,13 +352,19 @@
           p50_snr_pd: data?.baseline_calibrated?.p50_snr_pd,
           p50_snr_tia: data?.baseline_calibrated?.p50_snr_tia,
         });
-        const hm = data?.ber_per_tile;
-        if (hm && hm.length) drawHeatmap(document.getElementById('tileHeat'), hm);
-        const hma = data?.ber_per_tile_after;
-        if (hma && hma.length) drawHeatmap(document.getElementById('tileHeatAfter'), hma);
-        const xs = data?.window_sweep?.x_window_ns || [];
-        const ys = data?.window_sweep?.p50_ber || [];
-        if (xs.length && ys.length) drawLine(document.getElementById('winChart'), xs, ys, 'p50 BER');
+        try {
+          const hm = data?.ber_per_tile;
+          tileChartA = drawHeatmap(document.getElementById('tileHeat'), tileChartA, hm);
+        } catch {}
+        try {
+          const hma = data?.ber_per_tile_after;
+          tileChartB = drawHeatmap(document.getElementById('tileHeatAfter'), tileChartB, hma);
+        } catch {}
+        try {
+          const xs = data?.window_sweep?.x_window_ns || [];
+          const ys = data?.window_sweep?.p50_ber || [];
+          winChart = drawLine(document.getElementById('winChart'), winChart, xs, ys, 'p50 BER');
+        } catch {}
         renderTable(document.getElementById('table-calib'), {
           vote3_p50_ber: data?.vote3_p50_ber,
           spatial_oversample_p50_ber: data?.spatial_oversample_p50_ber,
@@ -314,9 +391,11 @@
             tuned_optics_ct_diag_db: data.autotune.params?.optics?.ct_diag_db,
           });
         }
-        const dx = data?.sensitivity?.diag_crosstalk_sweep?.x_ct_diag_db || [];
-        const dy = data?.sensitivity?.diag_crosstalk_sweep?.p50_ber || [];
-        if (dx.length && dy.length) drawLine(document.getElementById('diagChart'), dx, dy, 'p50 BER vs ct_diag_db');
+        try {
+          const dx = data?.sensitivity?.diag_crosstalk_sweep?.x_ct_diag_db || [];
+          const dy = data?.sensitivity?.diag_crosstalk_sweep?.p50_ber || [];
+          diagChart = drawLine(document.getElementById('diagChart'), diagChart, dx, dy, 'p50 BER vs ct_diag_db');
+        } catch {}
         const dno = data?.drift?.no_cal || {};
         const dfix = data?.drift?.with_cal || {};
         if ((dno?.x_frame?.length||0) && (dfix?.x_frame?.length||0)) {
@@ -333,9 +412,12 @@
       const auto = document.getElementById('chk-autotune').checked ? '1':'0';
       const sens = document.getElementById('chk-sens').checked ? '1':'0';
       const neigh = document.getElementById('chk-neigh').checked ? '1':'0';
+      const pbd = document.getElementById('inp-pathb-depth').value || '0';
+      const pbw = document.getElementById('chk-pathb-sweep').checked ? '1':'0';
+      const pbad = pbd; // default analog depth mirrors discrete depth
       appendLog({ msg: 'requesting run' });
       try {
-        const r = await fetch(`/api/run?trials=${trials}&seed=${seed}&base_window_ns=${windowNs}&vote3=${vote}&autotune=${auto}&sensitivity=${sens}&neighbor_ct=${neigh}`);
+        const r = await fetch(`/api/run?trials=${trials}&seed=${seed}&base_window_ns=${windowNs}&vote3=${vote}&autotune=${auto}&sensitivity=${sens}&neighbor_ct=${neigh}&path_b_depth=${pbd}&path_b_sweep=${pbw}&path_b_analog_depth=${pbad}`);
         appendLog(await r.json());
       } catch (err) { appendLog({ error: String(err) }); }
     };

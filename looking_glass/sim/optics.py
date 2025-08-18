@@ -15,6 +15,7 @@ class OpticsParams:
     signal_scale: float = 1.0
     amp_on: bool = False
     amp_gain_db: float = 10.0
+    amp_ase_sigma: float = 0.01  # scales additive ASE-like noise ~ sigma * sqrt(gain) * mean
     sat_abs_on: bool = False
     sat_I_sat: float = 1.0
     sat_alpha: float = 0.6
@@ -90,7 +91,9 @@ class Optics:
         # Optional amplifier
         if self.p.amp_on:
             gain = 10**(self.p.amp_gain_db/10.0)
-            img = img*gain + self.rng.normal(0.0, 0.01*img.mean() + 1e-12, size=img.shape)
+            ase_sigma = float(self.p.amp_ase_sigma)
+            img = img * gain + self.rng.normal(0.0, ase_sigma * (gain**0.5) * (img.mean() + 1e-12), size=img.shape)
+            img = np.clip(img, 0.0, None)
 
         # Optional saturable absorber
         if self.p.sat_abs_on:
