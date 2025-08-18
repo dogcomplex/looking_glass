@@ -2,28 +2,22 @@
   "config": {
     "trials": 300,
     "seed": 123,
-    "sensitivity": true,
+    "sensitivity": false,
     "vote3": true,
     "repeat": 3,
     "neighbor_ct": true,
-    "base_window_ns": 10.0,
+    "base_window_ns": 15.0,
     "applied_calibration": false
   },
   "baseline": {
-    "p50_ber": 0.375,
-    "p50_energy_pj": 67.03606903368612,
-    "window_ns": 8.000073666678947,
-    "p50_snr_emit": 1.4098953171190134,
-    "p50_snr_pd": 3.51062908913869,
-    "p50_snr_tia": 11.346874824541962
+    "p50_ber": 0.25,
+    "p50_energy_pj": null,
+    "window_ns": 15.0
   },
   "path_a": {
-    "p50_ber": 0.375,
-    "p50_energy_pj": 67.03606903368612,
-    "window_ns": 8.000073666678947,
-    "p50_snr_emit": 1.4098953171190134,
-    "p50_snr_pd": 3.51062908913869,
-    "p50_snr_tia": 11.346874824541962
+    "p50_ber": 0.25,
+    "p50_energy_pj": null,
+    "window_ns": 15.0
   },
   "path_b": null,
   "path_b_chain": {
@@ -53,7 +47,7 @@
     ],
     "p50_ber_vs_gain": [
       0.3125,
-      0.25,
+      0.1875,
       0.625,
       0.625,
       0.625
@@ -73,6 +67,7 @@
       0.625
     ]
   },
+  "cold_input": null,
   "packs": {
     "emitter": {
       "wavelength_nm": 850.0,
@@ -106,7 +101,7 @@
     },
     "tia": {
       "tia_transimpedance_kohm": 5.0,
-      "bw_mhz": 30.0,
+      "bw_mhz": 80.0,
       "in_noise_pA_rthz": 3.0,
       "peaking_q": 0.7,
       "slew_v_per_us": 500.0,
@@ -118,7 +113,7 @@
     "comparator": {
       "vth_mV": 5.0,
       "hysteresis_mV": 1.0,
-      "input_noise_mV_rms": 0.3,
+      "input_noise_mV_rms": 0.5,
       "drift_mV_per_C": 0.05,
       "prop_delay_ns": 2.0,
       "saturate_levels": true,
@@ -146,65 +141,65 @@
       "full_well_e": 20000.0
     },
     "tia": {
-      "score": 0.362,
-      "bw_mhz": 30.0,
+      "score": 0.613,
+      "bw_mhz": 80.0,
       "in_noise_pA_rthz": 3.0
     },
     "comparator": {
-      "score": 0.75,
-      "input_noise_mV_rms": 0.3
+      "score": 0.583,
+      "input_noise_mV_rms": 0.5
     }
   },
   "ber_per_tile": [
     [
-      0.47,
-      0.345,
-      0.35,
-      0.155
+      0.075,
+      0.225,
+      0.16,
+      0.04
     ],
     [
+      0.235,
       0.505,
-      0.335,
-      0.38,
-      0.29
+      0.49,
+      0.195
     ],
     [
-      0.45,
-      0.38,
-      0.41,
-      0.315
+      0.215,
+      0.565,
+      0.49,
+      0.225
     ],
     [
-      0.48,
-      0.295,
-      0.345,
-      0.12
+      0.145,
+      0.285,
+      0.32,
+      0.095
     ]
   ],
   "ber_per_tile_after": [
     [
-      0.315,
-      0.275,
-      0.25,
-      0.205
-    ],
-    [
-      0.32,
-      0.28,
-      0.32,
-      0.395
-    ],
-    [
-      0.37,
-      0.26,
-      0.36,
-      0.335
-    ],
-    [
-      0.3,
       0.305,
+      0.285,
+      0.23,
+      0.255
+    ],
+    [
+      0.31,
+      0.27,
+      0.31,
+      0.405
+    ],
+    [
+      0.345,
+      0.255,
       0.33,
-      0.295
+      0.345
+    ],
+    [
+      0.29,
+      0.3,
+      0.295,
+      0.335
     ]
   ],
   "baseline_calibrated": {
@@ -213,9 +208,9 @@
     "window_ns": 15.000447657301699,
     "p50_snr_emit": 1.4011426769971975,
     "p50_snr_pd": 3.464030825366203,
-    "p50_snr_tia": 3.6881392060583447
+    "p50_snr_tia": 3.4708352591570995
   },
-  "vote3_p50_ber": 0.375,
+  "vote3_p50_ber": 0.25,
   "spatial_oversample_p50_ber": null,
   "lockin_p50_ber": null,
   "chop_p50_ber": null,
@@ -228,7 +223,7 @@
     "crosstalk_non_decreasing": true
   },
   "effects": {
-    "window_ber_improvement": 0.375,
+    "window_ber_improvement": 0.3125,
     "rin_ber_degradation": 0.0,
     "crosstalk_ber_degradation": 0.0
   },
@@ -242,9 +237,9 @@
       17.0
     ],
     "p50_ber": [
-      0.6875,
-      0.5625,
-      0.375,
+      0.625,
+      0.3125,
+      0.3125,
       0.3125,
       0.3125,
       0.3125
@@ -279,10 +274,10 @@
     ]
   },
   "calibration": {
-    "vth_suggest_mV": -0.14024675008652498,
-    "ber_before": 0.375,
+    "vth_suggest_mV": -0.035746692879377845,
+    "ber_before": 0.25,
     "ber_after": 0.3125,
-    "ber_delta": -0.0625
+    "ber_delta": 0.0625
   },
   "sensitivity": {
     "config": {
@@ -355,15 +350,15 @@
         -130.0
       ],
       "p50_ber": [
-        0.625,
-        0.625,
-        0.625,
-        0.625,
-        0.625,
-        0.625,
-        0.625,
-        0.625,
-        0.625
+        0.5625,
+        0.5625,
+        0.5625,
+        0.5625,
+        0.5625,
+        0.5625,
+        0.5625,
+        0.5625,
+        0.5625
       ]
     },
     "crosstalk_sweep": {
@@ -399,11 +394,11 @@
         -20.0
       ],
       "p50_ber": [
-        0.625,
-        0.625,
-        0.625,
-        0.625,
-        0.625
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.5
       ]
     },
     "diag_crosstalk_sweep": {
@@ -416,12 +411,12 @@
         -20.0
       ],
       "p50_ber": [
-        0.625,
-        0.625,
-        0.625,
-        0.625,
-        0.625,
-        0.625
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.5
       ]
     }
   },
@@ -451,24 +446,24 @@
       ],
       "p50_ber": [
         0.25,
-        0.3125,
-        0.34375,
-        0.3125,
         0.34375,
         0.3125,
         0.3125,
-        0.28125,
+        0.375,
+        0.3125,
+        0.3125,
+        0.3125,
+        0.375,
+        0.3125,
+        0.3125,
+        0.3125,
+        0.3125,
+        0.3125,
         0.34375,
         0.3125,
         0.3125,
-        0.28125,
         0.3125,
         0.3125,
-        0.34375,
-        0.3125,
-        0.3125,
-        0.3125,
-        0.25,
         0.3125
       ]
     },
@@ -500,39 +495,39 @@
         0.375,
         0.3125,
         0.3125,
-        0.25,
         0.3125,
         0.3125,
-        0.3125,
-        0.375,
-        0.28125,
-        0.3125,
-        0.3125,
-        0.375,
-        0.3125,
-        0.28125,
-        0.28125,
         0.3125,
         0.3125,
         0.34375,
-        0.3125
+        0.3125,
+        0.3125,
+        0.3125,
+        0.34375,
+        0.3125,
+        0.3125,
+        0.3125,
+        0.3125,
+        0.3125,
+        0.3125,
+        0.34375
       ]
     }
   },
   "autotune": {
-    "best_ber": 0.3125,
+    "best_ber": 0.1875,
     "best_summary": {
-      "p50_ber": 0.3125,
-      "p50_energy_pj": 100.69686428959487,
-      "window_ns": 12.804900430307157,
-      "p50_snr_emit": 1.3919477148304813,
-      "p50_snr_pd": 3.448108686308511,
-      "p50_snr_tia": 3.530556993962687
+      "p50_ber": 0.1875,
+      "p50_energy_pj": 84.73852876006475,
+      "window_ns": 18.48310665760352,
+      "p50_snr_emit": 1.3919543974947488,
+      "p50_snr_pd": 3.4434558563562714,
+      "p50_snr_tia": 9.854217755019517
     },
     "params": {
       "system": {
         "channels": 16,
-        "window_ns": 10.0,
+        "window_ns": 15.0,
         "temp_C": 25.0,
         "seed": 123,
         "reset_analog_state_each_frame": true,
@@ -542,8 +537,8 @@
       "emitter": {
         "wavelength_nm": 850.0,
         "channels": 16,
-        "power_mw_per_ch": 0.9205486708211206,
-        "extinction_db": 15.513585185646214,
+        "power_mw_per_ch": 0.5734130018103931,
+        "extinction_db": 21.757125840464575,
         "rin_dbhz": -150.0,
         "rise_fall_ns_10_90": 1.0,
         "temp_coeff_pct_per_C": 0.2,
@@ -553,13 +548,13 @@
       },
       "optics": {
         "transmittance": 0.7,
-        "w_plus_contrast": 0.9258098554996079,
-        "w_minus_contrast": 0.7964194754675757,
-        "crosstalk_db": -35.65632214502225,
+        "w_plus_contrast": 0.856861559195189,
+        "w_minus_contrast": 0.7571610406411858,
+        "crosstalk_db": -32.33031117163572,
         "ct_model": "neighbor",
-        "ct_neighbor_db": -33.571282642403276,
-        "ct_diag_db": -33.644615596915486,
-        "stray_floor_db": -43.10067793045562,
+        "ct_neighbor_db": -35.172457973727894,
+        "ct_diag_db": -37.19221154926521,
+        "stray_floor_db": -35.68467511466542,
         "psf_kernel": "lorentzian:w=2.5",
         "signal_scale": 1.0,
         "amp_on": false,
@@ -575,9 +570,9 @@
         "cap_pF": 1.0
       },
       "tia": {
-        "tia_transimpedance_kohm": 2.2174555371516,
-        "bw_mhz": 47.202667680620436,
-        "in_noise_pA_rthz": 4.01092214939763,
+        "tia_transimpedance_kohm": 16.14608348213109,
+        "bw_mhz": 36.8982633430779,
+        "in_noise_pA_rthz": 2.139534782372195,
         "peaking_q": 0.7,
         "slew_v_per_us": 500.0,
         "adc_bits": 10,
@@ -587,15 +582,15 @@
       },
       "comparator": {
         "vth_mV": 5.0,
-        "hysteresis_mV": 1.8704031626844275,
-        "input_noise_mV_rms": 0.2858196013385913,
+        "hysteresis_mV": 1.5004404378223724,
+        "input_noise_mV_rms": 0.22340660434692539,
         "drift_mV_per_C": 0.05,
         "prop_delay_ns": 2.0,
         "saturate_levels": true,
         "vth_sigma_mV": 0.2
       },
       "clock": {
-        "window_ns": 14.80392760483165,
+        "window_ns": 20.48213383212801,
         "jitter_ps_rms": 10.0
       }
     }

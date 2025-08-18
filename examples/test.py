@@ -203,14 +203,24 @@ def main():
     ap.add_argument("--chop", action="store_true", help="Chopper stabilization: use +x and -x frames, subtract dv before threshold")
     ap.add_argument("--avg-frames", type=int, default=1, help="Average dv over N frames per input before thresholding (noise ~ 1/sqrt(N))")
     ap.add_argument("--soft-thresh", action="store_true", help="Bypass comparator: software threshold dv using per-channel vth (upper bound for Path A)")
-    ap.add_argument("--path-b-depth", type=int, default=0, help="If >0, run Path B cascaded for N stages and report per-stage BER")
+    ap.add_argument("--path-b-depth", type=int, default=5, help="If >0, run Path B cascaded for N stages and report per-stage BER (default 5)")
     ap.add_argument("--path-b-sweep", action="store_true", help="Run Path B sweeps (amp_gain_db, sat_I_sat) and report BER curves")
+    ap.add_argument("--no-path-b-sweep", action="store_true", help="Disable Path B sweeps (default is ON)")
     ap.add_argument("--path-b-analog-depth", type=int, default=-1, help="If -1, use --path-b-depth; if >0, run analog cascade (optics SA+amp per hop, single final threshold)")
+    ap.add_argument("--adaptive-input", action="store_true", help="Integrate multiple frames until dv margin met or max frames (default ON)")
+    ap.add_argument("--no-adaptive-input", action="store_true", help="Disable adaptive input integration")
+    ap.add_argument("--adaptive-max-frames", type=int, default=3, help="Max frames to integrate for adaptive input")
+    ap.add_argument("--adaptive-margin-mV", type=float, default=0.5, help="Extra margin above comparator up-threshold before stopping")
     ap.add_argument("--mitigated", action="store_true", help="Compute mitigated BER using (chop, avg-frames, linear per-channel calibration)")
     ap.add_argument("--quiet", action="store_true", help="Do not print final JSON to stdout (write file only)")
     ap.add_argument("--progress", action="store_true", help="Emit coarse progress messages to stdout")
     ap.add_argument("--json", type=str, default=None)
     args = ap.parse_args()
+    # Defaults to run full non-destructive suite
+    run_path_b_sweep = (not getattr(args, 'no_path_b_sweep', False)) or getattr(args, 'path_b_sweep', False)
+    args.path_b_sweep = bool(run_path_b_sweep)
+    if not getattr(args, 'no_adaptive_input', False):
+        args.adaptive_input = True
 
     # Base system from typ packs inline
     sys_p = SystemParams(channels=16, window_ns=float(args.base_window_ns), temp_C=25.0, seed=args.seed, normalize_dv=False)
@@ -243,7 +253,36 @@ def main():
     base_comp = ComparatorParams(input_noise_mV_rms=comp_noise, vth_mV=5.0, vth_sigma_mV=0.2)
     base_clk = ClockParams(window_ns=float(args.base_window_ns), jitter_ps_rms=10.0)
     base_orch = Orchestrator(sys_p, base_emit, base_optx, base_pd, base_tia, base_comp, base_clk)
-    base_summary = base_orch.run(trials=args.trials)
+    # Optional adaptive integration for input stage only
+    if args.adaptive_input:
+        import numpy as _np
+        errs = []
+        T = int(args.trials)
+        maxN = max(1, int(args.adaptive_max_frames))
+        margin = float(args.adaptive_margin_mV)
+        for _ in range(min(T, 400)):
+            tern = base_orch.rng.integers(-1, 2, size=base_orch.sys.channels)
+            acc = _np.zeros(base_orch.sys.channels, dtype=float)
+            n_used = 0
+            for k in range(maxN):
+                r = base_orch.step(force_ternary=tern)
+                dv = _np.array(r.get("dv_mV", [0]*base_orch.sys.channels))
+                acc += dv; n_used += 1
+                # Estimate current noise via MAD and comparator threshold vector
+                mad = _np.median(_np.abs(acc - _np.median(acc))) + 1e-9
+                # Use comparator base threshold as scale
+                up_th = float(base_orch.comp.p.vth_mV) + 0.5*float(base_orch.comp.p.hysteresis_mV)
+                if _np.all(_np.abs(acc) >= (up_th + margin)):
+                    break
+            pred = _np.sign(acc)
+            errs.append(float(_np.mean(pred != tern)))
+        base_summary = {
+            "p50_ber": float(_np.median(errs)) if errs else None,
+            "p50_energy_pj": None,
+            "window_ns": float(base_orch.clk.p.window_ns),
+        }
+    else:
+        base_summary = base_orch.run(trials=args.trials)
 
     # Cold-storage input path (parallel baseline): swap emitter with ColdReader and measure KPIs
     cold_summary = None

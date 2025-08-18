@@ -90,9 +90,12 @@ def api_run():
     sensitivity = request.args.get("sensitivity", "0")
     base_window = request.args.get("base_window_ns", "10.0")
     neighbor_ct = request.args.get("neighbor_ct", "0")
-    path_b_depth = request.args.get("path_b_depth", "0")
-    path_b_sweep = request.args.get("path_b_sweep", "0")
+    path_b_depth = request.args.get("path_b_depth", "5")
+    path_b_sweep = request.args.get("path_b_sweep", "1")
     path_b_analog_depth = request.args.get("path_b_analog_depth", None)
+    adaptive_input = request.args.get("adaptive_input", "1")
+    adaptive_max_frames = request.args.get("adaptive_max_frames", "3")
+    adaptive_margin_mV = request.args.get("adaptive_margin_mV", "0.5")
     args = ["--trials", str(trials), "--seed", str(seed), "--json", str(OUT_JSON)]
     if vote3 in ("1", "true", "True"): args.append("--vote3")
     if autotune in ("1", "true", "True"): args.append("--autotune")
@@ -102,6 +105,8 @@ def api_run():
     if str(path_b_depth) not in ("0", "false", "False", "", None): args += ["--path-b-depth", str(path_b_depth)]
     if str(path_b_sweep) in ("1", "true", "True"): args.append("--path-b-sweep")
     if path_b_analog_depth not in (None, "", "-1"): args += ["--path-b-analog-depth", str(path_b_analog_depth)]
+    if adaptive_input in ("1", "true", "True"): args.append("--adaptive-input")
+    args += ["--adaptive-max-frames", str(adaptive_max_frames), "--adaptive-margin-mV", str(adaptive_margin_mV)]
     threading.Thread(target=_run_test_worker, args=(args,), daemon=True).start()
     return jsonify({"status": "started"})
 

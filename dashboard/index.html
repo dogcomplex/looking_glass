@@ -25,16 +25,43 @@
 
   <input type="file" id="file" accept="application/json" />
   <div style="margin:8px 0;">
-    <button id="btn-run">Run Retest</button>
-    <label style="margin-left:8px;">Trials <input id="inp-trials" type="number" value="300" style="width:80px;"/></label>
-    <label style="margin-left:8px;">Seed <input id="inp-seed" type="number" value="123" style="width:80px;"/></label>
-    <label style="margin-left:8px;">Base Window ns <input id="inp-window" type="number" value="10" step="0.5" style="width:80px;"/></label>
-    <label style="margin-left:8px;"><input id="chk-vote" type="checkbox" checked/> Vote3</label>
-    <label style="margin-left:8px;"><input id="chk-autotune" type="checkbox" checked/> Autotune</label>
-    <label style="margin-left:8px;"><input id="chk-sens" type="checkbox" checked/> Sensitivity</label>
-    <label style="margin-left:8px;"><input id="chk-neigh" type="checkbox" checked/> Neighbor CT</label>
-    <label style="margin-left:8px;">Path B depth <input id="inp-pathb-depth" type="number" value="5" min="0" max="8" style="width:60px;"/></label>
-    <label style="margin-left:8px;"><input id="chk-pathb-sweep" type="checkbox" checked/> Path B sweeps</label>
+    <button id="btn-run" title="Run examples/test.py with the selected options">Run Retest</button>
+    <label style="margin-left:8px;" title="Number of trials per configuration; higher = more stable p50">
+      Trials <input id="inp-trials" type="number" value="300" style="width:80px;"/>
+    </label>
+    <label style="margin-left:8px;" title="Seed for RNG; controls reproducibility">
+      Seed <input id="inp-seed" type="number" value="123" style="width:80px;"/>
+    </label>
+    <label style="margin-left:8px;" title="Base exposure/integration window for the pipeline (ns)">
+      Base Window ns <input id="inp-window" type="number" value="10" step="0.5" style="width:80px;"/>
+    </label>
+    <label style="margin-left:8px;" title="Temporal voting (repeat=3) to reduce BER by majority vote">
+      <input id="chk-vote" type="checkbox" checked/> Vote3
+    </label>
+    <label style="margin-left:8px;" title="Search realistic parameter bounds to lower BER (clock, TIA, comparator, optics, etc)">
+      <input id="chk-autotune" type="checkbox" checked/> Autotune
+    </label>
+    <label style="margin-left:8px;" title="Use lower TIA BW and comparator noise to magnify trends in sweeps">
+      <input id="chk-sens" type="checkbox" checked/> Sensitivity
+    </label>
+    <label style="margin-left:8px;" title="Enable neighbor/diagonal crosstalk model (vs global pedestal)">
+      <input id="chk-neigh" type="checkbox" checked/> Neighbor CT
+    </label>
+    <label style="margin-left:8px;" title="Number of cascaded Path B stages (discrete re-threshold per stage)">
+      Path B depth <input id="inp-pathb-depth" type="number" value="5" min="0" max="8" style="width:60px;"/>
+    </label>
+    <label style="margin-left:8px;" title="Run Path B gain and SA I_sat sweeps to see BER envelopes">
+      <input id="chk-pathb-sweep" type="checkbox" checked/> Path B sweeps
+    </label>
+    <label style="margin-left:8px;" title="Integrate multiple input frames until dv exceeds threshold+margin (up to Max frames)">
+      <input id="chk-adapt" type="checkbox" checked/> Adaptive input
+    </label>
+    <label style="margin-left:8px;" title="Max frames the input stage is allowed to integrate before propagating">
+      Max frames <input id="inp-adapt-max" type="number" value="3" min="1" max="8" style="width:60px;"/>
+    </label>
+    <label style="margin-left:8px;" title="Extra decision margin above the comparator up-threshold (mV)">
+      Margin mV <input id="inp-adapt-margin" type="number" value="0.5" step="0.1" style="width:60px;"/>
+    </label>
   </div>
   <div class="card" style="margin:8px 0;">
     <h2>Worker Log</h2>
@@ -415,9 +442,12 @@
       const pbd = document.getElementById('inp-pathb-depth').value || '0';
       const pbw = document.getElementById('chk-pathb-sweep').checked ? '1':'0';
       const pbad = pbd; // default analog depth mirrors discrete depth
+      const adapt = document.getElementById('chk-adapt').checked ? '1':'0';
+      const adaptMax = document.getElementById('inp-adapt-max').value || '3';
+      const adaptMargin = document.getElementById('inp-adapt-margin').value || '0.5';
       appendLog({ msg: 'requesting run' });
       try {
-        const r = await fetch(`/api/run?trials=${trials}&seed=${seed}&base_window_ns=${windowNs}&vote3=${vote}&autotune=${auto}&sensitivity=${sens}&neighbor_ct=${neigh}&path_b_depth=${pbd}&path_b_sweep=${pbw}&path_b_analog_depth=${pbad}`);
+        const r = await fetch(`/api/run?trials=${trials}&seed=${seed}&base_window_ns=${windowNs}&vote3=${vote}&autotune=${auto}&sensitivity=${sens}&neighbor_ct=${neigh}&path_b_depth=${pbd}&path_b_sweep=${pbw}&path_b_analog_depth=${pbad}&adaptive_input=${adapt}&adaptive_max_frames=${adaptMax}&adaptive_margin_mV=${adaptMargin}`);
         appendLog(await r.json());
       } catch (err) { appendLog({ error: String(err) }); }
     };
