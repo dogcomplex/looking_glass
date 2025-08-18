@@ -6,7 +6,7 @@ class OpticsParams:
     transmittance: float = 0.7
     w_plus_contrast: float = 0.85
     w_minus_contrast: float = 0.84
-    crosstalk_db: float = -28.0
+    crosstalk_db: float = -35.0
     ct_model: str = "global"  # "global" or "neighbor"
     ct_neighbor_db: float = -30.0
     ct_diag_db: float = -35.0

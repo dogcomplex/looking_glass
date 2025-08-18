@@ -196,7 +196,7 @@ def main():
     ap.add_argument("--autotune-budget", type=int, default=60)
     ap.add_argument("--autotune-trials", type=int, default=120)
     ap.add_argument("--neighbor-ct", action="store_true", help="Use neighbor crosstalk model in baseline")
-    ap.add_argument("--base-window-ns", type=float, default=10.0, help="Baseline clock window (ns)")
+    ap.add_argument("--base-window-ns", type=float, default=20.0, help="Baseline clock window (ns)")
     ap.add_argument("--apply-calibration", action="store_true", help="Apply per-channel vth trims to baseline KPIs")
     ap.add_argument("--spatial-oversample", type=int, default=1, help="Pseudo spatial oversampling vote (runs per input)")
     ap.add_argument("--lockin", action="store_true", help="Estimate lock-in subtraction by subtracting a dark frame dv")
@@ -209,8 +209,11 @@ def main():
     ap.add_argument("--path-b-analog-depth", type=int, default=-1, help="If -1, use --path-b-depth; if >0, run analog cascade (optics SA+amp per hop, single final threshold)")
     ap.add_argument("--adaptive-input", action="store_true", help="Integrate multiple frames until dv margin met or max frames (default ON)")
     ap.add_argument("--no-adaptive-input", action="store_true", help="Disable adaptive input integration")
-    ap.add_argument("--adaptive-max-frames", type=int, default=3, help="Max frames to integrate for adaptive input")
-    ap.add_argument("--adaptive-margin-mV", type=float, default=0.5, help="Extra margin above comparator up-threshold before stopping")
+    ap.add_argument("--adaptive-max-frames", type=int, default=12, help="Max frames to integrate for adaptive input")
+    ap.add_argument("--adaptive-margin-mV", type=float, default=0.8, help="Extra margin above comparator up-threshold before stopping")
+    ap.add_argument("--no-path-b", action="store_true", help="Disable Path B baselines")
+    ap.add_argument("--no-path-b-analog", action="store_true", help="Disable Path B analog cascade baseline")
+    ap.add_argument("--no-cold-input", action="store_true", help="Disable cold-storage input baseline")
     ap.add_argument("--mitigated", action="store_true", help="Compute mitigated BER using (chop, avg-frames, linear per-channel calibration)")
     ap.add_argument("--quiet", action="store_true", help="Do not print final JSON to stdout (write file only)")
     ap.add_argument("--progress", action="store_true", help="Emit coarse progress messages to stdout")
@@ -228,8 +231,8 @@ def main():
     optx = OpticsParams(ct_model=("neighbor" if args.neighbor_ct else "global"))
     pd = PDParams()
     # Sensitivity mode tunes TIA BW and comparator noise to amplify trends
-    tia_bw = 30.0 if args.sensitivity else 80.0
-    comp_noise = 0.3 if args.sensitivity else 0.5
+    tia_bw = 30.0 if args.sensitivity else 120.0
+    comp_noise = 0.25 if args.sensitivity else 0.3
     tia = TIAParams(bw_mhz=tia_bw, tia_transimpedance_kohm=5.0, in_noise_pA_rthz=3.0, gain_sigma_pct=1.0)
     comp = ComparatorParams(input_noise_mV_rms=comp_noise, vth_mV=5.0, vth_sigma_mV=0.2)
     clk = ClockParams(window_ns=float(args.base_window_ns), jitter_ps_rms=10.0)
@@ -250,7 +253,7 @@ def main():
     base_optx = OpticsParams(ct_model=("neighbor" if args.neighbor_ct else "global"))
     base_pd = PDParams()
     base_tia = TIAParams(bw_mhz=tia_bw)
-    base_comp = ComparatorParams(input_noise_mV_rms=comp_noise, vth_mV=5.0, vth_sigma_mV=0.2)
+    base_comp = ComparatorParams(input_noise_mV_rms=comp_noise, vth_mV=5.0, hysteresis_mV=1.8, vth_sigma_mV=0.2)
     base_clk = ClockParams(window_ns=float(args.base_window_ns), jitter_ps_rms=10.0)
     base_orch = Orchestrator(sys_p, base_emit, base_optx, base_pd, base_tia, base_comp, base_clk)
     # Optional adaptive integration for input stage only
@@ -284,14 +287,15 @@ def main():
     else:
         base_summary = base_orch.run(trials=args.trials)
 
-    # Cold-storage input path (parallel baseline): swap emitter with ColdReader and measure KPIs
+    # Cold-storage input path (parallel baseline)
     cold_summary = None
-    try:
-        cold_emit = ColdReader(ColdParams(channels=sys_p.channels))
-        cold_orch = Orchestrator(sys_p, cold_emit, base_optx, base_pd, base_tia, base_comp, base_clk)
-        cold_summary = cold_orch.run(trials=args.trials)
-    except Exception:
-        cold_summary = None
+    if not getattr(args, 'no_cold_input', False):
+        try:
+            cold_emit = ColdReader(ColdParams(channels=sys_p.channels))
+            cold_orch = Orchestrator(sys_p, EmitterParams(channels=sys_p.channels), base_optx, base_pd, base_tia, base_comp, base_clk, emitter_override=cold_emit)
+            cold_summary = cold_orch.run(trials=args.trials)
+        except Exception:
+            cold_summary = {"error": "cold_input_failed"}
 
     # Path B estimate (enable saturable absorber + optical amplifier in optics)
     path_b_summary = None
@@ -307,7 +311,8 @@ def main():
         b_comp = ComparatorParams(**comp.__dict__)
         b_clk = ClockParams(**clk.__dict__)
         b_orch = Orchestrator(sys_p, b_emit, b_optx, b_pd, b_tia, b_comp, b_clk)
-        path_b_summary = b_orch.run(trials=args.trials)
+        if not getattr(args, 'no_path_b', False):
+            path_b_summary = b_orch.run(trials=args.trials)
 
         # Optional cascaded Path B chain: feed ternary outputs of stage k as inputs to k+1
         if int(getattr(args, "path_b_depth", 0)) > 0:
@@ -333,7 +338,7 @@ def main():
                 "per_stage_p50_ber_vs_initial": per_stage_med_cum,
             }
         # Optional Path B sweeps for realism: amplifier gain and SA I_sat
-        if bool(getattr(args, "path_b_sweep", False)):
+        if bool(getattr(args, "path_b_sweep", False)) and (not getattr(args, 'no_path_b', False)):
             import numpy as _np
             # Sweep amplifier gain in dB
             gain_vals = [0, 5, 10, 15, 20]
@@ -361,7 +366,7 @@ def main():
         analog_depth = int(getattr(args, "path_b_analog_depth", -1))
         if analog_depth == -1:
             analog_depth = int(getattr(args, "path_b_depth", 0))
-        if analog_depth > 0:
+        if analog_depth > 0 and (not getattr(args, 'no_path_b_analog', False)):
             import numpy as _np
             T = min(args.trials, 200)
             errs = []

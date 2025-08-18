@@ -33,7 +33,7 @@
       Seed <input id="inp-seed" type="number" value="123" style="width:80px;"/>
     </label>
     <label style="margin-left:8px;" title="Base exposure/integration window for the pipeline (ns)">
-      Base Window ns <input id="inp-window" type="number" value="10" step="0.5" style="width:80px;"/>
+      Base Window ns <input id="inp-window" type="number" value="20" step="0.5" style="width:80px;"/>
     </label>
     <label style="margin-left:8px;" title="Temporal voting (repeat=3) to reduce BER by majority vote">
       <input id="chk-vote" type="checkbox" checked/> Vote3
@@ -42,10 +42,13 @@
       <input id="chk-autotune" type="checkbox" checked/> Autotune
     </label>
     <label style="margin-left:8px;" title="Use lower TIA BW and comparator noise to magnify trends in sweeps">
-      <input id="chk-sens" type="checkbox" checked/> Sensitivity
+      <input id="chk-sens" type="checkbox"/> Sensitivity
     </label>
     <label style="margin-left:8px;" title="Enable neighbor/diagonal crosstalk model (vs global pedestal)">
-      <input id="chk-neigh" type="checkbox" checked/> Neighbor CT
+      <input id="chk-neigh" type="checkbox"/> Neighbor CT
+    </label>
+    <label style="margin-left:8px;" title="Include Path B baseline (SA+amp enabled)">
+      <input id="chk-pathb" type="checkbox" checked/> Path B baseline
     </label>
     <label style="margin-left:8px;" title="Number of cascaded Path B stages (discrete re-threshold per stage)">
       Path B depth <input id="inp-pathb-depth" type="number" value="5" min="0" max="8" style="width:60px;"/>
@@ -57,10 +60,16 @@
       <input id="chk-adapt" type="checkbox" checked/> Adaptive input
     </label>
     <label style="margin-left:8px;" title="Max frames the input stage is allowed to integrate before propagating">
-      Max frames <input id="inp-adapt-max" type="number" value="3" min="1" max="8" style="width:60px;"/>
+      Max frames <input id="inp-adapt-max" type="number" value="12" min="1" max="16" style="width:60px;"/>
     </label>
     <label style="margin-left:8px;" title="Extra decision margin above the comparator up-threshold (mV)">
-      Margin mV <input id="inp-adapt-margin" type="number" value="0.5" step="0.1" style="width:60px;"/>
+      Margin mV <input id="inp-adapt-margin" type="number" value="0.8" step="0.1" style="width:60px;"/>
+    </label>
+    <label style="margin-left:8px;" title="Run true analog cascade (optics-only hops with single final threshold)">
+      <input id="chk-pathb-analog" type="checkbox" checked/> Path B analog cascade
+    </label>
+    <label style="margin-left:8px;" title="Run cold-storage input baseline in parallel">
+      <input id="chk-cold" type="checkbox" checked/> Cold input
     </label>
   </div>
   <div class="card" style="margin:8px 0;">
@@ -76,9 +85,17 @@
   <div class="grid" style="margin-top:12px;">
     <div class="card">
       <h2>Summary KPIs</h2>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+        <label title="Choose which variant's KPIs to display in Summary">
+          Variant
+          <select id="variant-select" style="min-width:220px;"></select>
+        </label>
+      </div>
       <table id="table-summary"></table>
     </div>
     <div class="card">
+      <h2>Variants (click to focus)</h2>
+      <div id="variant-bar" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
       <h2>Path A vs Path B</h2>
       <table id="table-paths"></table>
     </div>
@@ -221,10 +238,66 @@
             p50_snr_tia: data?.baseline?.p50_snr_tia,
           });
           renderTable(document.getElementById('table-realism'), (data?.realism)||{});
+          const variants = [];
+          variants.push({ key:'baseline', label:'Baseline (Digital, Path A)', present: !!data?.baseline });
+          variants.push({ key:'cold_input', label:'Cold input (Path A)', present: !!data?.cold_input });
+          variants.push({ key:'path_b', label:'Path B (baseline)', present: !!data?.path_b });
+          variants.push({ key:'path_b_analog', label:'Path B (analog cascade)', present: !!data?.path_b?.analog_p50_ber });
+          const bar = document.getElementById('variant-bar');
+          bar.innerHTML = '';
+          const sel = document.getElementById('variant-select');
+          sel.innerHTML = '';
+          const present = variants.filter(v=>v.present);
+          present.forEach(v => {
+            const b = document.createElement('button');
+            b.textContent = v.label;
+            b.style.padding = '4px 8px';
+            b.onclick = () => {
+              window.__focusVariant = v.key;
+              // re-render summary tables according to selected variant if needed
+              let base = null;
+              if (v.key === 'cold_input') base = data?.cold_input;
+              else if (v.key === 'path_b' || v.key === 'path_b_analog') base = data?.path_b;
+              else base = data?.baseline;
+              if (base) renderTable(document.getElementById('table-summary'), {
+                p50_ber: base?.p50_ber ?? 'N/A',
+                p50_energy_pj: base?.p50_energy_pj ?? 'N/A',
+                window_ns: base?.window_ns ?? 'N/A',
+                p50_snr_emit: base?.p50_snr_emit ?? 'N/A',
+                p50_snr_pd: base?.p50_snr_pd ?? 'N/A',
+                p50_snr_tia: base?.p50_snr_tia ?? 'N/A',
+              });
+            };
+            bar.appendChild(b);
+            const opt = document.createElement('option');
+            opt.value = v.key;
+            opt.textContent = v.label;
+            sel.appendChild(opt);
+          });
+          if (present.length) {
+            sel.onchange = () => {
+              const key = sel.value;
+              window.__focusVariant = key;
+              let base = null;
+              if (key === 'cold_input') base = data?.cold_input;
+              else if (key === 'path_b' || key === 'path_b_analog') base = data?.path_b;
+              else base = data?.baseline;
+              if (base) renderTable(document.getElementById('table-summary'), {
+                p50_ber: base?.p50_ber ?? 'N/A',
+                p50_energy_pj: base?.p50_energy_pj ?? 'N/A',
+                window_ns: base?.window_ns ?? 'N/A',
+                p50_snr_emit: base?.p50_snr_emit ?? 'N/A',
+                p50_snr_pd: base?.p50_snr_pd ?? 'N/A',
+                p50_snr_tia: base?.p50_snr_tia ?? 'N/A',
+              });
+            };
+            sel.value = present[0].key;
+            sel.onchange();
+          }
           if (data?.path_a || data?.path_b) {
             renderTable(document.getElementById('table-paths'), {
-              path_a_p50_ber: data?.path_a?.p50_ber,
-              path_b_p50_ber: data?.path_b?.p50_ber,
+              path_a_p50_ber: data?.path_a?.p50_ber ?? 'N/A',
+              path_b_p50_ber: data?.path_b?.p50_ber ?? 'N/A',
               path_b_chain_depth: data?.path_b_chain?.depth,
               path_b_chain_p50_ber_vs_prev: data?.path_b_chain?.per_stage_p50_ber_vs_prev,
               path_b_chain_p50_ber_vs_initial: data?.path_b_chain?.per_stage_p50_ber_vs_initial,
@@ -236,9 +309,9 @@
           }
           if (data?.cold_input || data?.baseline) {
             renderTable(document.getElementById('table-inputs'), {
-              dlp_input_p50_ber: data?.baseline?.p50_ber,
-              cold_input_p50_ber: data?.cold_input?.p50_ber,
-              cold_input_window_ns: data?.cold_input?.window_ns,
+              dlp_input_p50_ber: data?.baseline?.p50_ber ?? 'N/A',
+              cold_input_p50_ber: data?.cold_input?.p50_ber ?? 'N/A',
+              cold_input_window_ns: data?.cold_input?.window_ns ?? 'N/A',
             });
           }
           renderTable(document.getElementById('table-calibrated'), {
@@ -343,32 +416,84 @@
         const data = JSON.parse(ev.data);
         // Auto-load the finished JSON
         renderTable(document.getElementById('table-summary'), {
-          p50_ber: data?.baseline?.p50_ber,
-          p50_energy_pj: data?.baseline?.p50_energy_pj,
-          window_ns: data?.baseline?.window_ns,
-          p50_snr_emit: data?.baseline?.p50_snr_emit,
-          p50_snr_pd: data?.baseline?.p50_snr_pd,
-          p50_snr_tia: data?.baseline?.p50_snr_tia,
+          p50_ber: data?.baseline?.p50_ber ?? 'N/A',
+          p50_energy_pj: data?.baseline?.p50_energy_pj ?? 'N/A',
+          window_ns: data?.baseline?.window_ns ?? 'N/A',
+          p50_snr_emit: data?.baseline?.p50_snr_emit ?? 'N/A',
+          p50_snr_pd: data?.baseline?.p50_snr_pd ?? 'N/A',
+          p50_snr_tia: data?.baseline?.p50_snr_tia ?? 'N/A',
         });
         renderTable(document.getElementById('table-realism'), (data?.realism)||{});
+        // Build/refresh variants bar
+        const variants = [];
+        variants.push({ key:'baseline', label:'Baseline (Digital, Path A)', present: !!data?.baseline });
+        variants.push({ key:'cold_input', label:'Cold input (Path A)', present: !!data?.cold_input });
+        variants.push({ key:'path_b', label:'Path B (baseline)', present: !!data?.path_b });
+        variants.push({ key:'path_b_analog', label:'Path B (analog cascade)', present: !!data?.path_b?.analog_p50_ber });
+        const bar = document.getElementById('variant-bar');
+        bar.innerHTML = '';
+        const sel = document.getElementById('variant-select');
+        sel.innerHTML = '';
+        const present = variants.filter(v=>v.present);
+        present.forEach(v => {
+          const b = document.createElement('button');
+          b.textContent = v.label;
+          b.style.padding = '4px 8px';
+          b.onclick = () => {
+            window.__focusVariant = v.key;
+            const base = (v.key==='cold_input') ? data?.cold_input : data?.baseline;
+            if (base) renderTable(document.getElementById('table-summary'), {
+              p50_ber: base?.p50_ber ?? 'N/A',
+              p50_energy_pj: base?.p50_energy_pj ?? 'N/A',
+              window_ns: base?.window_ns ?? 'N/A',
+              p50_snr_emit: base?.p50_snr_emit ?? 'N/A',
+              p50_snr_pd: base?.p50_snr_pd ?? 'N/A',
+              p50_snr_tia: base?.p50_snr_tia ?? 'N/A',
+            });
+          };
+          bar.appendChild(b);
+          const opt = document.createElement('option');
+          opt.value = v.key;
+          opt.textContent = v.label;
+          sel.appendChild(opt);
+        });
+        if (present.length) {
+          sel.onchange = () => {
+            const key = sel.value;
+            window.__focusVariant = key;
+            const base = (key==='cold_input') ? data?.cold_input : data?.baseline;
+            if (base) renderTable(document.getElementById('table-summary'), {
+              p50_ber: base?.p50_ber ?? 'N/A',
+              p50_energy_pj: base?.p50_energy_pj ?? 'N/A',
+              window_ns: base?.window_ns ?? 'N/A',
+              p50_snr_emit: base?.p50_snr_emit ?? 'N/A',
+              p50_snr_pd: base?.p50_snr_pd ?? 'N/A',
+              p50_snr_tia: base?.p50_snr_tia ?? 'N/A',
+            });
+          };
+          sel.value = present[0].key;
+          sel.onchange();
+        }
         if (data?.path_a || data?.path_b) {
           renderTable(document.getElementById('table-paths'), {
-            path_a_p50_ber: data?.path_a?.p50_ber,
-            path_b_p50_ber: data?.path_b?.p50_ber,
-            path_b_chain_depth: data?.path_b_chain?.depth,
-            path_b_chain_p50_ber_vs_prev: data?.path_b_chain?.per_stage_p50_ber_vs_prev,
-            path_b_chain_p50_ber_vs_initial: data?.path_b_chain?.per_stage_p50_ber_vs_initial,
-            path_b_sweep_amp_gain_db: data?.path_b_sweeps?.amp_gain_db,
-            path_b_sweep_p50_ber_vs_gain: data?.path_b_sweeps?.p50_ber_vs_gain,
-            path_b_sweep_sat_I_sat: data?.path_b_sweeps?.sat_I_sat,
-            path_b_sweep_p50_ber_vs_isat: data?.path_b_sweeps?.p50_ber_vs_isat,
+            path_a_p50_ber: data?.path_a?.p50_ber ?? 'N/A',
+            path_b_p50_ber: data?.path_b?.p50_ber ?? 'N/A',
+            path_b_chain_depth: data?.path_b_chain?.depth ?? 'N/A',
+            path_b_chain_p50_ber_vs_prev: data?.path_b_chain?.per_stage_p50_ber_vs_prev ?? 'N/A',
+            path_b_chain_p50_ber_vs_initial: data?.path_b_chain?.per_stage_p50_ber_vs_initial ?? 'N/A',
+            path_b_analog_depth: data?.path_b?.analog_depth ?? 'N/A',
+            path_b_analog_p50_ber: data?.path_b?.analog_p50_ber ?? 'N/A',
+            path_b_sweep_amp_gain_db: data?.path_b_sweeps?.amp_gain_db ?? 'N/A',
+            path_b_sweep_p50_ber_vs_gain: data?.path_b_sweeps?.p50_ber_vs_gain ?? 'N/A',
+            path_b_sweep_sat_I_sat: data?.path_b_sweeps?.sat_I_sat ?? 'N/A',
+            path_b_sweep_p50_ber_vs_isat: data?.path_b_sweeps?.p50_ber_vs_isat ?? 'N/A',
           });
         }
         if (data?.cold_input || data?.baseline) {
           renderTable(document.getElementById('table-inputs'), {
-            dlp_input_p50_ber: data?.baseline?.p50_ber,
-            cold_input_p50_ber: data?.cold_input?.p50_ber,
-            cold_input_window_ns: data?.cold_input?.window_ns,
+            dlp_input_p50_ber: data?.baseline?.p50_ber ?? 'N/A',
+            cold_input_p50_ber: data?.cold_input?.p50_ber ?? 'N/A',
+            cold_input_window_ns: data?.cold_input?.window_ns ?? 'N/A',
           });
         }
         renderTable(document.getElementById('table-calibrated'), {
@@ -442,12 +567,15 @@
       const pbd = document.getElementById('inp-pathb-depth').value || '0';
       const pbw = document.getElementById('chk-pathb-sweep').checked ? '1':'0';
       const pbad = pbd; // default analog depth mirrors discrete depth
+      const pben = document.getElementById('chk-pathb').checked ? '1':'0';
       const adapt = document.getElementById('chk-adapt').checked ? '1':'0';
-      const adaptMax = document.getElementById('inp-adapt-max').value || '3';
-      const adaptMargin = document.getElementById('inp-adapt-margin').value || '0.5';
+      const adaptMax = document.getElementById('inp-adapt-max').value || '12';
+      const adaptMargin = document.getElementById('inp-adapt-margin').value || '0.8';
+      const pba = document.getElementById('chk-pathb-analog').checked ? '1':'0';
+      const cold = document.getElementById('chk-cold').checked ? '1':'0';
       appendLog({ msg: 'requesting run' });
       try {
-        const r = await fetch(`/api/run?trials=${trials}&seed=${seed}&base_window_ns=${windowNs}&vote3=${vote}&autotune=${auto}&sensitivity=${sens}&neighbor_ct=${neigh}&path_b_depth=${pbd}&path_b_sweep=${pbw}&path_b_analog_depth=${pbad}&adaptive_input=${adapt}&adaptive_max_frames=${adaptMax}&adaptive_margin_mV=${adaptMargin}`);
+        const r = await fetch(`/api/run?trials=${trials}&seed=${seed}&base_window_ns=${windowNs}&vote3=${vote}&autotune=${auto}&sensitivity=${sens}&neighbor_ct=${neigh}&path_b=${pben}&path_b_depth=${pbd}&path_b_sweep=${pbw}&path_b_analog_depth=${pbad}&path_b_analog=${pba}&cold_input=${cold}&adaptive_input=${adapt}&adaptive_max_frames=${adaptMax}&adaptive_margin_mV=${adaptMargin}`);
         appendLog(await r.json());
       } catch (err) { appendLog({ error: String(err) }); }
     };

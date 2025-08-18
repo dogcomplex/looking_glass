@@ -29,10 +29,11 @@ class Orchestrator:
                  comp_p: ComparatorParams,
                  clk_p: ClockParams,
                  cam_p: CameraParams | None = None,
-                 thermal_p: ThermalParams | None = None):
+                 thermal_p: ThermalParams | None = None,
+                 emitter_override=None):
         self.rng = np.random.default_rng(sys.seed)
         self.sys = sys
-        self.emit = EmitterArray(emitter_p, rng=self.rng)
+        self.emit = emitter_override if emitter_override is not None else EmitterArray(emitter_p, rng=self.rng)
         self.optx = Optics(optics_p, rng=self.rng)
         self.pd = Photodiode(pd_p, rng=self.rng)
         self.cam = Camera(cam_p, rng=self.rng) if cam_p is not None else None
