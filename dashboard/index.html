@@ -26,6 +26,7 @@
   <input type="file" id="file" accept="application/json" />
   <div style="margin:8px 0;">
     <button id="btn-run" title="Run examples/test.py with the selected options">Run Retest</button>
+    <button id="btn-run-matrix" title="Run 2x2x2 matrix (input x sensitivity x output) and optional windows">Run Matrix</button>
     <label style="margin-left:8px;" title="Number of trials per configuration; higher = more stable p50">
       Trials <input id="inp-trials" type="number" value="300" style="width:80px;"/>
     </label>
@@ -108,6 +109,10 @@
       <table id="table-realism"></table>
     </div>
     <div class="card">
+      <h2>Per-Component BER Attribution</h2>
+      <table id="table-components"></table>
+    </div>
+    <div class="card">
       <h2>Calibrated Baseline KPIs</h2>
       <table id="table-calibrated"></table>
     </div>
@@ -140,6 +145,10 @@
       <table id="table-autotune"></table>
     </div>
     <div class="card">
+      <h2>Best-of (across Matrix Runs)</h2>
+      <table id="table-bestof"></table>
+    </div>
+    <div class="card">
       <h2>System Diagram</h2>
       <div class="diagram">
         <div class="box">Emitter</div><div class="arrow">→</div>
@@ -159,6 +168,78 @@
   <script>
     const fileInput = document.getElementById('file');
     let winChart, diagChart, driftChart, tileChartA, tileChartB;
+    let collectedRuns = [];
+
+    function getRunLabel(run) {
+      try {
+        const L = run.__label || {};
+        const input = L.input ?? (run?.config?.input || 'digital');
+        const sens = (L.sensitivity === true || L.sensitivity === 1) ? '1' : '0';
+        const output = L.output ?? (run?.path_b ? 'path_b_analog' : 'path_a');
+        const win = (L.window_ns ?? run?.baseline?.window_ns ?? run?.window_ns ?? '').toString();
+        const depth = (L.analog_depth ?? run?.path_b?.analog_depth ?? '');
+        const depthStr = depth !== '' ? ` / depth=${depth}` : '';
+        return `${input} / sens=${sens} / ${output} / win=${win}${depthStr}`;
+      } catch { return 'run'; }
+    }
+
+    function extractPrimaryBer(run) {
+      try {
+        const out = run.__label?.output;
+        if (out === 'path_a') {
+          return run?.path_a?.p50_ber ?? run?.baseline?.p50_ber ?? run?.p50_ber ?? null;
+        }
+        if (out === 'path_b_analog') {
+          return run?.path_b?.analog_p50_ber ?? run?.path_b?.p50_ber ?? run?.baseline?.p50_ber ?? null;
+        }
+        // fallback
+        return run?.baseline?.p50_ber ?? run?.p50_ber ?? null;
+      } catch { return null; }
+    }
+
+    function updateBestOf() {
+      const rows = [];
+      if (!Array.isArray(collectedRuns) || collectedRuns.length === 0) {
+        document.getElementById('table-bestof').innerHTML = '';
+        return;
+      }
+      let bestOverall = { ber: Infinity, label: '' };
+      let bestPathA = { ber: Infinity, label: '' };
+      let bestPathB = { ber: Infinity, label: '' };
+      let bestCold = { ber: Infinity, label: '' };
+      let bestDigital = { ber: Infinity, label: '' };
+
+      for (const r of collectedRuns) {
+        const label = getRunLabel(r);
+        const ber = extractPrimaryBer(r);
+        if (typeof ber === 'number') {
+          if (ber < bestOverall.ber) bestOverall = { ber, label };
+        }
+        const out = r.__label?.output;
+        const inp = r.__label?.input;
+        const berA = r?.path_a?.p50_ber ?? r?.baseline?.p50_ber;
+        const berB = r?.path_b?.analog_p50_ber ?? r?.path_b?.p50_ber;
+        if (typeof berA === 'number' && berA < bestPathA.ber) bestPathA = { ber: berA, label };
+        if (typeof berB === 'number' && berB < bestPathB.ber) bestPathB = { ber: berB, label };
+        if (inp === 'cold' && typeof ber === 'number' && ber < bestCold.ber) bestCold = { ber, label };
+        if (inp === 'digital' && typeof ber === 'number' && ber < bestDigital.ber) bestDigital = { ber, label };
+      }
+
+      const table = document.getElementById('table-bestof');
+      const obj = {
+        best_overall_p50_ber: bestOverall.ber === Infinity ? 'N/A' : bestOverall.ber,
+        best_overall_label: bestOverall.label || 'N/A',
+        best_path_a_p50_ber: bestPathA.ber === Infinity ? 'N/A' : bestPathA.ber,
+        best_path_a_label: bestPathA.label || 'N/A',
+        best_path_b_analog_p50_ber: bestPathB.ber === Infinity ? 'N/A' : bestPathB.ber,
+        best_path_b_analog_label: bestPathB.label || 'N/A',
+        best_cold_input_p50_ber: bestCold.ber === Infinity ? 'N/A' : bestCold.ber,
+        best_cold_input_label: bestCold.label || 'N/A',
+        best_digital_input_p50_ber: bestDigital.ber === Infinity ? 'N/A' : bestDigital.ber,
+        best_digital_input_label: bestDigital.label || 'N/A',
+      };
+      renderTable(table, obj);
+    }
 
     function safeDestroy(ch) {
       try { if (ch && typeof ch.destroy === 'function') ch.destroy(); } catch (e) {}
@@ -238,6 +319,7 @@
             p50_snr_tia: data?.baseline?.p50_snr_tia,
           });
           renderTable(document.getElementById('table-realism'), (data?.realism)||{});
+          renderTable(document.getElementById('table-components'), (data?.components)||{});
           const variants = [];
           variants.push({ key:'baseline', label:'Baseline (Digital, Path A)', present: !!data?.baseline });
           variants.push({ key:'cold_input', label:'Cold input (Path A)', present: !!data?.cold_input });
@@ -414,6 +496,113 @@
     evtSrc.addEventListener('done', (ev) => {
       try {
         const data = JSON.parse(ev.data);
+        if (data.__run_id) {
+          // Matrix run result: collect and append to select, auto-render latest
+          collectedRuns.push(data);
+          const sel = document.getElementById('variant-select');
+          const label = getRunLabel(data);
+          const opt = document.createElement('option');
+          opt.value = `run:${data.__run_id}`;
+          opt.textContent = label;
+          sel.appendChild(opt);
+          sel.value = `run:${data.__run_id}`;
+          // render immediately across panels
+          renderTable(document.getElementById('table-summary'), {
+            p50_ber: data?.baseline?.p50_ber ?? data?.p50_ber ?? 'N/A',
+            p50_energy_pj: data?.baseline?.p50_energy_pj ?? data?.p50_energy_pj ?? 'N/A',
+            window_ns: data?.baseline?.window_ns ?? data?.window_ns ?? 'N/A',
+            p50_snr_emit: data?.baseline?.p50_snr_emit ?? data?.p50_snr_emit ?? 'N/A',
+            p50_snr_pd: data?.baseline?.p50_snr_pd ?? data?.p50_snr_pd ?? 'N/A',
+            p50_snr_tia: data?.baseline?.p50_snr_tia ?? data?.p50_snr_tia ?? 'N/A',
+          });
+          renderTable(document.getElementById('table-realism'), (data?.realism)||{});
+          renderTable(document.getElementById('table-components'), (data?.components)||{});
+          renderTable(document.getElementById('table-paths'), {
+            path_a_p50_ber: data?.path_a?.p50_ber ?? 'N/A',
+            path_b_p50_ber: data?.path_b?.p50_ber ?? 'N/A',
+            path_b_chain_depth: data?.path_b_chain?.depth ?? 'N/A',
+            path_b_chain_p50_ber_vs_prev: data?.path_b_chain?.per_stage_p50_ber_vs_prev ?? 'N/A',
+            path_b_chain_p50_ber_vs_initial: data?.path_b_chain?.per_stage_p50_ber_vs_initial ?? 'N/A',
+            path_b_analog_depth: data?.path_b?.analog_depth ?? 'N/A',
+            path_b_analog_p50_ber: data?.path_b?.analog_p50_ber ?? 'N/A',
+          });
+          renderTable(document.getElementById('table-inputs'), {
+            dlp_input_p50_ber: data?.baseline?.p50_ber ?? 'N/A',
+            cold_input_p50_ber: data?.cold_input?.p50_ber ?? 'N/A',
+            cold_input_window_ns: data?.cold_input?.window_ns ?? 'N/A',
+          });
+          renderTable(document.getElementById('table-calibrated'), {
+            p50_ber: data?.baseline_calibrated?.p50_ber,
+            p50_energy_pj: data?.baseline_calibrated?.p50_energy_pj,
+            window_ns: data?.baseline_calibrated?.window_ns,
+            p50_snr_emit: data?.baseline_calibrated?.p50_snr_emit,
+            p50_snr_pd: data?.baseline_calibrated?.p50_snr_pd,
+            p50_snr_tia: data?.baseline_calibrated?.p50_snr_tia,
+          });
+          // Packs
+          try { renderPacks(document.getElementById('table-packs'), data?.packs || {}); } catch {}
+          try { tileChartA = drawHeatmap(document.getElementById('tileHeat'), tileChartA, data?.ber_per_tile); } catch {}
+          try { tileChartB = drawHeatmap(document.getElementById('tileHeatAfter'), tileChartB, data?.ber_per_tile_after); } catch {}
+          try {
+            const xs = data?.window_sweep?.x_window_ns || [];
+            const ys = data?.window_sweep?.p50_ber || [];
+            winChart = drawLine(document.getElementById('winChart'), winChart, xs, ys, 'p50 BER');
+          } catch {}
+          // Diag crosstalk sweep (sensitivity block)
+          try {
+            const dx = data?.sensitivity?.diag_crosstalk_sweep?.x_ct_diag_db || [];
+            const dy = data?.sensitivity?.diag_crosstalk_sweep?.p50_ber || [];
+            diagChart = drawLine(document.getElementById('diagChart'), diagChart, dx, dy, 'p50 BER vs ct_diag_db');
+          } catch {}
+          // Drift vs time
+          try {
+            const dno = data?.drift?.no_cal || {};
+            const dfix = data?.drift?.with_cal || {};
+            if ((dno?.x_frame?.length||0) && (dfix?.x_frame?.length||0)) {
+              const ctx = document.getElementById('driftChart').getContext('2d');
+              safeDestroy(driftChart);
+              driftChart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: dno.x_frame, datasets: [
+                  { label: 'No Cal', data: dno.p50_ber, borderColor: '#f44336', fill: false },
+                  { label: 'With Cal', data: dfix.p50_ber, borderColor: '#2196f3', fill: false },
+                ]},
+                options: { responsive: true, scales: { y: { suggestedMin: 0, suggestedMax: 1 } } }
+              });
+            }
+          } catch {}
+          // Autotuner results
+          if (data?.autotune) {
+            renderTable(document.getElementById('table-autotune'), {
+              best_ber: data.autotune.best_ber,
+              best_summary: JSON.stringify(data.autotune.best_summary),
+              tuned_clock_window_ns: data.autotune.params?.clock?.window_ns,
+              tuned_emitter_power_mw_per_ch: data.autotune.params?.emitter?.power_mw_per_ch,
+              tuned_tia_gain_kohm: data.autotune.params?.tia?.tia_transimpedance_kohm,
+              tuned_tia_bw_mhz: data.autotune.params?.tia?.bw_mhz,
+              tuned_comp_hysteresis_mV: data.autotune.params?.comparator?.hysteresis_mV,
+              tuned_optics_ct_db: data.autotune.params?.optics?.crosstalk_db,
+              tuned_optics_ct_neighbor_db: data.autotune.params?.optics?.ct_neighbor_db,
+              tuned_optics_ct_diag_db: data.autotune.params?.optics?.ct_diag_db,
+            });
+          }
+          renderTable(document.getElementById('table-calib'), {
+            vote3_p50_ber: data?.vote3_p50_ber,
+            spatial_oversample_p50_ber: data?.spatial_oversample_p50_ber,
+            lockin_p50_ber: data?.lockin_p50_ber,
+            chop_p50_ber: data?.chop_p50_ber,
+            avg_frames_p50_ber: data?.avg_frames_p50_ber,
+            soft_thresh_p50_ber: data?.soft_thresh_p50_ber,
+            mitigated_p50_ber: data?.mitigated_p50_ber,
+            vth_suggest_mV: data?.calibration?.vth_suggest_mV,
+            ber_before: data?.calibration?.ber_before,
+            ber_after: data?.calibration?.ber_after,
+            ber_delta: data?.calibration?.ber_delta,
+          });
+          // update best-of
+          updateBestOf();
+          return;
+        }
         // Auto-load the finished JSON
         renderTable(document.getElementById('table-summary'), {
           p50_ber: data?.baseline?.p50_ber ?? 'N/A',
@@ -579,6 +768,86 @@
         appendLog(await r.json());
       } catch (err) { appendLog({ error: String(err) }); }
     };
+
+    document.getElementById('btn-run-matrix').onclick = async () => {
+      const trials = document.getElementById('inp-trials').value;
+      const seed = document.getElementById('inp-seed').value;
+      const windowNs = document.getElementById('inp-window').value;
+      const pbd = document.getElementById('inp-pathb-depth').value || '5';
+      const auto = document.getElementById('chk-autotune').checked ? '1':'0';
+      // fixed sets for now (2x2x2): inputs(digital,cold), sensitivities(0,1), outputs(path_a,path_b_analog)
+      const inputs = 'digital,cold';
+      const sensitivities = '0,1';
+      const outputs = 'path_a,path_b_analog';
+      appendLog({ msg: 'requesting matrix run' });
+      try {
+        const r = await fetch(`/api/run_matrix?trials=${trials}&seed=${seed}&windows=${windowNs}&inputs=${inputs}&sensitivities=${sensitivities}&outputs=${outputs}&path_b_analog_depth=${pbd}&autotune=${auto}`);
+        appendLog(await r.json());
+      } catch (err) { appendLog({ error: String(err) }); }
+    };
+
+    // Allow selecting any collected matrix run from the dropdown later
+    document.getElementById('variant-select').addEventListener('change', () => {
+      const sel = document.getElementById('variant-select');
+      const val = sel.value || '';
+      if (!val.startsWith('run:')) return; // handled elsewhere for static variants
+      const runId = val.slice(4);
+      const data = collectedRuns.find(r => r.__run_id === runId);
+      if (!data) return;
+      renderTable(document.getElementById('table-summary'), {
+        p50_ber: data?.baseline?.p50_ber ?? data?.p50_ber ?? 'N/A',
+        p50_energy_pj: data?.baseline?.p50_energy_pj ?? data?.p50_energy_pj ?? 'N/A',
+        window_ns: data?.baseline?.window_ns ?? data?.window_ns ?? 'N/A',
+        p50_snr_emit: data?.baseline?.p50_snr_emit ?? data?.p50_snr_emit ?? 'N/A',
+        p50_snr_pd: data?.baseline?.p50_snr_pd ?? data?.p50_snr_pd ?? 'N/A',
+        p50_snr_tia: data?.baseline?.p50_snr_tia ?? data?.p50_snr_tia ?? 'N/A',
+      });
+      renderTable(document.getElementById('table-realism'), (data?.realism)||{});
+      renderTable(document.getElementById('table-components'), (data?.components)||{});
+      renderTable(document.getElementById('table-paths'), {
+        path_a_p50_ber: data?.path_a?.p50_ber ?? 'N/A',
+        path_b_p50_ber: data?.path_b?.p50_ber ?? 'N/A',
+        path_b_chain_depth: data?.path_b_chain?.depth ?? 'N/A',
+        path_b_chain_p50_ber_vs_prev: data?.path_b_chain?.per_stage_p50_ber_vs_prev ?? 'N/A',
+        path_b_chain_p50_ber_vs_initial: data?.path_b_chain?.per_stage_p50_ber_vs_initial ?? 'N/A',
+        path_b_analog_depth: data?.path_b?.analog_depth ?? 'N/A',
+        path_b_analog_p50_ber: data?.path_b?.analog_p50_ber ?? 'N/A',
+      });
+      renderTable(document.getElementById('table-inputs'), {
+        dlp_input_p50_ber: data?.baseline?.p50_ber ?? 'N/A',
+        cold_input_p50_ber: data?.cold_input?.p50_ber ?? 'N/A',
+        cold_input_window_ns: data?.cold_input?.window_ns ?? 'N/A',
+      });
+      renderTable(document.getElementById('table-calibrated'), {
+        p50_ber: data?.baseline_calibrated?.p50_ber,
+        p50_energy_pj: data?.baseline_calibrated?.p50_energy_pj,
+        window_ns: data?.baseline_calibrated?.window_ns,
+        p50_snr_emit: data?.baseline_calibrated?.p50_snr_emit,
+        p50_snr_pd: data?.baseline_calibrated?.p50_snr_pd,
+        p50_snr_tia: data?.baseline_calibrated?.p50_snr_tia,
+      });
+      try { tileChartA = drawHeatmap(document.getElementById('tileHeat'), tileChartA, data?.ber_per_tile); } catch {}
+      try { tileChartB = drawHeatmap(document.getElementById('tileHeatAfter'), tileChartB, data?.ber_per_tile_after); } catch {}
+      try {
+        const xs = data?.window_sweep?.x_window_ns || [];
+        const ys = data?.window_sweep?.p50_ber || [];
+        winChart = drawLine(document.getElementById('winChart'), winChart, xs, ys, 'p50 BER');
+      } catch {}
+      renderTable(document.getElementById('table-calib'), {
+        vote3_p50_ber: data?.vote3_p50_ber,
+        spatial_oversample_p50_ber: data?.spatial_oversample_p50_ber,
+        lockin_p50_ber: data?.lockin_p50_ber,
+        chop_p50_ber: data?.chop_p50_ber,
+        avg_frames_p50_ber: data?.avg_frames_p50_ber,
+        soft_thresh_p50_ber: data?.soft_thresh_p50_ber,
+        mitigated_p50_ber: data?.mitigated_p50_ber,
+        vth_suggest_mV: data?.calibration?.vth_suggest_mV,
+        ber_before: data?.calibration?.ber_before,
+        ber_after: data?.calibration?.ber_after,
+        ber_delta: data?.calibration?.ber_delta,
+      });
+      updateBestOf();
+    });
   </script>
 </body>
 </html>

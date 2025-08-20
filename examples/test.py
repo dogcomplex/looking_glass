@@ -21,6 +21,7 @@ import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import json
+from dataclasses import replace
 from statistics import median
 import argparse
 
@@ -182,6 +183,21 @@ def quick_diag_ct_sweep(
     return xs, ys, bool(monotone)
 
 
+def _build_fixed_inputs(seed: int, channels: int, count: int):
+    import numpy as _np
+    rng = _np.random.default_rng(int(seed))
+    return [rng.integers(-1, 2, size=channels) for _ in range(count)]
+
+
+def _med_ber_fixed_inputs(orch: Orchestrator, inputs: list[list[int]]):
+    import numpy as _np
+    errs = []
+    for tern in inputs:
+        r = orch.step(force_ternary=_np.asarray(tern, dtype=int))
+        errs.append(float(r.get("ber", 0.0)))
+    return float(median(errs)) if errs else None
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--trials", type=int, default=200)
@@ -214,6 +230,7 @@ def main():
     ap.add_argument("--no-path-b", action="store_true", help="Disable Path B baselines")
     ap.add_argument("--no-path-b-analog", action="store_true", help="Disable Path B analog cascade baseline")
     ap.add_argument("--no-cold-input", action="store_true", help="Disable cold-storage input baseline")
+    ap.add_argument("--components-mode", type=str, default="auto", help="Components attribution mode: auto|path_a|cold|path_b_analog")
     ap.add_argument("--mitigated", action="store_true", help="Compute mitigated BER using (chop, avg-frames, linear per-channel calibration)")
     ap.add_argument("--quiet", action="store_true", help="Do not print final JSON to stdout (write file only)")
     ap.add_argument("--progress", action="store_true", help="Emit coarse progress messages to stdout")
@@ -510,6 +527,93 @@ def main():
     except Exception:
         per_tile = None
 
+    # Per-component BER attribution (toggle one component to an idealized variant)
+    components = None
+    try:
+        import numpy as _np
+        fixed_inputs = _build_fixed_inputs(args.seed, sys_p.channels, min(args.trials, 200))
+        # Determine baseline orchestrator for attribution based on mode
+        comp_mode = (getattr(args, 'components_mode', 'auto') or 'auto').lower()
+        base_for_components = base_orch
+        base_labeled = "path_a"
+        if comp_mode == 'cold' and not getattr(args, 'no_cold_input', False):
+            try:
+                cold_emit = ColdReader(ColdParams(channels=sys_p.channels))
+                base_for_components = Orchestrator(sys_p, EmitterParams(channels=sys_p.channels), base_optx, base_pd, base_tia, base_comp, base_clk, emitter_override=cold_emit)
+                base_labeled = "cold"
+            except Exception:
+                base_for_components = base_orch
+                base_labeled = "path_a"
+        elif comp_mode in ('path_b_analog', 'path_b') and (not getattr(args, 'no_path_b', False)):
+            # Build a Path B baseline orchestrator (with SA+amp on) for attribution
+            b_emit = EmitterParams(**emit.__dict__)
+            b_optx = OpticsParams(**optx.__dict__)
+            b_optx.sat_abs_on = True
+            b_optx.amp_on = True
+            base_for_components = Orchestrator(sys_p, b_emit, b_optx, base_pd, base_tia, base_comp, base_clk)
+            base_labeled = "path_b"
+        baseline_med = _med_ber_fixed_inputs(base_for_components, fixed_inputs)
+
+        def clone_orch(e=None, o=None, p=None, t=None, c=None, k=None):
+            # Respect the attribution baseline's current packs (so mode follows path specifics)
+            be = getattr(base_for_components, 'emit').p if hasattr(base_for_components, 'emit') else base_emit
+            bo = getattr(base_for_components, 'optx').p if hasattr(base_for_components, 'optx') else base_optx
+            bp = getattr(base_for_components, 'pd').p if hasattr(base_for_components, 'pd') else base_pd
+            bt = getattr(base_for_components, 'tia').p if hasattr(base_for_components, 'tia') else base_tia
+            bc = getattr(base_for_components, 'comp').p if hasattr(base_for_components, 'comp') else base_comp
+            bk = getattr(base_for_components, 'clk').p if hasattr(base_for_components, 'clk') else base_clk
+            return Orchestrator(
+                sys_p,
+                e if e is not None else be,
+                o if o is not None else bo,
+                p if p is not None else bp,
+                t if t is not None else bt,
+                c if c is not None else bc,
+                k if k is not None else bk,
+            )
+
+        # Idealized params per component (keep scales, remove dominant noise terms)
+        ideal_emit = replace(base_emit, rin_dbhz=-200.0, extinction_db=max(30.0, getattr(base_emit, 'extinction_db', 20.0)), power_sigma_pct=0.0)
+        ideal_optx = replace(base_optx,
+                             crosstalk_db=-60.0,
+                             ct_model="global",
+                             stray_floor_db=-80.0,
+                             w_plus_contrast=0.95,
+                             w_minus_contrast=0.95)
+        ideal_pd = replace(base_pd, dark_current_nA=0.0)
+        ideal_tia = replace(base_tia,
+                            in_noise_pA_rthz=0.0,
+                            bw_mhz=max(1000.0, float(getattr(base_tia, 'bw_mhz', 80.0))),
+                            adc_read_noise_mV_rms=0.0,
+                            slew_v_per_us=1e9,
+                            gain_sigma_pct=0.0)
+        ideal_comp = replace(base_comp, input_noise_mV_rms=0.0, hysteresis_mV=0.0, vth_sigma_mV=0.0)
+
+        # Evaluate BER with each component idealized (others baseline)
+        ber_emit = _med_ber_fixed_inputs(clone_orch(e=ideal_emit), fixed_inputs)
+        ber_optx = _med_ber_fixed_inputs(clone_orch(o=ideal_optx), fixed_inputs)
+        ber_pd = _med_ber_fixed_inputs(clone_orch(p=ideal_pd), fixed_inputs)
+        ber_tia = _med_ber_fixed_inputs(clone_orch(t=ideal_tia), fixed_inputs)
+        ber_comp = _med_ber_fixed_inputs(clone_orch(c=ideal_comp), fixed_inputs)
+        components = {
+            "baseline_p50_ber": baseline_med,
+            "emitter_ideal_p50_ber": ber_emit,
+            "optics_ideal_p50_ber": ber_optx,
+            "pd_ideal_p50_ber": ber_pd,
+            "tia_ideal_p50_ber": ber_tia,
+            "comparator_ideal_p50_ber": ber_comp,
+            "mode": base_labeled,
+            "delta": {
+                "emitter": None if (baseline_med is None or ber_emit is None) else float(max(0.0, baseline_med - ber_emit)),
+                "optics": None if (baseline_med is None or ber_optx is None) else float(max(0.0, baseline_med - ber_optx)),
+                "pd": None if (baseline_med is None or ber_pd is None) else float(max(0.0, baseline_med - ber_pd)),
+                "tia": None if (baseline_med is None or ber_tia is None) else float(max(0.0, baseline_med - ber_tia)),
+                "comparator": None if (baseline_med is None or ber_comp is None) else float(max(0.0, baseline_med - ber_comp)),
+            }
+        }
+    except Exception:
+        components = None
+
     # Realism heuristic scoring (0.0–1.0)
     def realism_scores():
         scores = {}
@@ -701,6 +805,7 @@ def main():
             "clock": clk.__dict__,
         },
         "realism": realism_scores(),
+        "components": components,
         "ber_per_tile": per_tile,
         "ber_per_tile_after": per_tile_after,
         "baseline_calibrated": (cal_summary or {}),
