@@ -235,6 +235,15 @@ def main():
     ap.add_argument("--quiet", action="store_true", help="Do not print final JSON to stdout (write file only)")
     ap.add_argument("--progress", action="store_true", help="Emit coarse progress messages to stdout")
     ap.add_argument("--json", type=str, default=None)
+    # Vendor pack overrides (paths)
+    ap.add_argument("--emitter-pack", type=str, default=None)
+    ap.add_argument("--optics-pack", type=str, default=None)
+    ap.add_argument("--sensor-pack", type=str, default=None)
+    ap.add_argument("--tia-pack", type=str, default=None)
+    ap.add_argument("--comparator-pack", type=str, default=None)
+    ap.add_argument("--camera-pack", type=str, default=None)
+    ap.add_argument("--clock-pack", type=str, default=None)
+    ap.add_argument("--thermal-pack", type=str, default=None)
     args = ap.parse_args()
     # Defaults to run full non-destructive suite
     run_path_b_sweep = (not getattr(args, 'no_path_b_sweep', False)) or getattr(args, 'path_b_sweep', False)
@@ -244,15 +253,50 @@ def main():
 
     # Base system from typ packs inline
     sys_p = SystemParams(channels=16, window_ns=float(args.base_window_ns), temp_C=25.0, seed=args.seed, normalize_dv=False)
+    # Build from overrides if provided (simple loader)
+    def _load_yaml(path: str | None):
+        if not path:
+            return {}
+        import importlib, pathlib
+        text = pathlib.Path(path).read_text(encoding="utf-8")
+        try:
+            yaml_mod = importlib.import_module("yaml")
+            return yaml_mod.safe_load(text) or {}
+        except ModuleNotFoundError:
+            return {}
+
     emit = EmitterParams(channels=16, power_mw_per_ch=0.7, power_sigma_pct=2.0, modulation_mode="pushpull", pushpull_alpha=0.9)
+    emit_override = _load_yaml(getattr(args, 'emitter_pack', None))
+    for k, v in (emit_override or {}).items():
+        if hasattr(emit, k): setattr(emit, k, v)
+
     optx = OpticsParams(ct_model=("neighbor" if args.neighbor_ct else "global"))
+    optx_override = _load_yaml(getattr(args, 'optics_pack', None))
+    for k, v in (optx_override or {}).items():
+        if hasattr(optx, k): setattr(optx, k, v)
+
     pd = PDParams()
+    pd_override = _load_yaml(getattr(args, 'sensor_pack', None))
+    for k, v in (pd_override or {}).items():
+        if hasattr(pd, k): setattr(pd, k, v)
+
     # Sensitivity mode tunes TIA BW and comparator noise to amplify trends
     tia_bw = 30.0 if args.sensitivity else 120.0
     comp_noise = 0.25 if args.sensitivity else 0.3
     tia = TIAParams(bw_mhz=tia_bw, tia_transimpedance_kohm=5.0, in_noise_pA_rthz=3.0, gain_sigma_pct=1.0)
+    tia_override = _load_yaml(getattr(args, 'tia_pack', None))
+    for k, v in (tia_override or {}).items():
+        if hasattr(tia, k): setattr(tia, k, v)
+
     comp = ComparatorParams(input_noise_mV_rms=comp_noise, vth_mV=5.0, vth_sigma_mV=0.2)
+    comp_override = _load_yaml(getattr(args, 'comparator_pack', None))
+    for k, v in (comp_override or {}).items():
+        if hasattr(comp, k): setattr(comp, k, v)
+
     clk = ClockParams(window_ns=float(args.base_window_ns), jitter_ps_rms=10.0)
+    clk_override = _load_yaml(getattr(args, 'clock_pack', None))
+    for k, v in (clk_override or {}).items():
+        if hasattr(clk, k): setattr(clk, k, v)
     orch = Orchestrator(sys_p, emit, optx, pd, tia, comp, clk)
 
     # Parse windows and ranges
@@ -1011,6 +1055,26 @@ def main():
         from looking_glass.tuner import auto_tune
         if args.progress:
             print("PROGRESS: autotune start")
+        # Build tuning constraints from packs if provided
+        constraints = {}
+        def _merge_constraints(prefix: str, pack: dict | None):
+            if not pack: return
+            t = pack.get('tuning') or {}
+            allowed = t.get('allowed_params') or []
+            for item in allowed:
+                # item like {'comparator.hysteresis_mV': {min:.., max:..}} or {'tia.bw_mhz': {choices:[..]}}
+                for k, v in item.items():
+                    if isinstance(k, str) and isinstance(v, dict):
+                        if '.' in k:
+                            comp, param = k.split('.', 1)
+                            constraints[(comp, param)] = v
+        _merge_constraints('emitter', emit_override)
+        _merge_constraints('optics', optx_override)
+        _merge_constraints('sensor', pd_override)
+        _merge_constraints('tia', tia_override)
+        _merge_constraints('comparator', comp_override)
+        _merge_constraints('clock', clk_override)
+
         tune_res = auto_tune(
             sys_p,
             EmitterParams(**emit.__dict__),
@@ -1023,6 +1087,7 @@ def main():
             budget=int(args.autotune_budget),
             seed=int(args.seed),
             use_calibration=True,
+            constraints=constraints,
         )
         summary["autotune"] = tune_res
         if args.progress:

@@ -155,6 +155,13 @@ Dashboard tips:
 - Scenarios (e.g., `configs/scenarios/basic_typ.yaml`) choose packs and set the end‑to‑end run parameters.
 - You can create `*_vendorX.yaml` packs from datasheets/bench measurements and point scenarios to them to close sim↔bench.
 
+### Vendor packs and matrix testing
+
+- The dashboard exposes multi‑selects to pick vendor packs per component. Leave empty to use defaults, or select multiple to build a Cartesian matrix.
+- The server prunes incompatible combinations using a preflight validator (wavelength bands, PD/TIA BW vs window, comparator toggle rate). Pruned counts are returned by `/api/run_matrix`.
+- Each streamed result is labeled with the selected pack paths under `__label.packs`, and includes a `__preflight` block with `status` and reasons.
+- Single runs accept pack overrides via query args (e.g., `emitter_pack=configs/packs/vendors/emitters/thorlabs_L850P200.yaml`).
+
 ---
 
 ## Interpreting the KPIs

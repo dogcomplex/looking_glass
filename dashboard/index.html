@@ -24,54 +24,71 @@
   <p>Run: <code>python examples/test.py --json out/test_summary.json</code> then open this page and select the JSON.</p>
 
   <input type="file" id="file" accept="application/json" />
-  <div style="margin:8px 0;">
-    <button id="btn-run" title="Run examples/test.py with the selected options">Run Retest</button>
-    <button id="btn-run-matrix" title="Run 2x2x2 matrix (input x sensitivity x output) and optional windows">Run Matrix</button>
-    <label style="margin-left:8px;" title="Number of trials per configuration; higher = more stable p50">
-      Trials <input id="inp-trials" type="number" value="300" style="width:80px;"/>
-    </label>
-    <label style="margin-left:8px;" title="Seed for RNG; controls reproducibility">
-      Seed <input id="inp-seed" type="number" value="123" style="width:80px;"/>
-    </label>
-    <label style="margin-left:8px;" title="Base exposure/integration window for the pipeline (ns)">
-      Base Window ns <input id="inp-window" type="number" value="20" step="0.5" style="width:80px;"/>
-    </label>
-    <label style="margin-left:8px;" title="Temporal voting (repeat=3) to reduce BER by majority vote">
-      <input id="chk-vote" type="checkbox" checked/> Vote3
-    </label>
-    <label style="margin-left:8px;" title="Search realistic parameter bounds to lower BER (clock, TIA, comparator, optics, etc)">
-      <input id="chk-autotune" type="checkbox" checked/> Autotune
-    </label>
-    <label style="margin-left:8px;" title="Use lower TIA BW and comparator noise to magnify trends in sweeps">
-      <input id="chk-sens" type="checkbox"/> Sensitivity
-    </label>
-    <label style="margin-left:8px;" title="Enable neighbor/diagonal crosstalk model (vs global pedestal)">
-      <input id="chk-neigh" type="checkbox"/> Neighbor CT
-    </label>
-    <label style="margin-left:8px;" title="Include Path B baseline (SA+amp enabled)">
-      <input id="chk-pathb" type="checkbox" checked/> Path B baseline
-    </label>
-    <label style="margin-left:8px;" title="Number of cascaded Path B stages (discrete re-threshold per stage)">
-      Path B depth <input id="inp-pathb-depth" type="number" value="5" min="0" max="8" style="width:60px;"/>
-    </label>
-    <label style="margin-left:8px;" title="Run Path B gain and SA I_sat sweeps to see BER envelopes">
-      <input id="chk-pathb-sweep" type="checkbox" checked/> Path B sweeps
-    </label>
-    <label style="margin-left:8px;" title="Integrate multiple input frames until dv exceeds threshold+margin (up to Max frames)">
-      <input id="chk-adapt" type="checkbox" checked/> Adaptive input
-    </label>
-    <label style="margin-left:8px;" title="Max frames the input stage is allowed to integrate before propagating">
-      Max frames <input id="inp-adapt-max" type="number" value="12" min="1" max="16" style="width:60px;"/>
-    </label>
-    <label style="margin-left:8px;" title="Extra decision margin above the comparator up-threshold (mV)">
-      Margin mV <input id="inp-adapt-margin" type="number" value="0.8" step="0.1" style="width:60px;"/>
-    </label>
-    <label style="margin-left:8px;" title="Run true analog cascade (optics-only hops with single final threshold)">
-      <input id="chk-pathb-analog" type="checkbox" checked/> Path B analog cascade
-    </label>
-    <label style="margin-left:8px;" title="Run cold-storage input baseline in parallel">
-      <input id="chk-cold" type="checkbox" checked/> Cold input
-    </label>
+  <div class="card" style="margin:8px 0;">
+    <h2>Run Config (multi-select everything)</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;">
+      <div>
+        <label>Trials
+          <select id="ms-trials" multiple size="6" style="min-width:120px;"></select>
+        </label>
+      </div>
+      <div>
+        <label>Seed
+          <select id="ms-seed" multiple size="4" style="min-width:120px;"></select>
+        </label>
+      </div>
+      <div>
+        <label>Base Window ns
+          <select id="ms-window" multiple size="8" style="min-width:120px;"></select>
+        </label>
+      </div>
+      <div>
+        <label>Input Source
+          <select id="ms-input" multiple size="2" style="min-width:160px;">
+            <option value="digital" selected>Digital Emitter (DLP)</option>
+            <option value="cold">Analog Input (Cold Reader)</option>
+          </select>
+        </label>
+      </div>
+      <div>
+        <label>Path
+          <select id="ms-path" multiple size="2" style="min-width:160px;">
+            <option value="path_a" selected>Path A (Camera/TIA/Comp)</option>
+            <option value="path_b_analog">Path B Analog Cascade</option>
+          </select>
+        </label>
+      </div>
+      <div>
+        <label>Path B Depth
+          <select id="ms-pathb-depth" multiple size="6" style="min-width:100px;"></select>
+        </label>
+      </div>
+      <div>
+        <label>Flags
+          <select id="ms-flags" multiple size="6" style="min-width:180px;">
+            <option value="vote3" selected>Vote3</option>
+            <option value="autotune" selected>Autotune</option>
+            <option value="sensitivity">Sensitivity</option>
+            <option value="neighbor_ct">Neighbor CT</option>
+            <option value="adaptive_input" selected>Adaptive Input</option>
+          </select>
+        </label>
+      </div>
+      <div>
+        <label>Adaptive Max Frames
+          <select id="ms-adapt-max" multiple size="6" style="min-width:120px;"></select>
+        </label>
+      </div>
+      <div>
+        <label>Margin mV
+          <select id="ms-margin" multiple size="6" style="min-width:120px;"></select>
+        </label>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;">
+        <button id="btn-run" title="Run selected config(s)">Run Selected</button>
+        <button id="btn-run-matrix" title="Run Cartesian matrix of selections">Run Matrix</button>
+      </div>
+    </div>
   </div>
   <div class="card" style="margin:8px 0;">
     <h2>Worker Log</h2>
@@ -81,6 +98,53 @@
       <span id="connText" style="font-size:12px;color:#555;">Inactive</span>
     </div>
     <pre id="log" style="white-space:pre-wrap;height:160px;overflow:auto;border:1px solid #eee;padding:8px;"></pre>
+  </div>
+
+  <div class="card" style="margin:8px 0;">
+    <h2>Vendor Packs (optional)</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+      <div>
+        <label>Emitter
+          <select id="packs-emitter" multiple size="4" style="min-width:240px;"></select>
+        </label>
+      </div>
+      <div>
+        <label>Optics
+          <select id="packs-optics" multiple size="4" style="min-width:240px;"></select>
+        </label>
+      </div>
+      <div>
+        <label>Sensor (PD)
+          <select id="packs-sensor" multiple size="4" style="min-width:240px;"></select>
+        </label>
+      </div>
+      <div>
+        <label>TIA
+          <select id="packs-tia" multiple size="4" style="min-width:240px;"></select>
+        </label>
+      </div>
+      <div>
+        <label>Comparator
+          <select id="packs-comparator" multiple size="4" style="min-width:240px;"></select>
+        </label>
+      </div>
+      <div>
+        <label>Camera
+          <select id="packs-camera" multiple size="4" style="min-width:240px;"></select>
+        </label>
+      </div>
+      <div>
+        <label>Clock
+          <select id="packs-clock" multiple size="4" style="min-width:240px;"></select>
+        </label>
+      </div>
+      <div>
+        <label>Thermal
+          <select id="packs-thermal" multiple size="4" style="min-width:240px;"></select>
+        </label>
+      </div>
+    </div>
+    <p style="font-size:12px;color:#555;">Tip: leave all empty to use defaults. Multi-select to build a matrix of vendor combinations.</p>
   </div>
 
   <div class="grid" style="margin-top:12px;">
@@ -147,6 +211,21 @@
     <div class="card">
       <h2>Best-of (across Matrix Runs)</h2>
       <table id="table-bestof"></table>
+    </div>
+    <div class="card">
+      <h2>History & Filters</h2>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">
+        <label>Since (epoch s) <input id="hist-since" type="number" style="width:140px;"/></label>
+        <label>Pack contains <input id="hist-pack" type="text" style="width:220px;"/></label>
+        <label>Status
+          <select id="hist-status"><option value="">any</option><option>ok</option><option>warn</option><option>fail</option></select>
+        </label>
+        <label>Limit <input id="hist-limit" type="number" value="50" style="width:80px;"/></label>
+        <button id="btn-load-history">Load</button>
+        <button id="btn-best-csv">Export Best CSV</button>
+        <button id="btn-all-csv">Export All Runs CSV</button>
+      </div>
+      <table id="table-history"></table>
     </div>
     <div class="card">
       <h2>System Diagram</h2>
@@ -252,6 +331,24 @@
         let v = obj[k];
         if (typeof v === 'object') v = JSON.stringify(v);
         html += `<tr><td>${k}</td><td>${v}</td></tr>`;
+      }
+      table.innerHTML = html;
+    }
+
+    function renderRowsTable(table, rows) {
+      const cols = ["__time","__run_id","__label","baseline.p50_ber","path_a.p50_ber","path_b.analog_p50_ber","__preflight.status"];
+      let html = '<tr>' + cols.map(c=>`<th>${c}</th>`).join('') + '</tr>';
+      for (const r of rows || []) {
+        const cells = [];
+        const t = r.__time ? new Date(r.__time*1000).toISOString().replace('T',' ').replace('Z','') : '';
+        cells.push(t);
+        cells.push(r.__run_id || '');
+        cells.push(JSON.stringify(r.__label||{}));
+        cells.push(String(r?.baseline?.p50_ber ?? ''));
+        cells.push(String(r?.path_a?.p50_ber ?? ''));
+        cells.push(String(r?.path_b?.analog_p50_ber ?? ''));
+        cells.push(String(r?.__preflight?.status ?? ''));
+        html += '<tr>' + cells.map(x=>`<td>${x}</td>`).join('') + '</tr>';
       }
       table.innerHTML = html;
     }
@@ -745,46 +842,155 @@
         }
       } catch (e) { appendLog({ error: String(e) }); }
     });
+    function firstOf(id) {
+      const el = document.getElementById(id);
+      const sel = Array.from(el.selectedOptions).map(o=>o.value);
+      return sel[0];
+    }
+    function csvOf(id) {
+      const el = document.getElementById(id);
+      const sel = Array.from(el.selectedOptions).map(o=>o.value);
+      return sel.join(',');
+    }
     document.getElementById('btn-run').onclick = async () => {
-      const trials = document.getElementById('inp-trials').value;
-      const seed = document.getElementById('inp-seed').value;
-      const windowNs = document.getElementById('inp-window').value;
-      const vote = document.getElementById('chk-vote').checked ? '1':'0';
-      const auto = document.getElementById('chk-autotune').checked ? '1':'0';
-      const sens = document.getElementById('chk-sens').checked ? '1':'0';
-      const neigh = document.getElementById('chk-neigh').checked ? '1':'0';
-      const pbd = document.getElementById('inp-pathb-depth').value || '0';
-      const pbw = document.getElementById('chk-pathb-sweep').checked ? '1':'0';
-      const pbad = pbd; // default analog depth mirrors discrete depth
-      const pben = document.getElementById('chk-pathb').checked ? '1':'0';
-      const adapt = document.getElementById('chk-adapt').checked ? '1':'0';
-      const adaptMax = document.getElementById('inp-adapt-max').value || '12';
-      const adaptMargin = document.getElementById('inp-adapt-margin').value || '0.8';
-      const pba = document.getElementById('chk-pathb-analog').checked ? '1':'0';
-      const cold = document.getElementById('chk-cold').checked ? '1':'0';
+      const trials = firstOf('ms-trials');
+      const seed = firstOf('ms-seed');
+      const windowNs = firstOf('ms-window');
+      const flags = Array.from(document.getElementById('ms-flags').selectedOptions).map(o=>o.value);
+      const vote = flags.includes('vote3') ? '1':'0';
+      const auto = flags.includes('autotune') ? '1':'0';
+      const sens = flags.includes('sensitivity') ? '1':'0';
+      const neigh = flags.includes('neighbor_ct') ? '1':'0';
+      const adapt = flags.includes('adaptive_input') ? '1':'0';
+      const pbd = firstOf('ms-pathb-depth');
+      const adaptMax = firstOf('ms-adapt-max');
+      const adaptMargin = firstOf('ms-margin');
+      const path = firstOf('ms-path');
+      const inputSrc = firstOf('ms-input');
       appendLog({ msg: 'requesting run' });
       try {
-        const r = await fetch(`/api/run?trials=${trials}&seed=${seed}&base_window_ns=${windowNs}&vote3=${vote}&autotune=${auto}&sensitivity=${sens}&neighbor_ct=${neigh}&path_b=${pben}&path_b_depth=${pbd}&path_b_sweep=${pbw}&path_b_analog_depth=${pbad}&path_b_analog=${pba}&cold_input=${cold}&adaptive_input=${adapt}&adaptive_max_frames=${adaptMax}&adaptive_margin_mV=${adaptMargin}`);
+        const packArgs = new URLSearchParams();
+        const map = {
+          'packs-emitter': 'emitter_pack',
+          'packs-optics': 'optics_pack',
+          'packs-sensor': 'sensor_pack',
+          'packs-tia': 'tia_pack',
+          'packs-comparator': 'comparator_pack',
+          'packs-camera': 'camera_pack',
+          'packs-clock': 'clock_pack',
+          'packs-thermal': 'thermal_pack',
+        };
+        Object.entries(map).forEach(([id, key]) => {
+          const v = firstOf(id);
+          if (v) packArgs.append(key, v);
+        });
+        const isPathB = (path === 'path_b_analog');
+        const cold = (inputSrc === 'cold') ? '1':'0';
+        const r = await fetch(`/api/run?trials=${trials}&seed=${seed}&base_window_ns=${windowNs}&vote3=${vote}&autotune=${auto}&sensitivity=${sens}&neighbor_ct=${neigh}&path_b=${isPathB?'1':'0'}&path_b_depth=${pbd}&path_b_sweep=0&path_b_analog_depth=${pbd}&path_b_analog=${isPathB?'1':'0'}&cold_input=${cold}&adaptive_input=${adapt}&adaptive_max_frames=${adaptMax}&adaptive_margin_mV=${adaptMargin}&${packArgs.toString()}`);
         appendLog(await r.json());
       } catch (err) { appendLog({ error: String(err) }); }
     };
 
     document.getElementById('btn-run-matrix').onclick = async () => {
-      const trials = document.getElementById('inp-trials').value;
-      const seed = document.getElementById('inp-seed').value;
-      const windowNs = document.getElementById('inp-window').value;
-      const pbd = document.getElementById('inp-pathb-depth').value || '5';
-      const auto = document.getElementById('chk-autotune').checked ? '1':'0';
-      // fixed sets for now (2x2x2): inputs(digital,cold), sensitivities(0,1), outputs(path_a,path_b_analog)
-      const inputs = 'digital,cold';
-      const sensitivities = '0,1';
-      const outputs = 'path_a,path_b_analog';
+      const trials = csvOf('ms-trials');
+      const seed = csvOf('ms-seed');
+      const windowNs = csvOf('ms-window');
+      const depths = csvOf('ms-pathb-depth');
+      const auto = Array.from(document.getElementById('ms-flags').selectedOptions).map(o=>o.value).includes('autotune') ? '1':'0';
+      const inputs = csvOf('ms-input');
+      const outputs = csvOf('ms-path');
       appendLog({ msg: 'requesting matrix run' });
       try {
-        const r = await fetch(`/api/run_matrix?trials=${trials}&seed=${seed}&windows=${windowNs}&inputs=${inputs}&sensitivities=${sensitivities}&outputs=${outputs}&path_b_analog_depth=${pbd}&autotune=${auto}`);
+        // Build CSV lists from multi-selects
+        const pickCSV = (id) => {
+          const el = document.getElementById(id);
+          if (!el) return '';
+          const sel = Array.from(el.selectedOptions).map(o=>o.value);
+          return encodeURIComponent(sel.join(','));
+        };
+        const cap = 96;
+        const q = `emitter_packs=${pickCSV('packs-emitter')}&optics_packs=${pickCSV('packs-optics')}&sensor_packs=${pickCSV('packs-sensor')}&tia_packs=${pickCSV('packs-tia')}&comparator_packs=${pickCSV('packs-comparator')}&camera_packs=${pickCSV('packs-camera')}&clock_packs=${pickCSV('packs-clock')}&thermal_packs=${pickCSV('packs-thermal')}`;
+        const r = await fetch(`/api/run_matrix?trials=${trials}&seed=${seed}&windows=${windowNs}&inputs=${inputs}&outputs=${outputs}&path_b_analog_depths=${depths}&autotune=${auto}&cap=${cap}&${q}`);
         appendLog(await r.json());
       } catch (err) { appendLog({ error: String(err) }); }
     };
+
+    document.getElementById('btn-load-history').onclick = async () => {
+      const since = document.getElementById('hist-since').value || '';
+      const pack = document.getElementById('hist-pack').value || '';
+      const status = document.getElementById('hist-status').value || '';
+      const limit = document.getElementById('hist-limit').value || '50';
+      try {
+        const r = await fetch(`/api/history?limit=${encodeURIComponent(limit)}&since=${encodeURIComponent(since)}&pack_contains=${encodeURIComponent(pack)}&status=${encodeURIComponent(status)}`);
+        const data = await r.json();
+        renderRowsTable(document.getElementById('table-history'), data.rows || []);
+      } catch (e) { appendLog({ error: String(e) }); }
+    };
+
+    document.getElementById('btn-best-csv').onclick = async () => {
+      const status = document.getElementById('hist-status').value || '';
+      // group by all packs by default
+      const qs = `status=${encodeURIComponent(status)}&group_by=emitter,optics,sensor,tia,comparator,camera,clock,thermal&format=csv`;
+      try {
+        const r = await fetch(`/api/history_best?${qs}`);
+        const text = await r.text();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([text], {type:'text/csv'}));
+        a.download = 'history_best.csv';
+        a.click();
+      } catch (e) { appendLog({ error: String(e) }); }
+    };
+
+    document.getElementById('btn-all-csv').onclick = async () => {
+      const since = document.getElementById('hist-since').value || '';
+      const pack = document.getElementById('hist-pack').value || '';
+      const status = document.getElementById('hist-status').value || '';
+      const limit = document.getElementById('hist-limit').value || '10000';
+      try {
+        const r = await fetch(`/api/history?format=csv&limit=${encodeURIComponent(limit)}&since=${encodeURIComponent(since)}&pack_contains=${encodeURIComponent(pack)}&status=${encodeURIComponent(status)}`);
+        const text = await r.text();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([text], {type:'text/csv'}));
+        a.download = 'history_all_runs.csv';
+        a.click();
+      } catch (e) { appendLog({ error: String(e) }); }
+    };
+
+    // Populate vendor packs and Run Config lists
+    (async () => {
+      try {
+        const r = await fetch('/api/packs');
+        const data = await r.json();
+        const fill = (id, arr) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          el.innerHTML = '';
+          (arr||[]).forEach(p => { const o = document.createElement('option'); o.value = p; o.textContent = p; el.appendChild(o); });
+        };
+        fill('packs-emitter', data.emitters || data.emitters || data.emitter || []);
+        fill('packs-optics', data.optics || []);
+        fill('packs-sensor', data.sensors || data.sensor || []);
+        fill('packs-tia', data.tias || data.tia || []);
+        fill('packs-comparator', data.comparators || data.comparator || []);
+        fill('packs-camera', data.cameras || data.camera || []);
+        fill('packs-clock', data.clocks || data.clock || []);
+        fill('packs-thermal', data.thermal || []);
+        // Run config defaults
+        const trials = Array.from({length: 20}, (_,i)=> (50*(i+1))).map(x=>String(x));
+        const seeds = ['123','321','42','777'];
+        const windows = Array.from({length:50},(_,i)=>String(i+1));
+        const depths = Array.from({length:50},(_,i)=>String(i+1));
+        const adaptMax = Array.from({length:16},(_,i)=>String(i+1));
+        const margins = Array.from({length:20},(_,i)=> (0.1*(i+1)).toFixed(1));
+        const fillOpts = (id, arr, selIdxs=[0]) => { const el=document.getElementById(id); el.innerHTML=''; arr.forEach((v,idx)=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; if(selIdxs.includes(idx)) o.selected=true; el.appendChild(o); }); };
+        fillOpts('ms-trials', trials, [5]);
+        fillOpts('ms-seed', seeds, [0]);
+        fillOpts('ms-window', windows, [19]);
+        fillOpts('ms-pathb-depth', depths, [4]);
+        fillOpts('ms-adapt-max', adaptMax, [11]);
+        fillOpts('ms-margin', margins, [7]);
+      } catch {}
+    })();
 
     // Allow selecting any collected matrix run from the dropdown later
     document.getElementById('variant-select').addEventListener('change', () => {
