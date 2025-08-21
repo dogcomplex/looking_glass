@@ -19,14 +19,14 @@
     h1 { margin: 24px 24px 8px; font-size: 22px; font-weight: 600; color: var(--text); }
     p { margin: 0 24px 16px; color: var(--muted); }
     .container { padding: 0 24px 24px; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 16px; align-items: start; }
     .card { background: linear-gradient(180deg, var(--card), var(--card2)); border: 1px solid var(--border); border-radius: 12px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.25); }
     h2 { margin: 0 0 10px 0; font-size: 16px; font-weight: 600; color: var(--text); }
-    table { border-collapse: collapse; width: 100%; background: transparent; }
-    th, td { border: 1px solid var(--border); padding: 6px 8px; text-align: left; font-size: 12px; color: var(--text); }
+    table { border-collapse: collapse; width: 100%; background: transparent; table-layout: fixed; }
+    th, td { border: 1px solid var(--border); padding: 6px 8px; text-align: left; font-size: 12px; color: var(--text); word-break: break-word; overflow-wrap: anywhere; }
     th { background: rgba(96,165,250,0.08); }
     .score { font-weight: 600; color: var(--accent); }
-    canvas { width: 100% !important; height: 280px !important; }
+    canvas { width: 100% !important; height: 260px !important; }
     .diagram { display: flex; align-items: center; justify-content: center; }
     .box { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; margin: 4px; font-size: 12px; background: #0b1220; }
     .arrow { margin: 0 6px; font-size: 16px; color: var(--muted); }
@@ -89,8 +89,8 @@
     <pre id="log" style="white-space:pre-wrap;height:160px;overflow:auto;border:1px solid var(--border);padding:8px;background:#0b1220;"></pre>
   </div>
 
-  <div class="grid" style="margin-top:12px;">
-    <div class="card">
+  <div class="grid" style="margin-top:12px;grid-template-columns: 50% 50%;">
+    <div class="card" style="min-width:0;">
       <h2>Summary KPIs</h2>
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
         <label title="Choose which variant's KPIs to display in Summary">
@@ -100,7 +100,7 @@
       </div>
       <table id="table-summary"></table>
     </div>
-    <div class="card">
+    <div class="card" style="min-width:0;">
       <h2>Variants (click to focus)</h2>
       <div id="variant-bar" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
       <h2>Path A vs Path B</h2>
