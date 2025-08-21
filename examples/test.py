@@ -36,7 +36,16 @@ from looking_glass.sim.clock import ClockParams
 
 
 def run_trials(orch: Orchestrator, trials: int):
-    return [orch.step() for _ in range(trials)]
+    # Minimal per-trial retention to avoid large in-memory logs
+    out = []
+    for _ in range(trials):
+        r = orch.step()
+        out.append({
+            "ber": r.get("ber"),
+            "energy_pj": r.get("energy_pj"),
+            "window_ns": r.get("window_ns"),
+        })
+    return out
 
 
 def med_ber(rows):
@@ -235,6 +244,7 @@ def main():
     ap.add_argument("--quiet", action="store_true", help="Do not print final JSON to stdout (write file only)")
     ap.add_argument("--progress", action="store_true", help="Emit coarse progress messages to stdout")
     ap.add_argument("--json", type=str, default=None)
+    ap.add_argument("--light-output", action="store_true", help="Reduce output size by skipping heavy diagnostic blocks (sensitivity, drift, path-b sweeps, large arrays)")
     # Vendor pack overrides (paths)
     ap.add_argument("--emitter-pack", type=str, default=None)
     ap.add_argument("--optics-pack", type=str, default=None)
@@ -274,6 +284,12 @@ def main():
     optx_override = _load_yaml(getattr(args, 'optics_pack', None))
     for k, v in (optx_override or {}).items():
         if hasattr(optx, k): setattr(optx, k, v)
+    # If a pack provides neighbor/diag CT, force neighbor model so values apply
+    try:
+        if isinstance(optx_override, dict) and (('ct_neighbor_db' in optx_override) or ('ct_diag_db' in optx_override)):
+            optx.ct_model = 'neighbor'
+    except Exception:
+        pass
 
     pd = PDParams()
     pd_override = _load_yaml(getattr(args, 'sensor_pack', None))
@@ -309,7 +325,7 @@ def main():
     r_xs, r_ys, r_ok = quick_rin_sweep(sys_p, trials=args.trials, starts=float(rin_s), stops=float(rin_e), steps=int(rin_n), tia_bw_mhz=tia_bw, comp_noise_mV=comp_noise)
     c_xs, c_ys, c_ok = quick_crosstalk_sweep(sys_p, trials=args.trials, starts=float(ct_s), stops=float(ct_e), steps=int(ct_n), tia_bw_mhz=tia_bw, comp_noise_mV=comp_noise)
 
-    # Baseline summary at default settings
+    # Baseline summary at default settings (use same policy for baseline and path_a)
     base_emit = EmitterParams(channels=16, modulation_mode="pushpull", pushpull_alpha=0.9)
     base_optx = OpticsParams(ct_model=("neighbor" if args.neighbor_ct else "global"))
     base_pd = PDParams()
@@ -399,7 +415,7 @@ def main():
                 "per_stage_p50_ber_vs_initial": per_stage_med_cum,
             }
         # Optional Path B sweeps for realism: amplifier gain and SA I_sat
-        if bool(getattr(args, "path_b_sweep", False)) and (not getattr(args, 'no_path_b', False)):
+        if (not getattr(args, 'light_output', False)) and bool(getattr(args, "path_b_sweep", False)) and (not getattr(args, 'no_path_b', False)):
             import numpy as _np
             # Sweep amplifier gain in dB
             gain_vals = [0, 5, 10, 15, 20]
@@ -500,11 +516,12 @@ def main():
             # Suggest per-channel vth: midpoint between class means (global suggestion for now)
             if dv_pos and dv_neg:
                 vth_suggest = float(0.5*(float(_np.mean(dv_pos)) + float(_np.mean(dv_neg))))
-            try:
-                from looking_glass.plotting import save_heatmap as _save_hm
-                _save_hm(per_tile, xlabel="tile-x", ylabel="tile-y", out_path="out/ber_per_tile.png", title="Per-tile BER")
-            except Exception:
-                pass
+            if not getattr(args, 'light_output', False):
+                try:
+                    from looking_glass.plotting import save_heatmap as _save_hm
+                    _save_hm(per_tile, xlabel="tile-x", ylabel="tile-y", out_path="out/ber_per_tile.png", title="Per-tile BER")
+                except Exception:
+                    pass
             # Calibration pass: collect per-channel dv stats, compute vth per channel, apply and re-run
             # Build a fresh orchestrator to apply trims
             cal_emit = EmitterParams(**emit.__dict__)
@@ -563,11 +580,12 @@ def main():
             # Full-run BER after applying trims
             cal_summary = orch_cal.run(trials=args.trials)
             ber_after = float(cal_summary.get("p50_ber", None))
-            try:
-                from looking_glass.plotting import save_heatmap as _save_hm
-                _save_hm(per_tile_after, xlabel="tile-x", ylabel="tile-y", out_path="out/ber_per_tile_after.png", title="Per-tile BER (after calib)")
-            except Exception:
-                pass
+            if not getattr(args, 'light_output', False):
+                try:
+                    from looking_glass.plotting import save_heatmap as _save_hm
+                    _save_hm(per_tile_after, xlabel="tile-x", ylabel="tile-y", out_path="out/ber_per_tile_after.png", title="Per-tile BER (after calib)")
+                except Exception:
+                    pass
     except Exception:
         per_tile = None
 
@@ -834,6 +852,10 @@ def main():
             "neighbor_ct": bool(args.neighbor_ct),
             "base_window_ns": float(args.base_window_ns),
             "applied_calibration": bool(args.apply_calibration),
+            "adaptive_input": bool(args.adaptive_input),
+            "adaptive_max_frames": int(args.adaptive_max_frames),
+            "adaptive_margin_mV": float(args.adaptive_margin_mV),
+            "avg_frames": int(args.avg_frames),
         },
         "baseline": base_summary,
         "path_a": base_summary,
@@ -882,8 +904,9 @@ def main():
         summary["baseline_raw"] = summary["baseline"]
         summary["baseline"] = cal_summary
 
-    # Always include a sensitivity block with more pronounced ranges for "notable results"
-    sens_tia_bw = 30.0
+    # Always include a sensitivity block with more pronounced ranges for "notable results" (skip in light mode)
+    if not getattr(args, 'light_output', False):
+        sens_tia_bw = 30.0
     sens_comp_noise = 0.3
     sens_windows = [3, 6, 10, 15, 20, 30]
     sens_rin = (-170.0, -130.0, 9)
@@ -955,7 +978,7 @@ def main():
         "crosstalk_ber_degradation": (sc_ys[-1] - sc_ys[0]) if sc_ys and len(sc_ys) > 1 else 0.0,
         "neighbor_crosstalk_ber_degradation": (sn_ys[-1] - sn_ys[0]) if sn_ys and len(sn_ys) > 1 else 0.0,
     }
-    summary["sensitivity"] = {
+    summary["sensitivity"] = (None if getattr(args, 'light_output', False) else {
         "config": {
             "tia_bw_mhz": sens_tia_bw,
             "comp_input_noise_mV_rms": sens_comp_noise,
@@ -976,7 +999,7 @@ def main():
         "crosstalk_sweep": {"x_crosstalk_db": sc_xs, "p50_ber": sc_ys},
         "neighbor_crosstalk_sweep": {"x_ct_neighbor_db": sn_xs, "p50_ber": sn_ys},
         "diag_crosstalk_sweep": {"x_ct_diag_db": sd_xs, "p50_ber": sd_ys},
-    }
+    })
 
     # Optional: Per-tile heatmap in sensitivity mode if tiling is square (blocks^2 == channels)
     try:
@@ -989,8 +1012,10 @@ def main():
     except (ImportError, RuntimeError, ValueError):
         pass
 
-    # Drift calibration demo: BER vs time with/without periodic vth re-centering
+    # Drift calibration demo (skip in light mode): BER vs time with/without periodic vth re-centering
     try:
+        if getattr(args, 'light_output', False):
+            raise RuntimeError('skip drift in light output')
         import numpy as _np
         from looking_glass.sim.thermal import ThermalParams as _Therm
         drift_frames = 600

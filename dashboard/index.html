@@ -61,7 +61,24 @@
       <div class="col"><div class="label">Adaptive Input</div><select id="ms-adapt-flag" multiple size="2" style="min-width:120px;"><option value="1" selected>on</option><option value="0">off</option></select></div>
       <div class="col"><div class="label">Adaptive Max Frames</div><select id="ms-adapt-max" multiple size="6" style="min-width:120px;"></select></div>
       <div class="col"><div class="label">Margin mV</div><select id="ms-margin" multiple size="6" style="min-width:120px;"></select></div>
-      <div class="col" style="gap:8px;"><div class="label">Actions</div><button id="btn-run" title="Run selected config(s)">Run Selected</button><button id="btn-run-matrix" title="Run Cartesian matrix of selections" style="margin-left:8px;">Run Matrix</button></div>
+      <div class="col" style="gap:8px; min-width:260px;">
+        <div class="label">Actions</div>
+        <div class="row">
+          <button id="btn-run" title="Run selected config(s)">Run Selected</button>
+          <button id="btn-run-matrix" title="Run Cartesian matrix of selections">Run Matrix</button>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <input type="file" id="preset-file" accept="application/json" style="min-width:260px;" />
+          <button id="btn-run-preset" title="Run branches from selected preset JSON">Run Preset</button>
+        </div>
+        <div class="col" style="gap:4px; margin-top:8px; min-width:260px;">
+          <div class="label">Progress</div>
+          <div id="progress-text" style="font-size:12px;color:#9ca3af;">Idle</div>
+          <div class="progress" style="width:100%;height:8px;border:1px solid var(--border);border-radius:6px;background:#0b1220;overflow:hidden;">
+            <div id="progress-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#1e40af,#60a5fa);"></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
   <div class="card" style="margin:8px 0;">
@@ -531,17 +548,37 @@
     // Retest controls
     const logEl = document.getElementById('log');
     function appendLog(obj) {
-      logEl.textContent += (typeof obj === 'string' ? obj : JSON.stringify(obj)) + "\n";
+      const s = (typeof obj === 'string' ? obj : JSON.stringify(obj)) + "\n";
+      logEl.textContent += s;
+      // Cap log buffer to avoid unbounded growth (keep last ~200k chars)
+      const MAX_CHARS = 200000;
+      if (logEl.textContent.length > MAX_CHARS) {
+        logEl.textContent = logEl.textContent.slice(-MAX_CHARS);
+      }
       logEl.scrollTop = logEl.scrollHeight;
     }
     const evtSrc = new EventSource('/api/events');
+    let totalPlanned = 0;
+    let totalDone = 0;
+    function setProgress(total, done) {
+      totalPlanned = total; totalDone = done;
+      const pct = total > 0 ? Math.min(100, Math.floor((done/total)*100)) : 0;
+      document.getElementById('progress-text').textContent = total ? `Running ${done} / ${total} (${pct}%)` : 'Idle';
+      document.getElementById('progress-bar').style.width = `${pct}%`;
+    }
     evtSrc.onmessage = (ev) => {
       try {
         const data = JSON.parse(ev.data);
         if (data.msg === 'connected') {
           document.getElementById('conn').style.background = '#4caf50';
           document.getElementById('connText').textContent = 'Active';
+          // Do not reset progress to Idle if we already have a planned run
+          if (totalPlanned === 0) setProgress(0,0);
           return;
+        }
+        if (data.msg === 'started') {
+          // Ensure progress shows running if no prior plan (e.g., server-side start)
+          if (totalPlanned === 0) setProgress(1, 0);
         }
         if (data.ping) return; // quiet heartbeat
         appendLog(data);
@@ -551,8 +588,12 @@
       try {
         const data = JSON.parse(ev.data);
         if (data.__run_id) {
+          setProgress(totalPlanned, Math.min(totalPlanned, totalDone+1));
           // Matrix run result: collect and append to select, auto-render latest
+          // Keep only a bounded number of recent runs to avoid growing memory
           collectedRuns.push(data);
+          const MAX_RUNS = 250;
+          if (collectedRuns.length > MAX_RUNS) collectedRuns.splice(0, collectedRuns.length - MAX_RUNS);
           const sel = document.getElementById('variant-select');
           const label = getRunLabel(data);
           const opt = document.createElement('option');
@@ -843,7 +884,9 @@
         const isPathB = (path === 'path_b_analog');
         const cold = (inputSrc === 'cold') ? '1':'0';
         const r = await fetch(`/api/run?trials=${trials}&seed=${seed}&base_window_ns=${windowNs}&vote3=${vote}&autotune=${auto}&sensitivity=${sens}&neighbor_ct=${neigh}&path_b=${isPathB?'1':'0'}&path_b_depth=${pbd}&path_b_sweep=0&path_b_analog_depth=${pbd}&path_b_analog=${isPathB?'1':'0'}&cold_input=${cold}&adaptive_input=${adapt}&adaptive_max_frames=${adaptMax}&adaptive_margin_mV=${adaptMargin}&${packArgs.toString()}`);
-        appendLog(await r.json());
+        const resp = await r.json();
+        appendLog(resp);
+        setProgress(1, 0);
       } catch (err) { appendLog({ error: String(err) }); }
     };
 
@@ -871,7 +914,9 @@
         const cap = 96;
         const q = `emitter_packs=${pickCSV('packs-emitter')}&optics_packs=${pickCSV('packs-optics')}&sensor_packs=${pickCSV('packs-sensor')}&tia_packs=${pickCSV('packs-tia')}&comparator_packs=${pickCSV('packs-comparator')}&camera_packs=${pickCSV('packs-camera')}&clock_packs=${pickCSV('packs-clock')}&thermal_packs=${pickCSV('packs-thermal')}`;
         const r = await fetch(`/api/run_matrix?trials=${trials}&seed=${seed}&windows=${windowNs}&inputs=${inputs}&outputs=${outputs}&path_b_analog_depths=${depths}&autotune=${auto}&vote3=${votes}&sensitivity=${sens}&neighbor_ct=${neigh}&adaptive_input=${adapt}&adaptive_max_frames=${csvOf('ms-adapt-max')}&adaptive_margin_mV=${csvOf('ms-margin')}&cap=${cap}&${q}`);
-        appendLog(await r.json());
+        const resp = await r.json();
+        appendLog(resp);
+        if (resp && typeof resp.runs === 'number') setProgress(resp.runs, 0);
       } catch (err) { appendLog({ error: String(err) }); }
     };
 
@@ -913,6 +958,21 @@
         a.href = URL.createObjectURL(new Blob([text], {type:'text/csv'}));
         a.download = 'history_all_runs.csv';
         a.click();
+      } catch (e) { appendLog({ error: String(e) }); }
+    };
+
+    // Run preset (JSON file with runs array)
+    document.getElementById('btn-run-preset').onclick = async () => {
+      const f = document.getElementById('preset-file').files?.[0];
+      if (!f) { appendLog({ error: 'Select a preset JSON first' }); return; }
+      try {
+        const text = await f.text();
+        const payload = JSON.parse(text);
+        appendLog({ msg: 'requesting preset run', branches: (payload?.runs||[]).length });
+        const r = await fetch('/api/run_preset', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
+        const resp = await r.json();
+        appendLog(resp);
+        if (resp && typeof resp.runs === 'number') setProgress(resp.runs, 0);
       } catch (e) { appendLog({ error: String(e) }); }
     };
 

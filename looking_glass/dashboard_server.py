@@ -103,8 +103,16 @@ def _run_test_worker(args: list[str]):
         proc = subprocess.Popen(cmd, cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
         _event_q.put(_sse_format(json.dumps({"msg": "started", "cmd": " ".join(cmd)})))
         assert proc.stdout is not None
+        # Batch stdout lines to reduce SSE chatter and client memory
+        _batch = []
+        _B = 80
         for line in proc.stdout:
-            _event_q.put(_sse_format(json.dumps({"log": line.rstrip()})))
+            _batch.append(line.rstrip())
+            if len(_batch) >= _B:
+                _event_q.put(_sse_format(json.dumps({"log": "\n".join(_batch)})))
+                _batch = []
+        if _batch:
+            _event_q.put(_sse_format(json.dumps({"log": "\n".join(_batch)})))
         proc.wait()
         # When finished, emit final JSON if present
         if OUT_JSON.exists():
@@ -142,8 +150,16 @@ def _process_joblist():
                     proc = subprocess.Popen(cmd, cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
                     _event_q.put(_sse_format(json.dumps({"msg": "started", "cmd": " ".join(cmd), "run_id": run_id})))
                     assert proc.stdout is not None
+                    # Batch stdout lines to reduce SSE chatter and client memory
+                    _batch = []
+                    _B = 80
                     for line in proc.stdout:
-                        _event_q.put(_sse_format(json.dumps({"log": line.rstrip(), "run_id": run_id})))
+                        _batch.append(line.rstrip())
+                        if len(_batch) >= _B:
+                            _event_q.put(_sse_format(json.dumps({"log": "\n".join(_batch), "run_id": run_id})))
+                            _batch = []
+                    if _batch:
+                        _event_q.put(_sse_format(json.dumps({"log": "\n".join(_batch), "run_id": run_id})))
                     proc.wait()
                     try:
                         if out_path.exists():
@@ -203,7 +219,7 @@ def api_run():
     adaptive_input = request.args.get("adaptive_input", "1")
     adaptive_max_frames = request.args.get("adaptive_max_frames", "3")
     adaptive_margin_mV = request.args.get("adaptive_margin_mV", "0.5")
-    args = ["--trials", str(trials), "--seed", str(seed), "--json", str(OUT_JSON)]
+    args = ["--trials", str(trials), "--seed", str(seed), "--json", str(OUT_JSON), "--quiet"]
     # Optional pack overrides (single run)
     for key in ("emitter_pack","optics_pack","sensor_pack","tia_pack","comparator_pack","camera_pack","clock_pack","thermal_pack"):
         path = request.args.get(key)
@@ -611,7 +627,7 @@ def api_run_matrix():
             out_path = ROOT / "out" / f"test_summary_{run_id}.json"
             cmd = ["python", "examples/test.py",
                    "--trials", str(trials), "--seed", str(seed), "--json", str(out_path),
-                   "--base-window-ns", str(win)]
+                   "--base-window-ns", str(win), "--quiet"]
             if sens in ("1", "true", "True"): cmd.append("--sensitivity")
             if v3 in ("1", "true", "True"): cmd.append("--vote3")
             if neighb in ("1", "true", "True"): cmd.append("--neighbor-ct")
@@ -625,6 +641,8 @@ def api_run_matrix():
                 cmd += ["--components-mode", "cold"]
             if autotune in ("1", "true", "True"):
                 cmd.append("--autotune")
+            # Prefer light-output for matrix runs to reduce memory
+            cmd.append("--light-output")
             if adf in ("1", "true", "True"):
                 cmd.append("--adaptive-input")
             cmd += ["--adaptive-max-frames", str(admx), "--adaptive-margin-mV", str(admr)]
@@ -691,6 +709,170 @@ def api_run_matrix():
         return jsonify({"status": "started", "runs": len(jobs), "pruned": pruned})
     finally:
         pass
+
+
+@app.post("/api/run_preset")
+def api_run_preset():
+    """Run a preset JSON describing one or more run branches.
+
+    Schema (example):
+      {
+        "runs": [
+          {
+            "trials": [300],
+            "seed": [123,321],
+            "windows": [20,24],
+            "inputs": ["digital"],
+            "outputs": ["path_a"],
+            "path_b_analog_depths": [5],
+            "vote3": ["1"],
+            "autotune": ["1"],
+            "sensitivity": ["0"],
+            "neighbor_ct": ["0"],
+            "adaptive_input": ["1"],
+            "adaptive_max_frames": ["12"],
+            "adaptive_margin_mV": ["0.8"],
+            "packs": {
+              "emitter_packs": ["configs/packs/vendors/emitters/coherent_OBIS-850-nm_typ.yaml"],
+              "optics_packs": ["configs/packs/vendors/optics/thorlabs_Engineered-Diffuser-5°_typ.yaml"],
+              "sensor_packs": ["configs/packs/vendors/sensors/vishay_BPW34_typ.yaml"],
+              "tia_packs": ["configs/packs/vendors/tias/texas_instruments_OPA857EVM_typ.yaml"],
+              "comparator_packs": ["configs/packs/vendors/comparators/analog_devices_LTC6752_typ.yaml"],
+              "camera_packs": [""],
+              "clock_packs": ["configs/packs/clock_typ.yaml"],
+              "thermal_packs": ["configs/packs/thermal_typ.yaml"]
+            }
+          }
+        ]
+      }
+    """
+    global _is_running
+    try:
+        data = request.get_json(force=True, silent=False)
+        runs = data.get("runs", []) if isinstance(data, dict) else []
+        if not runs:
+            return jsonify({"error": "missing runs array"}), 400
+    except Exception as e:
+        return jsonify({"error": f"invalid JSON: {e}"}), 400
+    with _run_lock:
+        if _is_running:
+            return jsonify({"status": "busy"}), 409
+        _is_running = True
+    try:
+        import itertools, uuid, importlib, pathlib
+        from .preflight import validate_combo
+        jobs = []
+        total_pruned = 0
+        total_combos = 0
+
+        def _parse_list(val, default):
+            if val is None:
+                return default
+            if isinstance(val, list):
+                return [str(x) for x in val]
+            return [str(val)]
+
+        def _load_yaml(path: str | None):
+            if not path:
+                return {}
+            p = (ROOT / path) if not str(path).startswith("/") else pathlib.Path(path)
+            text = p.read_text(encoding="utf-8")
+            try:
+                yaml_mod = importlib.import_module("yaml")
+                return yaml_mod.safe_load(text) or {}
+            except ModuleNotFoundError:
+                return {}
+
+        for branch in runs:
+            trialsL = _parse_list(branch.get("trials"), ["300"])
+            seedL = _parse_list(branch.get("seed"), ["123"])
+            winL = _parse_list(branch.get("windows"), ["20"])  # base window ns
+            inputsL = _parse_list(branch.get("inputs"), ["digital"])
+            outputsL = _parse_list(branch.get("outputs"), ["path_a"])  # path_a or path_b_analog
+            depthL = _parse_list(branch.get("path_b_analog_depths"), ["5"])
+            voteL = _parse_list(branch.get("vote3"), ["1"])
+            autoL = _parse_list(branch.get("autotune"), ["1"])
+            sensL = _parse_list(branch.get("sensitivity"), ["0"])
+            neighL = _parse_list(branch.get("neighbor_ct"), ["0"])
+            applyCalL = _parse_list(branch.get("apply_calibration"), ["0"])
+            adaptL = _parse_list(branch.get("adaptive_input"), ["1"])
+            adaptMaxL = _parse_list(branch.get("adaptive_max_frames"), ["12"])
+            adaptMargL = _parse_list(branch.get("adaptive_margin_mV"), ["0.8"])
+            avgFramesL = _parse_list(branch.get("avg_frames"), ["1"])
+
+            packs = branch.get("packs", {})
+            def P(key):
+                v = packs.get(key)
+                if isinstance(v, list):
+                    return v if v else [None]
+                if v:
+                    return [v]
+                return [None]
+            epL = P("emitter_packs"); opL = P("optics_packs"); spL = P("sensor_packs"); tpL = P("tia_packs")
+            cpL = P("comparator_packs"); capL = P("camera_packs"); clpL = P("clock_packs"); thpL = P("thermal_packs")
+
+            # Preload pack YAMLs
+            pack_data = {}
+            for lst in (epL+opL+spL+tpL+cpL+capL+clpL+thpL):
+                if lst and lst not in pack_data:
+                    try:
+                        pack_data[lst] = _load_yaml(lst)
+                    except Exception:
+                        pack_data[lst] = {}
+
+            for (tr, sd) in itertools.product(trialsL, seedL):
+                for (inp, outp, win, depth, v3, au, se, ne, apc, adf, admx, admr, avf) in itertools.product(inputsL, outputsL, winL, depthL, voteL, autoL, sensL, neighL, applyCalL, adaptL, adaptMaxL, adaptMargL, avgFramesL):
+                    for (ep, op, spk, tpv, cpv, cav, clv, thv) in itertools.product(epL, opL, spL, tpL, cpL, capL, clpL, thpL):
+                        total_combos += 1
+                        packs_dict = {
+                            "emitter": pack_data.get(ep, {}),
+                            "optics": pack_data.get(op, {}),
+                            "sensor": pack_data.get(spk, {}),
+                            "tia": pack_data.get(tpv, {}),
+                            "comparator": pack_data.get(cpv, {}),
+                            "camera": pack_data.get(cav, {}),
+                            "clock": pack_data.get(clv, {}),
+                            "thermal": pack_data.get(thv, {}),
+                        }
+                        v = validate_combo(packs_dict, window_ns=float(win))
+                        if v.get("status") == "fail":
+                            total_pruned += 1
+                            continue
+                        run_id = str(uuid.uuid4())
+                        out_path = ROOT / "out" / f"test_summary_{run_id}.json"
+                        cmd = ["python", "examples/test.py",
+                               "--trials", str(tr), "--seed", str(sd), "--json", str(out_path),
+                               "--base-window-ns", str(win), "--quiet"]
+                        if se in ("1","true","True"): cmd.append("--sensitivity")
+                        if v3 in ("1","true","True"): cmd.append("--vote3")
+                        if ne in ("1","true","True"): cmd.append("--neighbor-ct")
+                        if inp == "digital": cmd.append("--no-cold-input")
+                        if outp == "path_a": cmd += ["--no-path-b", "--no-path-b-analog", "--components-mode", "path_a"]
+                        elif outp == "path_b_analog": cmd += ["--path-b-analog-depth", str(depth), "--no-path-b", "--components-mode", "path_b_analog"]
+                        if au in ("1","true","True"): cmd.append("--autotune")
+                        if apc in ("1","true","True"): cmd.append("--apply-calibration")
+                        cmd.append("--light-output")
+                        if adf in ("1","true","True"): cmd.append("--adaptive-input")
+                        cmd += ["--adaptive-max-frames", str(admx), "--adaptive-margin-mV", str(admr), "--avg-frames", str(avf)]
+                        if ep: cmd += ["--emitter-pack", str(ep)]
+                        if op: cmd += ["--optics-pack", str(op)]
+                        if spk: cmd += ["--sensor-pack", str(spk)]
+                        if tpv: cmd += ["--tia-pack", str(tpv)]
+                        if cpv: cmd += ["--comparator-pack", str(cpv)]
+                        if cav: cmd += ["--camera-pack", str(cav)]
+                        if clv: cmd += ["--clock-pack", str(clv)]
+                        if thv: cmd += ["--thermal-pack", str(thv)]
+                        jobs.append((cmd, run_id, out_path, inp, se, outp, win, depth, ep, op, spk, tpv, cpv, cav, clv, thv, v))
+
+        if not jobs:
+            return jsonify({"status": "noop", "pruned": total_pruned, "combos": total_combos}), 200
+
+        # Enqueue and start processor
+        _pending_jobs.put(jobs)
+        threading.Thread(target=_process_joblist, daemon=True).start()
+        return jsonify({"status": "started", "runs": len(jobs), "pruned": total_pruned, "combos": total_combos})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.get("/dashboard/<path:path>")
