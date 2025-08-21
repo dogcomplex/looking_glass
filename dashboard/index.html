@@ -5,17 +5,38 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>LookingGlassSim Dashboard</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
+    :root {
+      --bg: #0f172a;      /* slate-900 */
+      --card: #111827;    /* gray-900 */
+      --card2: #0b1220;   /* deeper */
+      --text: #e5e7eb;    /* gray-200 */
+      --muted: #9ca3af;   /* gray-400 */
+      --accent: #60a5fa;  /* blue-400 */
+      --border: #1f2937;  /* gray-800 */
+    }
+    * { box-sizing: border-box; }
+    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial; margin: 0; background: var(--bg); color: var(--text); }
+    h1 { margin: 24px 24px 8px; font-size: 22px; font-weight: 600; color: var(--text); }
+    p { margin: 0 24px 16px; color: var(--muted); }
+    .container { padding: 0 24px 24px; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .card { border: 1px solid #ddd; border-radius: 8px; padding: 12px; }
-    h2 { margin: 0 0 8px 0; font-size: 18px; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #eee; padding: 6px 8px; text-align: left; font-size: 12px; }
-    .score { font-weight: bold; }
+    .card { background: linear-gradient(180deg, var(--card), var(--card2)); border: 1px solid var(--border); border-radius: 12px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.25); }
+    h2 { margin: 0 0 10px 0; font-size: 16px; font-weight: 600; color: var(--text); }
+    table { border-collapse: collapse; width: 100%; background: transparent; }
+    th, td { border: 1px solid var(--border); padding: 6px 8px; text-align: left; font-size: 12px; color: var(--text); }
+    th { background: rgba(96,165,250,0.08); }
+    .score { font-weight: 600; color: var(--accent); }
     canvas { width: 100% !important; height: 280px !important; }
     .diagram { display: flex; align-items: center; justify-content: center; }
-    .box { padding: 6px 10px; border: 1px solid #999; border-radius: 4px; margin: 4px; font-size: 12px; }
-    .arrow { margin: 0 6px; font-size: 16px; }
+    .box { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; margin: 4px; font-size: 12px; background: #0b1220; }
+    .arrow { margin: 0 6px; font-size: 16px; color: var(--muted); }
+    select, input[type="number"], input[type="text"], button { background: #0b1220; color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; }
+    select[multiple] { min-height: 96px; }
+    button { cursor: pointer; background: linear-gradient(180deg, #1e3a8a, #1f2937); border-color: #1e40af; }
+    button:hover { filter: brightness(1.1); }
+    .pill { display:inline-block; padding: 2px 8px; border-radius: 999px; background: rgba(96,165,250,0.15); color: var(--accent); font-size: 12px; margin-left: 6px; }
+    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    .col { display:flex; flex-direction:column; gap:6px; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -26,125 +47,46 @@
   <input type="file" id="file" accept="application/json" />
   <div class="card" style="margin:8px 0;">
     <h2>Run Config (multi-select everything)</h2>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;">
-      <div>
-        <label>Trials
-          <select id="ms-trials" multiple size="6" style="min-width:120px;"></select>
-        </label>
-      </div>
-      <div>
-        <label>Seed
-          <select id="ms-seed" multiple size="4" style="min-width:120px;"></select>
-        </label>
-      </div>
-      <div>
-        <label>Base Window ns
-          <select id="ms-window" multiple size="8" style="min-width:120px;"></select>
-        </label>
-      </div>
-      <div>
-        <label>Input Source
-          <select id="ms-input" multiple size="2" style="min-width:160px;">
-            <option value="digital" selected>Digital Emitter (DLP)</option>
-            <option value="cold">Analog Input (Cold Reader)</option>
-          </select>
-        </label>
-      </div>
-      <div>
-        <label>Path
-          <select id="ms-path" multiple size="2" style="min-width:160px;">
-            <option value="path_a" selected>Path A (Camera/TIA/Comp)</option>
-            <option value="path_b_analog">Path B Analog Cascade</option>
-          </select>
-        </label>
-      </div>
-      <div>
-        <label>Path B Depth
-          <select id="ms-pathb-depth" multiple size="6" style="min-width:100px;"></select>
-        </label>
-      </div>
-      <div>
-        <label>Flags
-          <select id="ms-flags" multiple size="6" style="min-width:180px;">
-            <option value="vote3" selected>Vote3</option>
-            <option value="autotune" selected>Autotune</option>
-            <option value="sensitivity">Sensitivity</option>
-            <option value="neighbor_ct">Neighbor CT</option>
-            <option value="adaptive_input" selected>Adaptive Input</option>
-          </select>
-        </label>
-      </div>
-      <div>
-        <label>Adaptive Max Frames
-          <select id="ms-adapt-max" multiple size="6" style="min-width:120px;"></select>
-        </label>
-      </div>
-      <div>
-        <label>Margin mV
-          <select id="ms-margin" multiple size="6" style="min-width:120px;"></select>
-        </label>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;">
-        <button id="btn-run" title="Run selected config(s)">Run Selected</button>
-        <button id="btn-run-matrix" title="Run Cartesian matrix of selections">Run Matrix</button>
-      </div>
+    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;">
+      <div class="col"><div class="label">Trials</div><select id="ms-trials" multiple size="6" style="min-width:120px;"></select></div>
+      <div class="col"><div class="label">Seed</div><select id="ms-seed" multiple size="4" style="min-width:120px;"></select></div>
+      <div class="col"><div class="label">Base Window ns</div><select id="ms-window" multiple size="8" style="min-width:120px;"></select></div>
+      <div class="col"><div class="label">Input Source</div><select id="ms-input" multiple size="2" style="min-width:160px;"><option value="digital" selected>Digital Emitter (DLP)</option><option value="cold">Analog Input (Cold Reader)</option></select></div>
+      <div class="col"><div class="label">Path</div><select id="ms-path" multiple size="2" style="min-width:160px;"><option value="path_a" selected>Path A (Camera/TIA/Comp)</option><option value="path_b_analog">Path B Analog Cascade</option></select></div>
+      <div class="col"><div class="label">Path B Depth</div><select id="ms-pathb-depth" multiple size="6" style="min-width:100px;"></select></div>
+      <div class="col"><div class="label">Vote3</div><select id="ms-vote3" multiple size="2" style="min-width:120px;"><option value="1" selected>on</option><option value="0">off</option></select></div>
+      <div class="col"><div class="label">Autotune</div><select id="ms-autotune" multiple size="2" style="min-width:120px;"><option value="1" selected>on</option><option value="0">off</option></select></div>
+      <div class="col"><div class="label">Sensitivity</div><select id="ms-sensitivity" multiple size="2" style="min-width:120px;"><option value="0" selected>off (default)</option><option value="1">on</option></select></div>
+      <div class="col"><div class="label">Neighbor CT</div><select id="ms-neighbor" multiple size="2" style="min-width:120px;"><option value="0" selected>off</option><option value="1">on</option></select></div>
+      <div class="col"><div class="label">Adaptive Input</div><select id="ms-adapt-flag" multiple size="2" style="min-width:120px;"><option value="1" selected>on</option><option value="0">off</option></select></div>
+      <div class="col"><div class="label">Adaptive Max Frames</div><select id="ms-adapt-max" multiple size="6" style="min-width:120px;"></select></div>
+      <div class="col"><div class="label">Margin mV</div><select id="ms-margin" multiple size="6" style="min-width:120px;"></select></div>
+      <div class="col" style="gap:8px;"><div class="label">Actions</div><button id="btn-run" title="Run selected config(s)">Run Selected</button><button id="btn-run-matrix" title="Run Cartesian matrix of selections" style="margin-left:8px;">Run Matrix</button></div>
     </div>
   </div>
+  <div class="card" style="margin:8px 0;">
+    <h2>Vendor Packs (optional)</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;">
+      <div class="col"><div class="label">Emitter</div><select id="packs-emitter" multiple size="6" style="min-width:260px;"></select></div>
+      <div class="col"><div class="label">Optics</div><select id="packs-optics" multiple size="6" style="min-width:260px;"></select></div>
+      <div class="col"><div class="label">Sensor (PD)</div><select id="packs-sensor" multiple size="6" style="min-width:260px;"></select></div>
+      <div class="col"><div class="label">TIA</div><select id="packs-tia" multiple size="6" style="min-width:260px;"></select></div>
+      <div class="col"><div class="label">Comparator</div><select id="packs-comparator" multiple size="6" style="min-width:260px;"></select></div>
+      <div class="col"><div class="label">Camera</div><select id="packs-camera" multiple size="6" style="min-width:260px;"></select></div>
+      <div class="col"><div class="label">Clock</div><select id="packs-clock" multiple size="6" style="min-width:260px;"></select></div>
+      <div class="col"><div class="label">Thermal</div><select id="packs-thermal" multiple size="6" style="min-width:260px;"></select></div>
+    </div>
+    <p style="font-size:12px;color:#9ca3af;">Tip: leave all empty to use defaults. Multi-select to build a matrix of vendor combinations.</p>
+  </div>
+
   <div class="card" style="margin:8px 0;">
     <h2>Worker Log</h2>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
       <span>Connection:</span>
-      <span id="conn" style="width:10px;height:10px;border-radius:50%;background:#f44336;display:inline-block;"></span>
-      <span id="connText" style="font-size:12px;color:#555;">Inactive</span>
+      <span id="conn" style="width:10px;height:10px;border-radius:50%;background:#4b5563;display:inline-block;"></span>
+      <span id="connText" style="font-size:12px;color:#9ca3af;">Inactive</span>
     </div>
-    <pre id="log" style="white-space:pre-wrap;height:160px;overflow:auto;border:1px solid #eee;padding:8px;"></pre>
-  </div>
-
-  <div class="card" style="margin:8px 0;">
-    <h2>Vendor Packs (optional)</h2>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-      <div>
-        <label>Emitter
-          <select id="packs-emitter" multiple size="4" style="min-width:240px;"></select>
-        </label>
-      </div>
-      <div>
-        <label>Optics
-          <select id="packs-optics" multiple size="4" style="min-width:240px;"></select>
-        </label>
-      </div>
-      <div>
-        <label>Sensor (PD)
-          <select id="packs-sensor" multiple size="4" style="min-width:240px;"></select>
-        </label>
-      </div>
-      <div>
-        <label>TIA
-          <select id="packs-tia" multiple size="4" style="min-width:240px;"></select>
-        </label>
-      </div>
-      <div>
-        <label>Comparator
-          <select id="packs-comparator" multiple size="4" style="min-width:240px;"></select>
-        </label>
-      </div>
-      <div>
-        <label>Camera
-          <select id="packs-camera" multiple size="4" style="min-width:240px;"></select>
-        </label>
-      </div>
-      <div>
-        <label>Clock
-          <select id="packs-clock" multiple size="4" style="min-width:240px;"></select>
-        </label>
-      </div>
-      <div>
-        <label>Thermal
-          <select id="packs-thermal" multiple size="4" style="min-width:240px;"></select>
-        </label>
-      </div>
-    </div>
-    <p style="font-size:12px;color:#555;">Tip: leave all empty to use defaults. Multi-select to build a matrix of vendor combinations.</p>
+    <pre id="log" style="white-space:pre-wrap;height:160px;overflow:auto;border:1px solid var(--border);padding:8px;background:#0b1220;"></pre>
   </div>
 
   <div class="grid" style="margin-top:12px;">
@@ -224,6 +166,7 @@
         <button id="btn-load-history">Load</button>
         <button id="btn-best-csv">Export Best CSV</button>
         <button id="btn-all-csv">Export All Runs CSV</button>
+        <button id="btn-reset-history" style="margin-left:auto;background:#7f1d1d;border-color:#991b1b;">Reset History</button>
       </div>
       <table id="table-history"></table>
     </div>
@@ -252,13 +195,27 @@
     function getRunLabel(run) {
       try {
         const L = run.__label || {};
-        const input = L.input ?? (run?.config?.input || 'digital');
-        const sens = (L.sensitivity === true || L.sensitivity === 1) ? '1' : '0';
-        const output = L.output ?? (run?.path_b ? 'path_b_analog' : 'path_a');
-        const win = (L.window_ns ?? run?.baseline?.window_ns ?? run?.window_ns ?? '').toString();
-        const depth = (L.analog_depth ?? run?.path_b?.analog_depth ?? '');
-        const depthStr = depth !== '' ? ` / depth=${depth}` : '';
-        return `${input} / sens=${sens} / ${output} / win=${win}${depthStr}`;
+        const packs = (L.packs || {});
+        const diffs = [];
+        // defaults
+        const def = { input: 'digital', sensitivity: false, output: 'path_a', window_ns: 20, analog_depth: 5 };
+        if ((L.input||'digital') !== def.input) diffs.push(L.input === 'cold' ? 'cold' : String(L.input));
+        if ((!!L.sensitivity) !== def.sensitivity) diffs.push('sens');
+        if ((L.output||'path_a') !== def.output) {
+          const d = (L.analog_depth!=null?`d=${L.analog_depth}`:'');
+          diffs.push(L.output === 'path_b_analog' ? `pathB${d?`(${d})`:''}` : String(L.output));
+        }
+        const w = (L.window_ns!=null?Number(L.window_ns):null);
+        if (w!=null && Math.round(w) !== def.window_ns) diffs.push(`w=${Math.round(w)}ns`);
+        // include notable vendor overrides (non-typ)
+        const base = (p)=>{ if(!p) return 'typ'; const s = p.split(/[\\/]/).pop()||''; return s.replace(/\.yaml$/,''); };
+        const notable = [];
+        ['tia','comparator','camera','emitter','optics','sensor','clock','thermal'].forEach(k=>{
+          const b = base(packs[k]);
+          if (b && !b.endsWith('_typ')) notable.push(`${k}=${b}`);
+        });
+        const core = diffs.length ? diffs.join(', ') : 'default';
+        return notable.length ? `${core} | ${notable.join(', ')}` : core;
       } catch { return 'run'; }
     }
 
@@ -856,12 +813,11 @@
       const trials = firstOf('ms-trials');
       const seed = firstOf('ms-seed');
       const windowNs = firstOf('ms-window');
-      const flags = Array.from(document.getElementById('ms-flags').selectedOptions).map(o=>o.value);
-      const vote = flags.includes('vote3') ? '1':'0';
-      const auto = flags.includes('autotune') ? '1':'0';
-      const sens = flags.includes('sensitivity') ? '1':'0';
-      const neigh = flags.includes('neighbor_ct') ? '1':'0';
-      const adapt = flags.includes('adaptive_input') ? '1':'0';
+      const vote = firstOf('ms-vote3') || '1';
+      const auto = firstOf('ms-autotune') || '1';
+      const sens = firstOf('ms-sensitivity') || '0';
+      const neigh = firstOf('ms-neighbor') || '0';
+      const adapt = firstOf('ms-adapt-flag') || '1';
       const pbd = firstOf('ms-pathb-depth');
       const adaptMax = firstOf('ms-adapt-max');
       const adaptMargin = firstOf('ms-margin');
@@ -896,7 +852,11 @@
       const seed = csvOf('ms-seed');
       const windowNs = csvOf('ms-window');
       const depths = csvOf('ms-pathb-depth');
-      const auto = Array.from(document.getElementById('ms-flags').selectedOptions).map(o=>o.value).includes('autotune') ? '1':'0';
+      const auto = csvOf('ms-autotune') || '1';
+      const votes = csvOf('ms-vote3') || '1';
+      const sens = csvOf('ms-sensitivity') || '0';
+      const neigh = csvOf('ms-neighbor') || '0';
+      const adapt = csvOf('ms-adapt-flag') || '1';
       const inputs = csvOf('ms-input');
       const outputs = csvOf('ms-path');
       appendLog({ msg: 'requesting matrix run' });
@@ -910,7 +870,7 @@
         };
         const cap = 96;
         const q = `emitter_packs=${pickCSV('packs-emitter')}&optics_packs=${pickCSV('packs-optics')}&sensor_packs=${pickCSV('packs-sensor')}&tia_packs=${pickCSV('packs-tia')}&comparator_packs=${pickCSV('packs-comparator')}&camera_packs=${pickCSV('packs-camera')}&clock_packs=${pickCSV('packs-clock')}&thermal_packs=${pickCSV('packs-thermal')}`;
-        const r = await fetch(`/api/run_matrix?trials=${trials}&seed=${seed}&windows=${windowNs}&inputs=${inputs}&outputs=${outputs}&path_b_analog_depths=${depths}&autotune=${auto}&cap=${cap}&${q}`);
+        const r = await fetch(`/api/run_matrix?trials=${trials}&seed=${seed}&windows=${windowNs}&inputs=${inputs}&outputs=${outputs}&path_b_analog_depths=${depths}&autotune=${auto}&vote3=${votes}&sensitivity=${sens}&neighbor_ct=${neigh}&adaptive_input=${adapt}&adaptive_max_frames=${csvOf('ms-adapt-max')}&adaptive_margin_mV=${csvOf('ms-margin')}&cap=${cap}&${q}`);
         appendLog(await r.json());
       } catch (err) { appendLog({ error: String(err) }); }
     };
@@ -953,6 +913,14 @@
         a.href = URL.createObjectURL(new Blob([text], {type:'text/csv'}));
         a.download = 'history_all_runs.csv';
         a.click();
+      } catch (e) { appendLog({ error: String(e) }); }
+    };
+
+    document.getElementById('btn-reset-history').onclick = async () => {
+      if (!confirm('This will delete runs_history.jsonl. Continue?')) return;
+      try {
+        const r = await fetch('/api/history/reset', { method: 'POST' });
+        appendLog(await r.json());
       } catch (e) { appendLog({ error: String(e) }); }
     };
 

@@ -24,6 +24,7 @@ _event_q: "queue.Queue[str]" = queue.Queue()
 _run_lock = threading.Lock()
 _is_running = False
 _pending_jobs: "queue.Queue[list]" = queue.Queue()
+_seq_counter = 0
 
 
 def _sse_format(data: str, event: str | None = None) -> str:
@@ -33,6 +34,49 @@ def _sse_format(data: str, event: str | None = None) -> str:
     if event:
         return f"event: {event}\n" + payload + "\n"
     return payload + "\n"
+def _basename(p: str | None) -> str:
+    if not p:
+        return "typ"
+    try:
+        return Path(p).stem
+    except Exception:
+        return str(p)
+
+
+def _build_run_name(label: dict) -> str:
+    try:
+        packs = (label.get("packs") or {})
+        parts = [
+            label.get("input") or "",
+            label.get("output") or "",
+            f"w{int(label.get('window_ns', 0))}ns" if label.get("window_ns") is not None else "",
+            f"d{label.get('analog_depth')}" if label.get("analog_depth") else "",
+            _basename(packs.get("emitter")),
+            _basename(packs.get("tia")),
+            _basename(packs.get("comparator")),
+            _basename(packs.get("optics")),
+            _basename(packs.get("sensor")),
+            _basename(packs.get("camera")),
+            _basename(packs.get("clock")),
+        ]
+        return " / ".join([s for s in parts if s])
+    except Exception:
+        return "run"
+
+
+def _persist_history(obj: dict) -> None:
+    global _seq_counter
+    try:
+        obj["__time"] = time.time()
+        obj["__time_ms"] = int(time.time_ns() // 1_000_000)
+        _seq_counter += 1
+        obj["__seq"] = _seq_counter
+        HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(HISTORY_FILE, "a", encoding="utf-8") as hf:
+            hf.write(json.dumps(obj) + "\n")
+    except Exception:
+        pass
+
 
 
 def _publisher() -> Iterator[bytes]:
@@ -70,12 +114,9 @@ def _run_test_worker(args: list[str]):
                 _event_q.put(_sse_format(data, event="done"))
                 # Persist to history
                 try:
-                    import json as _json, time as _time
+                    import json as _json
                     obj = _json.loads(data)
-                    obj["__time"] = _time.time()
-                    HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
-                    with open(HISTORY_FILE, "a", encoding="utf-8") as hf:
-                        hf.write(_json.dumps(obj) + "\n")
+                    _persist_history(obj)
                 except Exception:
                     pass
             except Exception as e:
@@ -127,13 +168,7 @@ def _process_joblist():
                             }
                             data["__preflight"] = vres
                             _event_q.put(_sse_format(json.dumps(data), event="done"))
-                            try:
-                                data["__time"] = time.time()
-                                HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
-                                with open(HISTORY_FILE, "a", encoding="utf-8") as hf:
-                                    hf.write(json.dumps(data) + "\n")
-                            except Exception:
-                                pass
+                            _persist_history(data)
                         else:
                             _event_q.put(_sse_format(json.dumps({"warn": "no JSON output found", "run_id": run_id})))
                     except Exception as e:
@@ -281,50 +316,77 @@ def api_history():
                         rows.append(obj)
                     except Exception:
                         continue
-        rows = rows[-limit:]
+        rows = sorted(rows, key=lambda r: (float(r.get("__time", 0.0)), int(r.get("__seq", 0))))[-limit:]
         # Optional CSV export of raw rows
         if request.args.get("format") == "csv":
             import io, csv
             buf = io.StringIO()
-            # Flatten typical fields for analysis
-            fieldnames = [
-                "time_iso","run_id","input","sensitivity","output","window_ns","analog_depth","preflight_status","preflight_reasons",
-                "baseline_p50_ber","path_a_p50_ber","path_b_p50_ber","path_b_analog_p50_ber",
-                "emitter_pack","optics_pack","sensor_pack","tia_pack","comparator_pack","camera_pack","clock_pack","thermal_pack",
-            ]
-            w = csv.DictWriter(buf, fieldnames=fieldnames)
-            w.writeheader()
+            # Build dynamic fieldnames including flattened configs and summaries
+            def flat(prefix, obj):
+                out = {}
+                if isinstance(obj, dict):
+                    for k, v in obj.items():
+                        out.update(flat(f"{prefix}{k}.", v))
+                else:
+                    out[prefix[:-1]] = obj
+                return out
+
+            # Collect all keys across rows
+            keys = set()
+            flat_rows = []
             for r in rows:
                 label = (r.get("__label") or {})
                 packs = (label.get("packs") or {})
                 pre = (r.get("__preflight") or {})
-                iso = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(r.get("__time", 0))) if r.get("__time") else ""
-                row = {
+                # Include ms for ordering
+                ts = float(r.get("__time", 0))
+                ms = int(r.get("__time_ms", 0))
+                iso = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(ts)) + (f".{ms%1000:03d}" if ms else "") if ts else ""
+                base = {
                     "time_iso": iso,
                     "run_id": r.get("__run_id"),
-                    "input": label.get("input"),
-                    "sensitivity": label.get("sensitivity"),
-                    "output": label.get("output"),
-                    "window_ns": label.get("window_ns"),
-                    "analog_depth": label.get("analog_depth"),
-                    "preflight_status": pre.get("status"),
-                    "preflight_reasons": "; ".join(pre.get("reasons", [])),
-                    "baseline_p50_ber": (r.get("baseline") or {}).get("p50_ber"),
-                    "path_a_p50_ber": (r.get("path_a") or {}).get("p50_ber"),
-                    "path_b_p50_ber": (r.get("path_b") or {}).get("p50_ber"),
-                    "path_b_analog_p50_ber": (r.get("path_b") or {}).get("analog_p50_ber"),
-                    "emitter_pack": packs.get("emitter"),
-                    "optics_pack": packs.get("optics"),
-                    "sensor_pack": packs.get("sensor"),
-                    "tia_pack": packs.get("tia"),
-                    "comparator_pack": packs.get("comparator"),
-                    "camera_pack": packs.get("camera"),
-                    "clock_pack": packs.get("clock"),
-                    "thermal_pack": packs.get("thermal"),
+                    "run_name": _build_run_name(label),
                 }
-                w.writerow(row)
+                base.update({
+                    "label.input": label.get("input"),
+                    "label.sensitivity": label.get("sensitivity"),
+                    "label.output": label.get("output"),
+                    "label.window_ns": label.get("window_ns"),
+                    "label.analog_depth": label.get("analog_depth"),
+                })
+                base.update(flat("packs.", packs))
+                base.update({
+                    "preflight.status": pre.get("status"),
+                    "preflight.reasons": "; ".join(pre.get("reasons", [])),
+                })
+                # Attach full summaries
+                for block in ("baseline","path_a","path_b","path_b_chain","path_b_sweeps","cold_input","realism","components","window_sweep","rin_sweep","crosstalk_sweep","baseline_calibrated","sensitivity","drift","autotune"):
+                    if r.get(block) is not None:
+                        base.update(flat(f"{block}.", r.get(block)))
+                flat_rows.append(base)
+                keys.update(base.keys())
+
+            fieldnames = ["time_iso","run_id","run_name","__seq","__time_ms"] + sorted([k for k in keys if k not in ("time_iso","run_id","run_name","__seq","__time_ms")])
+            w = csv.DictWriter(buf, fieldnames=fieldnames)
+            w.writeheader()
+            for fr in flat_rows:
+                out = {k: fr.get(k, "") for k in fieldnames}
+                w.writerow(out)
             return Response(buf.getvalue(), mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=history_all_runs.csv"})
         return jsonify({"count": len(rows), "rows": rows})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.post("/api/history/reset")
+def api_history_reset():
+    """Clear run history (JSONL) and reset sequence counter."""
+    global _seq_counter
+    try:
+        if HISTORY_FILE.exists():
+            HISTORY_FILE.unlink()
+        _seq_counter = 0
+        return jsonify({"status": "ok", "reset": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -443,15 +505,20 @@ def api_run_matrix():
         _is_running = True
     try:
         import itertools, uuid
-        inputs_csv = request.args.get("inputs", "digital,cold")
-        sens_csv = request.args.get("sensitivities", "0,1")
+        inputs_csv = request.args.get("inputs", "digital")
+        sens_csv = request.args.get("sensitivity", request.args.get("sensitivities", "0"))
         outputs_csv = request.args.get("outputs", "path_a,path_b_analog")
         windows_csv = request.args.get("windows", "")
         trials = request.args.get("trials", "300")
         seed = request.args.get("seed", "123")
         pba_depth = request.args.get("path_b_analog_depth", "5")
         pba_depths_csv = request.args.get("path_b_analog_depths", "")
-        autotune = request.args.get("autotune", "0")
+        autotune = request.args.get("autotune", "1")
+        vote3_csv = request.args.get("vote3", "1")
+        neighbor_csv = request.args.get("neighbor_ct", "0")
+        adapt_flag_csv = request.args.get("adaptive_input", "1")
+        adapt_max_csv = request.args.get("adaptive_max_frames", "12")
+        adapt_margin_csv = request.args.get("adaptive_margin_mV", "0.8")
         # pack lists per component (CSV of relative paths)
         packs = {
             "emitter_pack": request.args.get("emitter_packs", ""),
@@ -466,6 +533,11 @@ def api_run_matrix():
 
         inputs = [s.strip() for s in inputs_csv.split(',') if s.strip()]
         sens_list = [s.strip() for s in sens_csv.split(',') if s.strip()]
+        vote_list = [s.strip() for s in vote3_csv.split(',') if s.strip()]
+        neigh_list = [s.strip() for s in neighbor_csv.split(',') if s.strip()]
+        adapt_list = [s.strip() for s in adapt_flag_csv.split(',') if s.strip()]
+        adapt_max_list = [s.strip() for s in adapt_max_csv.split(',') if s.strip()]
+        adapt_margin_list = [s.strip() for s in adapt_margin_csv.split(',') if s.strip()]
         outputs = [s.strip() for s in outputs_csv.split(',') if s.strip()]
         windows = [w.strip() for w in windows_csv.split(',') if w.strip()]
         depths = [d.strip() for d in pba_depths_csv.split(',') if d.strip()]
@@ -503,7 +575,7 @@ def api_run_matrix():
         from .preflight import validate_combo
         combos = []
         pruned = 0
-        for (inp, sens, outp, win, depth) in itertools.product(inputs, sens_list, outputs, windows, depths):
+        for (inp, sens, outp, win, depth, v3, neighb, adf, admx, admr) in itertools.product(inputs, sens_list, outputs, windows, depths, vote_list, neigh_list, adapt_list, adapt_max_list, adapt_margin_list):
             for ep in pack_lists["emitter_pack"]:
                 for op in pack_lists["optics_pack"]:
                     for sp in pack_lists["sensor_pack"]:
@@ -526,7 +598,7 @@ def api_run_matrix():
                                             if v.get("status") == "fail":
                                                 pruned += 1
                                                 continue
-                                            combos.append((inp, sens, outp, win, depth, ep, op, sp, tp, cp, cap, clp, thp, v))
+                                            combos.append((inp, sens, outp, win, depth, v3, neighb, adf, admx, admr, ep, op, sp, tp, cp, cap, clp, thp, v))
         # soft cap (configurable via query)
         cap = int(request.args.get("cap", "96"))
         if len(combos) > cap:
@@ -534,13 +606,15 @@ def api_run_matrix():
 
         # Prepare jobs
         jobs = []
-        for (inp, sens, outp, win, depth, ep, op, sp, tp, cp, cap, clp, thp, vres) in combos:
+        for (inp, sens, outp, win, depth, v3, neighb, adf, admx, admr, ep, op, sp, tp, cp, cap, clp, thp, vres) in combos:
             run_id = str(uuid.uuid4())
             out_path = ROOT / "out" / f"test_summary_{run_id}.json"
             cmd = ["python", "examples/test.py",
                    "--trials", str(trials), "--seed", str(seed), "--json", str(out_path),
                    "--base-window-ns", str(win)]
             if sens in ("1", "true", "True"): cmd.append("--sensitivity")
+            if v3 in ("1", "true", "True"): cmd.append("--vote3")
+            if neighb in ("1", "true", "True"): cmd.append("--neighbor-ct")
             if inp == "digital":
                 cmd.append("--no-cold-input")
             if outp == "path_a":
@@ -551,6 +625,9 @@ def api_run_matrix():
                 cmd += ["--components-mode", "cold"]
             if autotune in ("1", "true", "True"):
                 cmd.append("--autotune")
+            if adf in ("1", "true", "True"):
+                cmd.append("--adaptive-input")
+            cmd += ["--adaptive-max-frames", str(admx), "--adaptive-margin-mV", str(admr)]
             if ep: cmd += ["--emitter-pack", str(ep)]
             if op: cmd += ["--optics-pack", str(op)]
             if sp: cmd += ["--sensor-pack", str(sp)]
