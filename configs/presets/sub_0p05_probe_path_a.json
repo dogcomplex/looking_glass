@@ -18,7 +18,7 @@
       "adaptive_max_frames": ["8"],
       "adaptive_margin_mV": ["0.9"],
       "avg_frames": ["1", "2"],
-      "normalize_dv": ["1"],
+      "normalize_dv": ["0"],
       "normalize_eps_v": ["1e-6"],
       "fast": ["1"],
       "no_sweeps": ["1"],
