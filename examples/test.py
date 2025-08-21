@@ -51,6 +51,9 @@ def run_trials(orch: Orchestrator, trials: int):
 def med_ber(rows):
     return float(median([r["ber"] for r in rows])) if rows else None
 
+def mean_ber(rows):
+    return (float(sum(r["ber"] for r in rows)/len(rows)) if rows else None)
+
 
 def quick_window_sweep(orch: Orchestrator, trials: int, windows):
     xs, ys = [], []
@@ -245,6 +248,11 @@ def main():
     ap.add_argument("--progress", action="store_true", help="Emit coarse progress messages to stdout")
     ap.add_argument("--json", type=str, default=None)
     ap.add_argument("--light-output", action="store_true", help="Reduce output size by skipping heavy diagnostic blocks (sensitivity, drift, path-b sweeps, large arrays)")
+    # Speed/skip flags
+    ap.add_argument("--no-sweeps", action="store_true", help="Skip window/RIN/crosstalk sweeps for faster runs")
+    ap.add_argument("--no-cal", action="store_true", help="Skip per-tile/calibration passes")
+    ap.add_argument("--no-drift", action="store_true", help="Skip drift demo block")
+    ap.add_argument("--fast", action="store_true", help="Shortcut: implies --no-sweeps --no-cal --no-drift and uses smaller internal caps")
     # Vendor pack overrides (paths)
     ap.add_argument("--emitter-pack", type=str, default=None)
     ap.add_argument("--optics-pack", type=str, default=None)
@@ -254,6 +262,9 @@ def main():
     ap.add_argument("--camera-pack", type=str, default=None)
     ap.add_argument("--clock-pack", type=str, default=None)
     ap.add_argument("--thermal-pack", type=str, default=None)
+    # Normalization/mitigation toggles
+    ap.add_argument("--normalize-dv", action="store_true", help="Normalize dv to comparator threshold scale inside orchestrator")
+    ap.add_argument("--normalize-eps-v", type=float, default=1e-6, help="Epsilon to avoid divide-by-zero during dv normalization (V)")
     args = ap.parse_args()
     # Defaults to run full non-destructive suite
     run_path_b_sweep = (not getattr(args, 'no_path_b_sweep', False)) or getattr(args, 'path_b_sweep', False)
@@ -262,7 +273,9 @@ def main():
         args.adaptive_input = True
 
     # Base system from typ packs inline
-    sys_p = SystemParams(channels=16, window_ns=float(args.base_window_ns), temp_C=25.0, seed=args.seed, normalize_dv=False)
+    sys_p = SystemParams(channels=16, window_ns=float(args.base_window_ns), temp_C=25.0, seed=args.seed,
+                         normalize_dv=bool(getattr(args, 'normalize_dv', False)),
+                         normalize_eps_v=float(getattr(args, 'normalize_eps_v', 1e-6)))
     # Build from overrides if provided (simple loader)
     def _load_yaml(path: str | None):
         if not path:
@@ -352,9 +365,14 @@ def main():
     ct_s, ct_e, ct_n = [v.strip() for v in args.ct_range.split(":")]
 
     # Short, pragmatic sweeps
-    w_xs, w_ys, w_ok = quick_window_sweep(orch, trials=args.trials, windows=windows)
-    r_xs, r_ys, r_ok = quick_rin_sweep(sys_p, trials=args.trials, starts=float(rin_s), stops=float(rin_e), steps=int(rin_n), tia_bw_mhz=tia_bw, comp_noise_mV=comp_noise)
-    c_xs, c_ys, c_ok = quick_crosstalk_sweep(sys_p, trials=args.trials, starts=float(ct_s), stops=float(ct_e), steps=int(ct_n), tia_bw_mhz=tia_bw, comp_noise_mV=comp_noise)
+    if not (getattr(args, 'no_sweeps', False) or getattr(args, 'fast', False)):
+        w_xs, w_ys, w_ok = quick_window_sweep(orch, trials=args.trials, windows=windows)
+        r_xs, r_ys, r_ok = quick_rin_sweep(sys_p, trials=args.trials, starts=float(rin_s), stops=float(rin_e), steps=int(rin_n), tia_bw_mhz=tia_bw, comp_noise_mV=comp_noise)
+        c_xs, c_ys, c_ok = quick_crosstalk_sweep(sys_p, trials=args.trials, starts=float(ct_s), stops=float(ct_e), steps=int(ct_n), tia_bw_mhz=tia_bw, comp_noise_mV=comp_noise)
+    else:
+        w_xs, w_ys, w_ok = [float(args.base_window_ns)], [None], True
+        r_xs, r_ys, r_ok = [], [], True
+        c_xs, c_ys, c_ok = [], [], True
 
     # Baseline summary at default settings (use same policy for baseline and path_a)
     base_emit = EmitterParams(channels=16, modulation_mode="pushpull", pushpull_alpha=0.9)
@@ -374,11 +392,10 @@ def main():
         for _ in range(min(T, 400)):
             tern = base_orch.rng.integers(-1, 2, size=base_orch.sys.channels)
             acc = _np.zeros(base_orch.sys.channels, dtype=float)
-            n_used = 0
             for k in range(maxN):
                 r = base_orch.step(force_ternary=tern)
                 dv = _np.array(r.get("dv_mV", [0]*base_orch.sys.channels))
-                acc += dv; n_used += 1
+                acc += dv
                 up_th = float(base_orch.comp.p.vth_mV) + 0.5*float(base_orch.comp.p.hysteresis_mV)
                 if _np.all(_np.abs(acc) >= (up_th + margin)):
                     break
@@ -391,6 +408,12 @@ def main():
         }
     else:
         base_summary = base_orch.run(trials=args.trials)
+    # Add mean_ber to baseline using a lightweight re-run (bounded)
+    try:
+        _rows_b = run_trials(base_orch, min(args.trials, 200))
+        base_summary["mean_ber"] = mean_ber(_rows_b)
+    except Exception:
+        pass
 
     # Cold-storage input path (parallel baseline)
     cold_summary = None
@@ -512,12 +535,15 @@ def main():
     lin_offset = None
     cal_summary = None
     try:
+        if getattr(args, 'no_cal', False) or getattr(args, 'fast', False):
+            raise RuntimeError('skip per-tile/calibration')
         blocks = base_orch.sys.channels
         blocks = int(blocks**0.5)
         if blocks*blocks == base_orch.sys.channels:
             # Run one frame to get tile mapping, then accumulate per-tile BER
             # Use a small additional run to estimate per-tile BER robustly
-            rows = [base_orch.step() for _ in range(min(200, args.trials))]
+            cap_rows = min(args.trials, 200 if not getattr(args, 'fast', False) else 60)
+            rows = [base_orch.step() for _ in range(int(cap_rows))]
             # Map channel -> tile index
             # Tiles are filled row-major in optics.simulate(); two rails per tile (plus/minus)
             # Here we approximate channel→tile as index // 1 (one channel per tile in current mapping)
@@ -564,7 +590,7 @@ def main():
             pos_cnt = _np.zeros(sys_p.channels, dtype=float)
             neg_sum = _np.zeros(sys_p.channels, dtype=float)
             neg_cnt = _np.zeros(sys_p.channels, dtype=float)
-            total_cal = min(400, args.trials*2)
+            total_cal = int(min(args.trials*2, 400 if not getattr(args, 'fast', False) else 120))
             for idx in range(total_cal):
                 tern = orch_cal.rng.integers(-1, 2, size=sys_p.channels)
                 r = orch_cal.step(force_ternary=tern)
@@ -588,7 +614,7 @@ def main():
             orch_cal.comp.set_vth_per_channel(vth_vec)
             # Evaluate post-calibration BER and per-tile BER
             rows_after = []
-            total_eval = min(200, args.trials)
+            total_eval = int(min(args.trials, 200 if not getattr(args, 'fast', False) else 60))
             for j in range(total_eval):
                 rows_after.append(orch_cal.step())
                 if args.progress and (j+1) % 50 == 0:
@@ -896,6 +922,12 @@ def main():
         }
     else:
         path_a_summary = orch.run(trials=args.trials)
+    # Add mean_ber to path_a using a lightweight re-run (bounded)
+    try:
+        _rows_a = run_trials(orch, min(args.trials, 200))
+        path_a_summary["mean_ber"] = mean_ber(_rows_a)
+    except Exception:
+        pass
 
     summary = {
         "config": {
@@ -1069,7 +1101,7 @@ def main():
 
     # Drift calibration demo (skip in light mode): BER vs time with/without periodic vth re-centering
     try:
-        if getattr(args, 'light_output', False):
+        if getattr(args, 'light_output', False) or getattr(args, 'no_drift', False) or getattr(args, 'fast', False):
             raise RuntimeError('skip drift in light output')
         import numpy as _np
         from looking_glass.sim.thermal import ThermalParams as _Therm

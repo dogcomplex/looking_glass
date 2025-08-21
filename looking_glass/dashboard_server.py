@@ -798,6 +798,16 @@ def api_run_preset():
             adaptMaxL = _parse_list(branch.get("adaptive_max_frames"), ["12"])
             adaptMargL = _parse_list(branch.get("adaptive_margin_mV"), ["0.8"])
             avgFramesL = _parse_list(branch.get("avg_frames"), ["1"])
+            # Fast/skip flags (non-destructive: only skip heavy diagnostics)
+            fastL = _parse_list(branch.get("fast"), ["0"])
+            noSweepsL = _parse_list(branch.get("no_sweeps"), ["0"])
+            noCalL = _parse_list(branch.get("no_cal"), ["0"])
+            noDriftL = _parse_list(branch.get("no_drift"), ["0"])
+            # Normalization and tuner budges
+            normDvL = _parse_list(branch.get("normalize_dv"), ["0"])
+            normEpsVL = _parse_list(branch.get("normalize_eps_v"), ["1e-6"])
+            tuneBudgetL = _parse_list(branch.get("autotune_budget"), [None])
+            tuneTrialsL = _parse_list(branch.get("autotune_trials"), [None])
 
             packs = branch.get("packs", {})
             def P(key):
@@ -820,7 +830,9 @@ def api_run_preset():
                         pack_data[lst] = {}
 
             for (tr, sd) in itertools.product(trialsL, seedL):
-                for (inp, outp, win, depth, v3, au, se, ne, apc, adf, admx, admr, avf) in itertools.product(inputsL, outputsL, winL, depthL, voteL, autoL, sensL, neighL, applyCalL, adaptL, adaptMaxL, adaptMargL, avgFramesL):
+                for (inp, outp, win, depth, v3, au, se, ne, apc, adf, admx, admr, avf, ff, ns, nc, nd, ndv, neps, tb, tt) in itertools.product(
+                    inputsL, outputsL, winL, depthL, voteL, autoL, sensL, neighL, applyCalL, adaptL, adaptMaxL, adaptMargL, avgFramesL, fastL, noSweepsL, noCalL, noDriftL, normDvL, normEpsVL, tuneBudgetL, tuneTrialsL
+                ):
                     for (ep, op, spk, tpv, cpv, cav, clv, thv) in itertools.product(epL, opL, spL, tpL, cpL, capL, clpL, thpL):
                         total_combos += 1
                         packs_dict = {
@@ -853,6 +865,17 @@ def api_run_preset():
                         # Light-output is optional; not enforced by default
                         if adf in ("1","true","True"): cmd.append("--adaptive-input")
                         cmd += ["--adaptive-max-frames", str(admx), "--adaptive-margin-mV", str(admr), "--avg-frames", str(avf)]
+                        # Fast/skip flags from preset
+                        if ff in ("1","true","True"): cmd.append("--fast")
+                        if ns in ("1","true","True"): cmd.append("--no-sweeps")
+                        if nc in ("1","true","True"): cmd.append("--no-cal")
+                        if nd in ("1","true","True"): cmd.append("--no-drift")
+                        # Normalization
+                        if ndv in ("1","true","True"): cmd.append("--normalize-dv")
+                        if neps not in (None, "", "None"): cmd += ["--normalize-eps-v", str(neps)]
+                        # Tuner budgets
+                        if tb not in (None, "", "None"): cmd += ["--autotune-budget", str(tb)]
+                        if tt not in (None, "", "None"): cmd += ["--autotune-trials", str(tt)]
                         if ep: cmd += ["--emitter-pack", str(ep)]
                         if op: cmd += ["--optics-pack", str(op)]
                         if spk: cmd += ["--sensor-pack", str(spk)]
