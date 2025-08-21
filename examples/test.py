@@ -284,7 +284,27 @@ def main():
     optx_override = _load_yaml(getattr(args, 'optics_pack', None))
     for k, v in (optx_override or {}).items():
         if hasattr(optx, k): setattr(optx, k, v)
-    # Ensure neighbor/diag crosstalk are effective: use provided values, otherwise derive from global when neighbor model is active
+    # Map common vendor-pack fields → sim params
+    try:
+        if isinstance(optx_override, dict):
+            if 'transmittance_percent' in optx_override:
+                tp = float(optx_override['transmittance_percent'])
+                optx.transmittance = max(0.0, min(1.0, tp/100.0))
+            if 'scatter_angle_deg_FWHM' in optx_override:
+                ang = float(optx_override['scatter_angle_deg_FWHM'])
+                # Heuristic: wider scatter → higher neighbor leakage (less negative dB)
+                neigh = -40.0 + (ang - 5.0) * (10.0 / 15.0)  # 5°→-40dB, 20°→-30dB
+                neigh = max(-45.0, min(-28.0, neigh))
+                diag = neigh - 3.0
+                optx.ct_model = 'neighbor'
+                optx.ct_neighbor_db = float(neigh)
+                optx.ct_diag_db = float(diag)
+                # PSF width proxy
+                w = 2.0 + max(0.0, (ang - 5.0)) * 0.2
+                optx.psf_kernel = f"lorentzian:w={w:.2f}"
+    except Exception:
+        pass
+    # Ensure neighbor/diag crosstalk are effective when neighbor model is active
     try:
         if isinstance(optx_override, dict) and (("ct_neighbor_db" in optx_override) or ("ct_diag_db" in optx_override)):
             optx.ct_model = 'neighbor'
@@ -344,7 +364,7 @@ def main():
     base_comp = ComparatorParams(input_noise_mV_rms=comp_noise, vth_mV=5.0, hysteresis_mV=1.8, vth_sigma_mV=0.2)
     base_clk = ClockParams(window_ns=float(args.base_window_ns), jitter_ps_rms=10.0)
     base_orch = Orchestrator(sys_p, base_emit, base_optx, base_pd, base_tia, base_comp, base_clk)
-    # Optional adaptive integration for input stage only
+    # Optional adaptive integration for input stage only (baseline)
     if args.adaptive_input:
         import numpy as _np
         errs = []
@@ -359,9 +379,6 @@ def main():
                 r = base_orch.step(force_ternary=tern)
                 dv = _np.array(r.get("dv_mV", [0]*base_orch.sys.channels))
                 acc += dv; n_used += 1
-                # Estimate current noise via MAD and comparator threshold vector
-                mad = _np.median(_np.abs(acc - _np.median(acc))) + 1e-9
-                # Use comparator base threshold as scale
                 up_th = float(base_orch.comp.p.vth_mV) + 0.5*float(base_orch.comp.p.hysteresis_mV)
                 if _np.all(_np.abs(acc) >= (up_th + margin)):
                     break
@@ -853,6 +870,33 @@ def main():
             errs.append(float(_np.mean(pred != tern)))
         mitigated_ber = float(_np.median(errs)) if errs else None
 
+    # Path A summary with configured packs (reflects vendor overrides)
+    if args.adaptive_input:
+        import numpy as _np
+        errs = []
+        T = int(args.trials)
+        maxN = max(1, int(args.adaptive_max_frames))
+        margin = float(args.adaptive_margin_mV)
+        for _ in range(min(T, 400)):
+            tern = orch.rng.integers(-1, 2, size=orch.sys.channels)
+            acc = _np.zeros(orch.sys.channels, dtype=float)
+            for k in range(maxN):
+                r = orch.step(force_ternary=tern)
+                dv = _np.array(r.get("dv_mV", [0]*orch.sys.channels))
+                acc += dv
+                up_th = float(orch.comp.p.vth_mV) + 0.5*float(orch.comp.p.hysteresis_mV)
+                if _np.all(_np.abs(acc) >= (up_th + margin)):
+                    break
+            pred = _np.sign(acc)
+            errs.append(float(_np.mean(pred != tern)))
+        path_a_summary = {
+            "p50_ber": float(_np.median(errs)) if errs else None,
+            "p50_energy_pj": None,
+            "window_ns": float(orch.clk.p.window_ns),
+        }
+    else:
+        path_a_summary = orch.run(trials=args.trials)
+
     summary = {
         "config": {
             "trials": args.trials,
@@ -869,7 +913,7 @@ def main():
             "avg_frames": int(args.avg_frames),
         },
         "baseline": base_summary,
-        "path_a": base_summary,
+        "path_a": path_a_summary,
         "path_b": path_b_summary,
         "path_b_chain": path_b_chain,
         "path_b_sweeps": path_b_sweeps,
