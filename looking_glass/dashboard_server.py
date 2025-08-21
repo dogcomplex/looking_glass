@@ -641,8 +641,7 @@ def api_run_matrix():
                 cmd += ["--components-mode", "cold"]
             if autotune in ("1", "true", "True"):
                 cmd.append("--autotune")
-            # Prefer light-output for matrix runs to reduce memory
-            cmd.append("--light-output")
+            # Light-output is optional; not enforced by default
             if adf in ("1", "true", "True"):
                 cmd.append("--adaptive-input")
             cmd += ["--adaptive-max-frames", str(admx), "--adaptive-margin-mV", str(admr)]
@@ -851,7 +850,7 @@ def api_run_preset():
                         elif outp == "path_b_analog": cmd += ["--path-b-analog-depth", str(depth), "--no-path-b", "--components-mode", "path_b_analog"]
                         if au in ("1","true","True"): cmd.append("--autotune")
                         if apc in ("1","true","True"): cmd.append("--apply-calibration")
-                        cmd.append("--light-output")
+                        # Light-output is optional; not enforced by default
                         if adf in ("1","true","True"): cmd.append("--adaptive-input")
                         cmd += ["--adaptive-max-frames", str(admx), "--adaptive-margin-mV", str(admr), "--avg-frames", str(avf)]
                         if ep: cmd += ["--emitter-pack", str(ep)]

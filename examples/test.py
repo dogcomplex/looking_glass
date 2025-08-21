@@ -284,10 +284,21 @@ def main():
     optx_override = _load_yaml(getattr(args, 'optics_pack', None))
     for k, v in (optx_override or {}).items():
         if hasattr(optx, k): setattr(optx, k, v)
-    # If a pack provides neighbor/diag CT, force neighbor model so values apply
+    # Ensure neighbor/diag crosstalk are effective: use provided values, otherwise derive from global when neighbor model is active
     try:
-        if isinstance(optx_override, dict) and (('ct_neighbor_db' in optx_override) or ('ct_diag_db' in optx_override)):
+        if isinstance(optx_override, dict) and (("ct_neighbor_db" in optx_override) or ("ct_diag_db" in optx_override)):
             optx.ct_model = 'neighbor'
+            if getattr(optx, 'ct_neighbor_db', None) is None:
+                base = float(getattr(optx, 'crosstalk_db', -30.0))
+                optx.ct_neighbor_db = base
+            if getattr(optx, 'ct_diag_db', None) is None:
+                optx.ct_diag_db = float(optx.ct_neighbor_db) + 3.0
+        elif getattr(optx, 'ct_model', 'global') == 'neighbor':
+            base = float(getattr(optx, 'crosstalk_db', -30.0))
+            if getattr(optx, 'ct_neighbor_db', None) is None:
+                optx.ct_neighbor_db = base
+            if getattr(optx, 'ct_diag_db', None) is None:
+                optx.ct_diag_db = base + 3.0
     except Exception:
         pass
 
@@ -904,113 +915,113 @@ def main():
         summary["baseline_raw"] = summary["baseline"]
         summary["baseline"] = cal_summary
 
-    # Always include a sensitivity block with more pronounced ranges for "notable results" (skip in light mode)
+    # Sensitivity block (skip entirely in light-output mode)
     if not getattr(args, 'light_output', False):
         sens_tia_bw = 30.0
-    sens_comp_noise = 0.3
-    sens_windows = [3, 6, 10, 15, 20, 30]
-    sens_rin = (-170.0, -130.0, 9)
-    sens_ct = (-40.0, -15.0, 9)
-    sens_emit = EmitterParams(channels=16, power_mw_per_ch=0.05, modulation_mode="pushpull", pushpull_alpha=0.9)
-    sens_optx = OpticsParams()
-    sens_pd = PDParams()
-    sens_tia = TIAParams(bw_mhz=sens_tia_bw, tia_transimpedance_kohm=1.0)
-    sens_comp = ComparatorParams(input_noise_mV_rms=sens_comp_noise, vth_mV=5.0)
-    sens_clk = ClockParams(window_ns=10.0, jitter_ps_rms=10.0)
-    sens_orch = Orchestrator(sys_p, sens_emit, sens_optx, sens_pd, sens_tia, sens_comp, sens_clk)
-    sw_xs, sw_ys, sw_ok = quick_window_sweep(sens_orch, trials=args.trials, windows=sens_windows)
-    sr_xs, sr_ys, sr_ok = quick_rin_sweep(
-        sys_p,
-        trials=args.trials,
-        starts=sens_rin[0],
-        stops=sens_rin[1],
-        steps=sens_rin[2],
-        tia_bw_mhz=sens_tia_bw,
-        comp_noise_mV=sens_comp_noise,
-        emit_ext_db=6.0,
-        emit_power_mw=0.05,
-        tia_R_kohm=1.0,
-        comp_vth_mV=5.0,
-    )
-    sc_xs, sc_ys, sc_ok = quick_crosstalk_sweep(
-        sys_p,
-        trials=args.trials,
-        starts=sens_ct[0],
-        stops=sens_ct[1],
-        steps=sens_ct[2],
-        tia_bw_mhz=sens_tia_bw,
-        comp_noise_mV=sens_comp_noise,
-        opt_contrast=(0.8, 0.78),
-        opt_transmittance=0.6,
-    )
-    nct_range = (-40.0, -20.0, 5)
-    sn_xs, sn_ys, sn_ok = quick_neighbor_ct_sweep(
-        sys_p,
-        trials=args.trials,
-        starts=nct_range[0],
-        stops=nct_range[1],
-        steps=nct_range[2],
-        tia_bw_mhz=sens_tia_bw,
-        comp_noise_mV=sens_comp_noise,
-        opt_contrast=(0.8, 0.78),
-        emit_power_mw=0.05,
-        tia_R_kohm=1.0,
-        comp_vth_mV=5.0,
-    )
-    # Diagonal crosstalk sweep
-    dct_range = (-45.0, -20.0, 6)
-    sd_xs, sd_ys, sd_ok = quick_diag_ct_sweep(
-        sys_p,
-        trials=args.trials,
-        starts=dct_range[0],
-        stops=dct_range[1],
-        steps=dct_range[2],
-        tia_bw_mhz=sens_tia_bw,
-        comp_noise_mV=sens_comp_noise,
-        opt_contrast=(0.8, 0.78),
-        emit_power_mw=0.05,
-        tia_R_kohm=1.0,
-        comp_vth_mV=5.0,
-    )
-    sens_effects = {
-        "window_ber_improvement": safe_delta(sw_ys),
-        "rin_ber_degradation": (sr_ys[-1] - sr_ys[0]) if sr_ys and len(sr_ys) > 1 else 0.0,
-        "crosstalk_ber_degradation": (sc_ys[-1] - sc_ys[0]) if sc_ys and len(sc_ys) > 1 else 0.0,
-        "neighbor_crosstalk_ber_degradation": (sn_ys[-1] - sn_ys[0]) if sn_ys and len(sn_ys) > 1 else 0.0,
-    }
-    summary["sensitivity"] = (None if getattr(args, 'light_output', False) else {
-        "config": {
-            "tia_bw_mhz": sens_tia_bw,
-            "comp_input_noise_mV_rms": sens_comp_noise,
-            "windows": sens_windows,
-            "rin_range": sens_rin,
-            "ct_range": sens_ct,
-            "neighbor_ct_range": nct_range,
-        },
-        "sanity": {
-            "window_non_increasing": sw_ok,
-            "rin_non_decreasing": sr_ok,
-            "crosstalk_non_decreasing": sc_ok,
-            "neighbor_crosstalk_non_decreasing": sn_ok,
-        },
-        "effects": sens_effects,
-        "window_sweep": {"x_window_ns": sw_xs, "p50_ber": sw_ys},
-        "rin_sweep": {"x_rin_dbhz": sr_xs, "p50_ber": sr_ys},
-        "crosstalk_sweep": {"x_crosstalk_db": sc_xs, "p50_ber": sc_ys},
-        "neighbor_crosstalk_sweep": {"x_ct_neighbor_db": sn_xs, "p50_ber": sn_ys},
-        "diag_crosstalk_sweep": {"x_ct_diag_db": sd_xs, "p50_ber": sd_ys},
-    })
-
-    # Optional: Per-tile heatmap in sensitivity mode if tiling is square (blocks^2 == channels)
-    try:
-        from looking_glass.plotting import save_heatmap
-        # Run one sensitivity frame to capture per-tile average maps
-        _one = sens_orch.step()
-        if _one.get("per_tile", {}).get("plus") is not None:
-            save_heatmap(_one["per_tile"]["plus"], xlabel="tile-x", ylabel="tile-y", out_path="out/per_tile_plus.png", title="Per-tile Plus Intensity")
-            save_heatmap(_one["per_tile"]["minus"], xlabel="tile-x", ylabel="tile-y", out_path="out/per_tile_minus.png", title="Per-tile Minus Intensity")
-    except (ImportError, RuntimeError, ValueError):
-        pass
+        sens_comp_noise = 0.3
+        sens_windows = [3, 6, 10, 15, 20, 30]
+        sens_rin = (-170.0, -130.0, 9)
+        sens_ct = (-40.0, -15.0, 9)
+        sens_emit = EmitterParams(channels=16, power_mw_per_ch=0.05, modulation_mode="pushpull", pushpull_alpha=0.9)
+        sens_optx = OpticsParams()
+        sens_pd = PDParams()
+        sens_tia = TIAParams(bw_mhz=sens_tia_bw, tia_transimpedance_kohm=1.0)
+        sens_comp = ComparatorParams(input_noise_mV_rms=sens_comp_noise, vth_mV=5.0)
+        sens_clk = ClockParams(window_ns=10.0, jitter_ps_rms=10.0)
+        sens_orch = Orchestrator(sys_p, sens_emit, sens_optx, sens_pd, sens_tia, sens_comp, sens_clk)
+        sw_xs, sw_ys, sw_ok = quick_window_sweep(sens_orch, trials=args.trials, windows=sens_windows)
+        sr_xs, sr_ys, sr_ok = quick_rin_sweep(
+            sys_p,
+            trials=args.trials,
+            starts=sens_rin[0],
+            stops=sens_rin[1],
+            steps=sens_rin[2],
+            tia_bw_mhz=sens_tia_bw,
+            comp_noise_mV=sens_comp_noise,
+            emit_ext_db=6.0,
+            emit_power_mw=0.05,
+            tia_R_kohm=1.0,
+            comp_vth_mV=5.0,
+        )
+        sc_xs, sc_ys, sc_ok = quick_crosstalk_sweep(
+            sys_p,
+            trials=args.trials,
+            starts=sens_ct[0],
+            stops=sens_ct[1],
+            steps=sens_ct[2],
+            tia_bw_mhz=sens_tia_bw,
+            comp_noise_mV=sens_comp_noise,
+            opt_contrast=(0.8, 0.78),
+            opt_transmittance=0.6,
+        )
+        nct_range = (-40.0, -20.0, 5)
+        sn_xs, sn_ys, sn_ok = quick_neighbor_ct_sweep(
+            sys_p,
+            trials=args.trials,
+            starts=nct_range[0],
+            stops=nct_range[1],
+            steps=nct_range[2],
+            tia_bw_mhz=sens_tia_bw,
+            comp_noise_mV=sens_comp_noise,
+            opt_contrast=(0.8, 0.78),
+            emit_power_mw=0.05,
+            tia_R_kohm=1.0,
+            comp_vth_mV=5.0,
+        )
+        # Diagonal crosstalk sweep
+        dct_range = (-45.0, -20.0, 6)
+        sd_xs, sd_ys, sd_ok = quick_diag_ct_sweep(
+            sys_p,
+            trials=args.trials,
+            starts=dct_range[0],
+            stops=dct_range[1],
+            steps=dct_range[2],
+            tia_bw_mhz=sens_tia_bw,
+            comp_noise_mV=sens_comp_noise,
+            opt_contrast=(0.8, 0.78),
+            emit_power_mw=0.05,
+            tia_R_kohm=1.0,
+            comp_vth_mV=5.0,
+        )
+        sens_effects = {
+            "window_ber_improvement": safe_delta(sw_ys),
+            "rin_ber_degradation": (sr_ys[-1] - sr_ys[0]) if sr_ys and len(sr_ys) > 1 else 0.0,
+            "crosstalk_ber_degradation": (sc_ys[-1] - sc_ys[0]) if sc_ys and len(sc_ys) > 1 else 0.0,
+            "neighbor_crosstalk_ber_degradation": (sn_ys[-1] - sn_ys[0]) if sn_ys and len(sn_ys) > 1 else 0.0,
+        }
+        summary["sensitivity"] = {
+            "config": {
+                "tia_bw_mhz": sens_tia_bw,
+                "comp_input_noise_mV_rms": sens_comp_noise,
+                "windows": sens_windows,
+                "rin_range": sens_rin,
+                "ct_range": sens_ct,
+                "neighbor_ct_range": nct_range,
+            },
+            "sanity": {
+                "window_non_increasing": sw_ok,
+                "rin_non_decreasing": sr_ok,
+                "crosstalk_non_decreasing": sc_ok,
+                "neighbor_crosstalk_non_decreasing": sn_ok,
+            },
+            "effects": sens_effects,
+            "window_sweep": {"x_window_ns": sw_xs, "p50_ber": sw_ys},
+            "rin_sweep": {"x_rin_dbhz": sr_xs, "p50_ber": sr_ys},
+            "crosstalk_sweep": {"x_crosstalk_db": sc_xs, "p50_ber": sc_ys},
+            "neighbor_crosstalk_sweep": {"x_ct_neighbor_db": sn_xs, "p50_ber": sn_ys},
+            "diag_crosstalk_sweep": {"x_ct_diag_db": sd_xs, "p50_ber": sd_ys},
+        }
+        # Optional: Per-tile heatmap in sensitivity mode if tiling is square (blocks^2 == channels)
+        try:
+            from looking_glass.plotting import save_heatmap
+            _one = sens_orch.step()
+            if _one.get("per_tile", {}).get("plus") is not None:
+                save_heatmap(_one["per_tile"]["plus"], xlabel="tile-x", ylabel="tile-y", out_path="out/per_tile_plus.png", title="Per-tile Plus Intensity")
+                save_heatmap(_one["per_tile"]["minus"], xlabel="tile-x", ylabel="tile-y", out_path="out/per_tile_minus.png", title="Per-tile Minus Intensity")
+        except (ImportError, RuntimeError, ValueError):
+            pass
+    else:
+        summary["sensitivity"] = None
 
     # Drift calibration demo (skip in light mode): BER vs time with/without periodic vth re-centering
     try:
