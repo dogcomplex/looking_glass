@@ -1,0 +1,19 @@
+vendor: Thorlabs
+model: "Engineered Diffuser 3°"
+category: optics
+price_usd_est: 195.0
+sources:
+- https://www.thorlabs.com/newgrouppage9.cfm?objectgroup_id=9029
+notes: Narrow-angle diffuser; lowest neighbor crosstalk among this family, tighter PSF.
+type: engineered_diffuser
+scatter_angle_deg_FWHM: 3.0
+transmittance_percent: 90.0
+thickness_mm: 2.0
+dn_dT_per_K: 1.0e-05
+surface_roughness_nm: 5.0
+Henyey_Greenstein_g: 0.7
+guessed_fields:
+- g
+- dn_dT
+
+

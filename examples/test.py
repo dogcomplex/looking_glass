@@ -230,7 +230,9 @@ def main():
     ap.add_argument("--lockin", action="store_true", help="Estimate lock-in subtraction by subtracting a dark frame dv")
     ap.add_argument("--chop", action="store_true", help="Chopper stabilization: use +x and -x frames, subtract dv before threshold")
     ap.add_argument("--avg-frames", type=int, default=1, help="Average dv over N frames per input before thresholding (noise ~ 1/sqrt(N))")
+    ap.add_argument("--use-avg-frames-for-path-a", action="store_true", help="If set and avg_frames>1, use averaged-dv classifier as primary path_a summary")
     ap.add_argument("--soft-thresh", action="store_true", help="Bypass comparator: software threshold dv using per-channel vth (upper bound for Path A)")
+    ap.add_argument("--apply-autotuned-params", action="store_true", help="After autotune, re-evaluate path_a using best params and include as path_a_autotuned")
     ap.add_argument("--path-b-depth", type=int, default=5, help="If >0, run Path B cascaded for N stages and report per-stage BER (default 5)")
     ap.add_argument("--path-b-sweep", action="store_true", help="Run Path B sweeps (amp_gain_db, sat_I_sat) and report BER curves")
     ap.add_argument("--no-path-b-sweep", action="store_true", help="Disable Path B sweeps (default is ON)")
@@ -253,6 +255,7 @@ def main():
     ap.add_argument("--no-cal", action="store_true", help="Skip per-tile/calibration passes")
     ap.add_argument("--no-drift", action="store_true", help="Skip drift demo block")
     ap.add_argument("--fast", action="store_true", help="Shortcut: implies --no-sweeps --no-cal --no-drift and uses smaller internal caps")
+    ap.add_argument("--lock-optics-ct", action="store_true", help="Constrain autotuner to keep optics ct_neighbor_db/ct_diag_db at initial values (no worsening)")
     # Vendor pack overrides (paths)
     ap.add_argument("--emitter-pack", type=str, default=None)
     ap.add_argument("--optics-pack", type=str, default=None)
@@ -896,6 +899,37 @@ def main():
             errs.append(float(_np.mean(pred != tern)))
         mitigated_ber = float(_np.median(errs)) if errs else None
 
+    # Optional quick per-channel calibration to set vth for path_a/baseline even when --no-cal
+    vth_vec_pa = None
+    try:
+        if getattr(args, 'apply_calibration', False):
+            import numpy as _np
+            calN = int(min(max(120, args.trials), 240))
+            pos_sum = _np.zeros(sys_p.channels, dtype=float)
+            pos_cnt = _np.zeros(sys_p.channels, dtype=float)
+            neg_sum = _np.zeros(sys_p.channels, dtype=float)
+            neg_cnt = _np.zeros(sys_p.channels, dtype=float)
+            # Use a fresh clone to avoid contaminating main RNG state
+            cal_orch = Orchestrator(sys_p, EmitterParams(**emit.__dict__), OpticsParams(**optx.__dict__), PDParams(**pd.__dict__), TIAParams(**tia.__dict__), ComparatorParams(**comp.__dict__), ClockParams(**clk.__dict__))
+            for _ in range(calN):
+                tern = cal_orch.rng.integers(-1, 2, size=sys_p.channels)
+                r = cal_orch.step(force_ternary=tern)
+                dv = _np.array(r.get("dv_mV", [0]*sys_p.channels), dtype=float)
+                pos = tern > 0
+                neg = tern < 0
+                pos_sum[pos] += dv[pos]; pos_cnt[pos] += 1
+                neg_sum[neg] += dv[neg]; neg_cnt[neg] += 1
+            pos_mean = _np.divide(pos_sum, _np.clip(pos_cnt, 1.0, None))
+            neg_mean = _np.divide(neg_sum, _np.clip(neg_cnt, 1.0, None))
+            vth_vec_pa = 0.5*(pos_mean + neg_mean)
+            # Apply to comparator for main orchestrator
+            try:
+                orch.comp.set_vth_per_channel(vth_vec_pa)
+            except Exception:
+                pass
+    except Exception:
+        vth_vec_pa = None
+
     # Path A summary with configured packs (reflects vendor overrides)
     if args.adaptive_input:
         import numpy as _np
@@ -913,7 +947,10 @@ def main():
                 up_th = float(orch.comp.p.vth_mV) + 0.5*float(orch.comp.p.hysteresis_mV)
                 if _np.all(_np.abs(acc) >= (up_th + margin)):
                     break
-            pred = _np.sign(acc)
+            if vth_vec_pa is not None:
+                pred = _np.sign(acc - vth_vec_pa)
+            else:
+                pred = _np.sign(acc)
             errs.append(float(_np.mean(pred != tern)))
         path_a_summary = {
             "p50_ber": float(_np.median(errs)) if errs else None,
@@ -921,7 +958,28 @@ def main():
             "window_ns": float(orch.clk.p.window_ns),
         }
     else:
-        path_a_summary = orch.run(trials=args.trials)
+        if getattr(args, 'use_avg_frames_for_path_a', False) and int(args.avg_frames) > 1:
+            import numpy as _np
+            N = int(args.avg_frames)
+            errs = []
+            for _ in range(min(args.trials, 200)):
+                tern = orch.rng.integers(-1, 2, size=orch.sys.channels)
+                acc = _np.zeros(orch.sys.channels, dtype=float)
+                for _j in range(N):
+                    r = orch.step(force_ternary=tern)
+                    acc += _np.array(r.get("dv_mV", [0]*orch.sys.channels))
+                if vth_vec_pa is not None:
+                    pred = _np.sign(acc - vth_vec_pa)
+                else:
+                    pred = _np.sign(acc)
+                errs.append(float(_np.mean(pred != tern)))
+            path_a_summary = {
+                "p50_ber": float(_np.median(errs)) if errs else None,
+                "p50_energy_pj": None,
+                "window_ns": float(orch.clk.p.window_ns),
+            }
+        else:
+            path_a_summary = orch.run(trials=args.trials)
     # Add mean_ber to path_a using a lightweight re-run (bounded)
     try:
         _rows_a = run_trials(orch, min(args.trials, 200))
@@ -1186,6 +1244,15 @@ def main():
         _merge_constraints('tia', tia_override)
         _merge_constraints('comparator', comp_override)
         _merge_constraints('clock', clk_override)
+        # Optional locks: keep optics neighbor/diag CT fixed at initial values
+        try:
+            if getattr(args, 'lock_optics_ct', False) and getattr(optx, 'ct_model', 'global') == 'neighbor':
+                if getattr(optx, 'ct_neighbor_db', None) is not None:
+                    constraints[("optics", "ct_neighbor_db")] = {"min": float(optx.ct_neighbor_db), "max": float(optx.ct_neighbor_db)}
+                if getattr(optx, 'ct_diag_db', None) is not None:
+                    constraints[("optics", "ct_diag_db")] = {"min": float(optx.ct_diag_db), "max": float(optx.ct_diag_db)}
+        except Exception:
+            pass
 
         tune_res = auto_tune(
             sys_p,
@@ -1204,6 +1271,59 @@ def main():
         summary["autotune"] = tune_res
         if args.progress:
             print("PROGRESS: autotune done")
+        # Optional: re-evaluate path_a with tuned params
+        try:
+            if getattr(args, 'apply_autotuned_params', False):
+                best = (tune_res.get("params") or {})
+                def _apply(dobj, key):
+                    upd = (best.get(key) or {})
+                    if not isinstance(upd, dict):
+                        return dobj
+                    # keep only attributes that exist on the dataclass
+                    filt = {k: v for k, v in upd.items() if hasattr(dobj, k)}
+                    return replace(dobj, **filt) if filt else dobj
+                sys_t = _apply(sys_p, "system")
+                emit_t = _apply(EmitterParams(**emit.__dict__), "emitter")
+                optx_t = _apply(OpticsParams(**optx.__dict__), "optics")
+                pd_t = _apply(PDParams(**pd.__dict__), "sensor")
+                tia_t = _apply(TIAParams(**tia.__dict__), "tia")
+                comp_t = _apply(ComparatorParams(**comp.__dict__), "comparator")
+                clk_t = _apply(ClockParams(**clk.__dict__), "clock")
+                orch_t = Orchestrator(sys_t, emit_t, optx_t, pd_t, tia_t, comp_t, clk_t)
+                if args.adaptive_input:
+                    import numpy as _np
+                    errs = []
+                    T = int(args.trials)
+                    maxN = max(1, int(args.adaptive_max_frames))
+                    margin = float(args.adaptive_margin_mV)
+                    for _ in range(min(T, 400)):
+                        tern = orch_t.rng.integers(-1, 2, size=orch_t.sys.channels)
+                        acc = _np.zeros(orch_t.sys.channels, dtype=float)
+                        for k in range(maxN):
+                            r = orch_t.step(force_ternary=tern)
+                            dv = _np.array(r.get("dv_mV", [0]*orch_t.sys.channels))
+                            acc += dv
+                            up_th = float(orch_t.comp.p.vth_mV) + 0.5*float(orch_t.comp.p.hysteresis_mV)
+                            if _np.all(_np.abs(acc) >= (up_th + margin)):
+                                break
+                        pred = _np.sign(acc)
+                        errs.append(float(_np.mean(pred != tern)))
+                    path_a_auto = {
+                        "p50_ber": float(_np.median(errs)) if errs else None,
+                        "p50_energy_pj": None,
+                        "window_ns": float(orch_t.clk.p.window_ns),
+                    }
+                else:
+                    path_a_auto = orch_t.run(trials=args.trials)
+                # Add mean_ber for tuned as well
+                try:
+                    _rows_at = run_trials(orch_t, min(args.trials, 200))
+                    path_a_auto["mean_ber"] = mean_ber(_rows_at)
+                except Exception:
+                    pass
+                summary["path_a_autotuned"] = path_a_auto
+        except Exception:
+            pass
     if not args.quiet:
         print(json.dumps(summary, indent=2))
     if args.json:
