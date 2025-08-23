@@ -1,0 +1,18 @@
+# Comparator overlay: keep typ values and constrain tuner to comparator-only micro-sweep
+vth_mV: 5.0
+hysteresis_mV: 2.0
+input_noise_mV_rms: 0.3
+drift_mV_per_C: 0.05
+prop_delay_ns: 1.25
+saturate_levels: true
+vth_sigma_mV: 0.2
+
+tuning:
+  allowed_params:
+    - comparator.hysteresis_mV:
+        min: 0.6
+        max: 1.0
+    - comparator.input_noise_mV_rms:
+        min: 0.35
+        max: 0.5
+

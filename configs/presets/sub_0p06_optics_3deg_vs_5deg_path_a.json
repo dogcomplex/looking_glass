@@ -1,0 +1,50 @@
+{
+  "runs": [
+    {
+      "trials": ["200"],
+      "seed": ["123"],
+      "windows": ["16", "18"],
+      "inputs": ["digital"],
+      "outputs": ["path_a"],
+      "path_b_analog_depths": ["0"],
+
+      "vote3": ["1"],
+      "autotune": ["1"],
+      "apply_autotuned_params": ["1"],
+      "use_autotuned_as_primary": ["1"],
+      "autotune_budget": ["40"],
+      "autotune_trials": ["100"],
+
+      "sensitivity": ["0"],
+      "neighbor_ct": ["0"],
+      "lock_optics_ct": ["1"],
+      "apply_calibration": ["0"],
+      "adaptive_input": ["0"],
+      "avg_frames": ["1"],
+      "normalize_dv": ["0"],
+
+      "fast": ["0"],
+      "no_sweeps": ["1"],
+      "no_cal": ["0"],
+      "no_drift": ["1"],
+      "light_output": ["1"],
+      "cap": ["24"],
+
+      "packs": {
+        "emitter_packs": ["configs/packs/vendors/emitters/coherent_OBIS-850-nm_typ.yaml"],
+        "optics_packs": [
+          "configs/packs/vendors/optics/thorlabs_Engineered-Diffuser-5°_typ.yaml",
+          "configs/packs/vendors/optics/thorlabs_Engineered-Diffuser-3°_typ.yaml"
+        ],
+        "sensor_packs": ["configs/packs/vendors/sensors/vishay_BPW34_typ.yaml"],
+        "tia_packs": ["configs/packs/vendors/tias/texas_instruments_OPA857EVM_typ.yaml"],
+        "comparator_packs": ["configs/packs/vendors/comparators/analog_devices_LTC6752_typ.yaml"],
+        "camera_packs": [""],
+        "clock_packs": ["configs/packs/clock_typ.yaml"],
+        "thermal_packs": ["configs/packs/thermal_typ.yaml"]
+      }
+    }
+  ]
+}
+
+

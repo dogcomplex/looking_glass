@@ -1,0 +1,19 @@
+# TIA overlay: constrain tuner to BW and transimpedance micro-sweep near tuned region
+tia_transimpedance_kohm: 10.0
+bw_mhz: 70.0
+in_noise_pA_rthz: 5.0
+peaking_q: 0.7
+slew_v_per_us: 500.0
+adc_bits: 10
+adc_fullscale_v: 1.0
+adc_read_noise_mV_rms: 0.0
+gain_sigma_pct: 1.0
+
+tuning:
+  allowed_params:
+    - tia.tia_transimpedance_kohm:
+        min: 8.0
+        max: 12.0
+    - tia.bw_mhz:
+        choices: [60, 65, 70, 75, 80]
+

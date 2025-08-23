@@ -237,6 +237,7 @@ def main():
                     choices=["auto", "adaptive", "avg", "soft", "vote3", "lockin", "chop", "mitigated"],
                     help="Select classifier used for path_a summary: auto (default policy), adaptive, averaged dv, software threshold, temporal vote3, lockin, chop, or mitigated pipeline")
     ap.add_argument("--apply-autotuned-params", action="store_true", help="After autotune, re-evaluate path_a using best params and include as path_a_autotuned")
+    ap.add_argument("--use-autotuned-as-primary", action="store_true", help="If set, replace primary path_a summary with path_a_autotuned when available")
     ap.add_argument("--path-b-depth", type=int, default=5, help="If >0, run Path B cascaded for N stages and report per-stage BER (default 5)")
     ap.add_argument("--path-b-sweep", action="store_true", help="Run Path B sweeps (amp_gain_db, sat_I_sat) and report BER curves")
     ap.add_argument("--no-path-b-sweep", action="store_true", help="Disable Path B sweeps (default is ON)")
@@ -364,6 +365,11 @@ def main():
     clk_override = _load_yaml(getattr(args, 'clock_pack', None))
     for k, v in (clk_override or {}).items():
         if hasattr(clk, k): setattr(clk, k, v)
+    # Ensure CLI --base-window-ns always wins over pack defaults
+    try:
+        clk.window_ns = float(args.base_window_ns)
+    except Exception:
+        pass
     orch = Orchestrator(sys_p, emit, optx, pd, tia, comp, clk)
 
     # Parse windows and ranges
@@ -1342,6 +1348,11 @@ def main():
                 except Exception:
                     pass
                 summary["path_a_autotuned"] = path_a_auto
+                try:
+                    if getattr(args, 'use_autotuned_as_primary', False):
+                        summary["path_a"] = path_a_auto
+                except Exception:
+                    pass
         except Exception:
             pass
     if not args.quiet:

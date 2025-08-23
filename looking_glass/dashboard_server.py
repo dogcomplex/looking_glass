@@ -535,6 +535,7 @@ def api_run_matrix():
         adapt_flag_csv = request.args.get("adaptive_input", "1")
         adapt_max_csv = request.args.get("adaptive_max_frames", "12")
         adapt_margin_csv = request.args.get("adaptive_margin_mV", "0.8")
+        light_csv = request.args.get("light_output", "0")
         # extra flags to mirror preset capabilities
         apply_cal_csv = request.args.get("apply_calibration", "0")
         avg_frames_csv = request.args.get("avg_frames", "1")
@@ -546,6 +547,7 @@ def api_run_matrix():
         norm_eps_v = request.args.get("normalize_eps_v", "")
         tune_budget_csv = request.args.get("autotune_budget", "")
         tune_trials_csv = request.args.get("autotune_trials", "")
+        use_at_primary_csv = request.args.get("use_autotuned_as_primary", "0")
         fast_csv = request.args.get("fast", "0")
         no_sweeps_csv = request.args.get("no_sweeps", "0")
         no_cal_csv = request.args.get("no_cal", "0")
@@ -579,6 +581,8 @@ def api_run_matrix():
         no_sweeps_list = [s.strip() for s in no_sweeps_csv.split(',') if s.strip()]
         no_cal_list = [s.strip() for s in no_cal_csv.split(',') if s.strip()]
         no_drift_list = [s.strip() for s in no_drift_csv.split(',') if s.strip()]
+        use_at_primary_list = [s.strip() for s in use_at_primary_csv.split(',') if s.strip()]
+        light_list = [s.strip() for s in light_csv.split(',') if s.strip()]
         outputs = [s.strip() for s in outputs_csv.split(',') if s.strip()]
         windows = [w.strip() for w in windows_csv.split(',') if w.strip()]
         depths = [d.strip() for d in pba_depths_csv.split(',') if d.strip()]
@@ -616,12 +620,12 @@ def api_run_matrix():
         from .preflight import validate_combo
         combos = []
         pruned = 0
-        for (inp, sens, outp, win, depth, v3, neighb, apc, adf, admx, admr, avf, sth, uap, aap, lct, ff, ns, nc, nd) in itertools.product(
+        for (inp, sens, outp, win, depth, v3, neighb, apc, adf, admx, admr, avf, sth, uap, aap, lct, ff, ns, nc, nd, lo, uatp) in itertools.product(
             inputs, sens_list, outputs, windows, depths, vote_list, neigh_list,
             apply_cal_list or ["0"], adapt_list, adapt_max_list, adapt_margin_list,
             avg_frames_list or ["1"], soft_thresh_list or ["0"], use_avg_path_a_list or ["0"],
             apply_auto_list or ["0"], lock_ct_list or ["0"], fast_list or ["0"],
-            no_sweeps_list or ["0"], no_cal_list or ["0"], no_drift_list or ["0"]
+            no_sweeps_list or ["0"], no_cal_list or ["0"], no_drift_list or ["0"], light_list or ["0"], use_at_primary_list or ["0"]
         ):
             for ep in pack_lists["emitter_pack"]:
                 for op in pack_lists["optics_pack"]:
@@ -645,7 +649,7 @@ def api_run_matrix():
                                             if v.get("status") == "fail":
                                                 pruned += 1
                                                 continue
-                                            combos.append((inp, sens, outp, win, depth, v3, neighb, apc, adf, admx, admr, avf, sth, uap, aap, lct, ff, ns, nc, nd, ep, op, sp, tp, cp, cap, clp, thp, v))
+                                            combos.append((inp, sens, outp, win, depth, v3, neighb, apc, adf, admx, admr, avf, sth, uap, aap, lct, ff, ns, nc, nd, lo, uatp, ep, op, sp, tp, cp, cap, clp, thp, v))
         # soft cap (configurable via query)
         cap = int(request.args.get("cap", "96"))
         if len(combos) > cap:
@@ -653,7 +657,7 @@ def api_run_matrix():
 
         # Prepare jobs
         jobs = []
-        for (inp, sens, outp, win, depth, v3, neighb, apc, adf, admx, admr, avf, sth, uap, aap, lct, ff, ns, nc, nd, ep, op, sp, tp, cp, cap, clp, thp, vres) in combos:
+        for (inp, sens, outp, win, depth, v3, neighb, apc, adf, admx, admr, avf, sth, uap, aap, lct, ff, ns, nc, nd, lo, uatp, ep, op, sp, tp, cp, cap, clp, thp, vres) in combos:
             run_id = str(uuid.uuid4())
             out_path = ROOT / "out" / f"test_summary_{run_id}.json"
             cmd = ["python", "examples/test.py",
@@ -682,6 +686,7 @@ def api_run_matrix():
             if ns in ("1","true","True"): cmd.append("--no-sweeps")
             if nc in ("1","true","True"): cmd.append("--no-cal")
             if nd in ("1","true","True"): cmd.append("--no-drift")
+            if lo in ("1","true","True"): cmd.append("--light-output")
             # Normalization
             if norm_dv_csv in ("1","true","True"): cmd.append("--normalize-dv")
             if norm_eps_v not in (None, "", "None"): cmd += ["--normalize-eps-v", str(norm_eps_v)]
@@ -690,6 +695,7 @@ def api_run_matrix():
             if tune_trials_csv not in (None, "", "None"): cmd += ["--autotune-trials", str(tune_trials_csv)]
             # Post-tune application
             if aap in ("1","true","True"): cmd.append("--apply-autotuned-params")
+            if uatp in ("1","true","True"): cmd.append("--use-autotuned-as-primary")
             if uap in ("1","true","True"): cmd.append("--use-avg-frames-for-path-a")
             if lct in ("1","true","True"): cmd.append("--lock-optics-ct")
             if sth in ("1","true","True"): cmd.append("--soft-thresh")
@@ -851,12 +857,16 @@ def api_run_preset():
             noSweepsL = _parse_list(branch.get("no_sweeps"), ["0"])
             noCalL = _parse_list(branch.get("no_cal"), ["0"])
             noDriftL = _parse_list(branch.get("no_drift"), ["0"])
+            lightOutL = _parse_list(branch.get("light_output"), ["0"])
+            # Optional cap to limit combinatorics per branch
+            capL = _parse_list(branch.get("cap"), [None])
             # Normalization and tuner budges
             normDvL = _parse_list(branch.get("normalize_dv"), ["0"])
             normEpsVL = _parse_list(branch.get("normalize_eps_v"), ["1e-6"])
             tuneBudgetL = _parse_list(branch.get("autotune_budget"), [None])
             tuneTrialsL = _parse_list(branch.get("autotune_trials"), [None])
             applyAutoL = _parse_list(branch.get("apply_autotuned_params"), ["0"])
+            useAutoPrimaryL = _parse_list(branch.get("use_autotuned_as_primary"), ["0"])
             useAvgPathAL = _parse_list(branch.get("use_avg_frames_for_path_a"), ["0"])
             lockCtL = _parse_list(branch.get("lock_optics_ct"), ["0"])
             softThreshL = _parse_list(branch.get("soft_thresh"), ["0"])
@@ -882,8 +892,8 @@ def api_run_preset():
                         pack_data[lst] = {}
 
             for (tr, sd) in itertools.product(trialsL, seedL):
-                for (inp, outp, win, depth, v3, au, se, ne, apc, adf, admx, admr, avf, ff, ns, nc, nd, ndv, neps, tb, tt, aap, uap, lct, sth) in itertools.product(
-                    inputsL, outputsL, winL, depthL, voteL, autoL, sensL, neighL, applyCalL, adaptL, adaptMaxL, adaptMargL, avgFramesL, fastL, noSweepsL, noCalL, noDriftL, normDvL, normEpsVL, tuneBudgetL, tuneTrialsL, applyAutoL, useAvgPathAL, lockCtL, softThreshL
+                for (inp, outp, win, depth, v3, au, se, ne, apc, adf, admx, admr, avf, ff, ns, nc, nd, ndv, neps, tb, tt, aap, uatp, uap, lct, sth, lo) in itertools.product(
+                    inputsL, outputsL, winL, depthL, voteL, autoL, sensL, neighL, applyCalL, adaptL, adaptMaxL, adaptMargL, avgFramesL, fastL, noSweepsL, noCalL, noDriftL, normDvL, normEpsVL, tuneBudgetL, tuneTrialsL, applyAutoL, useAutoPrimaryL, useAvgPathAL, lockCtL, softThreshL, lightOutL
                 ):
                     for (ep, op, spk, tpv, cpv, cav, clv, thv) in itertools.product(epL, opL, spL, tpL, cpL, capL, clpL, thpL):
                         total_combos += 1
@@ -922,6 +932,7 @@ def api_run_preset():
                         if ns in ("1","true","True"): cmd.append("--no-sweeps")
                         if nc in ("1","true","True"): cmd.append("--no-cal")
                         if nd in ("1","true","True"): cmd.append("--no-drift")
+                        if lo in ("1","true","True"): cmd.append("--light-output")
                         # Normalization
                         if ndv in ("1","true","True"): cmd.append("--normalize-dv")
                         if neps not in (None, "", "None"): cmd += ["--normalize-eps-v", str(neps)]
@@ -929,6 +940,7 @@ def api_run_preset():
                         if tb not in (None, "", "None"): cmd += ["--autotune-budget", str(tb)]
                         if tt not in (None, "", "None"): cmd += ["--autotune-trials", str(tt)]
                         if aap in ("1","true","True"): cmd.append("--apply-autotuned-params")
+                        if uatp in ("1","true","True"): cmd.append("--use-autotuned-as-primary")
                         if uap in ("1","true","True"): cmd.append("--use-avg-frames-for-path-a")
                         if lct in ("1","true","True"): cmd.append("--lock-optics-ct")
                         if sth in ("1","true","True"): cmd.append("--soft-thresh")
@@ -941,6 +953,16 @@ def api_run_preset():
                         if clv: cmd += ["--clock-pack", str(clv)]
                         if thv: cmd += ["--thermal-pack", str(thv)]
                         jobs.append((cmd, run_id, out_path, inp, se, outp, win, depth, ep, op, spk, tpv, cpv, cav, clv, thv, v))
+
+            # Apply per-branch cap if provided
+            try:
+                cap_val = next((c for c in capL if c not in (None, "", "None")), None)
+                if cap_val is not None:
+                    cap_n = int(cap_val)
+                    if cap_n > 0 and len(jobs) > cap_n:
+                        jobs = jobs[:cap_n]
+            except Exception:
+                pass
 
         if not jobs:
             return jsonify({"status": "noop", "pruned": total_pruned, "combos": total_combos}), 200
