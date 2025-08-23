@@ -232,6 +232,10 @@ def main():
     ap.add_argument("--avg-frames", type=int, default=1, help="Average dv over N frames per input before thresholding (noise ~ 1/sqrt(N))")
     ap.add_argument("--use-avg-frames-for-path-a", action="store_true", help="If set and avg_frames>1, use averaged-dv classifier as primary path_a summary")
     ap.add_argument("--soft-thresh", action="store_true", help="Bypass comparator: software threshold dv using per-channel vth (upper bound for Path A)")
+    # Option to choose which computed classifier feeds the primary path_a summary
+    ap.add_argument("--path-a-mode", type=str, default="auto",
+                    choices=["auto", "adaptive", "avg", "soft", "vote3", "lockin", "chop", "mitigated"],
+                    help="Select classifier used for path_a summary: auto (default policy), adaptive, averaged dv, software threshold, temporal vote3, lockin, chop, or mitigated pipeline")
     ap.add_argument("--apply-autotuned-params", action="store_true", help="After autotune, re-evaluate path_a using best params and include as path_a_autotuned")
     ap.add_argument("--path-b-depth", type=int, default=5, help="If >0, run Path B cascaded for N stages and report per-stage BER (default 5)")
     ap.add_argument("--path-b-sweep", action="store_true", help="Run Path B sweeps (amp_gain_db, sat_I_sat) and report BER curves")
@@ -511,8 +515,7 @@ def main():
                 Im = b_orch.pd.simulate(Pm, b_orch.clk.sample_window())
                 Vp = b_orch.tia.simulate(Ip, b_orch.clk.sample_window())
                 Vm = b_orch.tia.simulate(Im, b_orch.clk.sample_window())
-                dv_mV = (Vp - Vm)*1e3
-                out = b_orch.comp.simulate(Vp, Vm, b_orch.sys.temp_C, dv_mV=dv_mV)
+                out = b_orch.comp.simulate(Vp, Vm, b_orch.sys.temp_C)
                 errs.append(float(_np.mean(out != tern0)))
             path_b_summary = dict(path_b_summary or {})
             path_b_summary["analog_depth"] = analog_depth
@@ -931,7 +934,45 @@ def main():
         vth_vec_pa = None
 
     # Path A summary with configured packs (reflects vendor overrides)
-    if args.adaptive_input:
+    # Precedence: soft-threshold > averaged-dv > adaptive > default
+    if getattr(args, 'soft_thresh', False):
+        import numpy as _np
+        errs = []
+        for _ in range(min(args.trials, 200)):
+            tern = orch.rng.integers(-1, 2, size=orch.sys.channels)
+            r = orch.step(force_ternary=tern)
+            dv = _np.array(r.get("dv_mV", [0]*orch.sys.channels))
+            if vth_vec_pa is not None:
+                pred = _np.sign(dv - vth_vec_pa)
+            else:
+                pred = _np.sign(dv)
+            errs.append(float(_np.mean(pred != tern)))
+        path_a_summary = {
+            "p50_ber": float(_np.median(errs)) if errs else None,
+            "p50_energy_pj": None,
+            "window_ns": float(orch.clk.p.window_ns),
+        }
+    elif getattr(args, 'use_avg_frames_for_path_a', False) and int(args.avg_frames) > 1:
+        import numpy as _np
+        N = int(args.avg_frames)
+        errs = []
+        for _ in range(min(args.trials, 200)):
+            tern = orch.rng.integers(-1, 2, size=orch.sys.channels)
+            acc = _np.zeros(orch.sys.channels, dtype=float)
+            for _j in range(N):
+                r = orch.step(force_ternary=tern)
+                acc += _np.array(r.get("dv_mV", [0]*orch.sys.channels))
+            if vth_vec_pa is not None:
+                pred = _np.sign(acc - vth_vec_pa)
+            else:
+                pred = _np.sign(acc)
+            errs.append(float(_np.mean(pred != tern)))
+        path_a_summary = {
+            "p50_ber": float(_np.median(errs)) if errs else None,
+            "p50_energy_pj": None,
+            "window_ns": float(orch.clk.p.window_ns),
+        }
+    elif args.adaptive_input:
         import numpy as _np
         errs = []
         T = int(args.trials)
@@ -958,28 +999,7 @@ def main():
             "window_ns": float(orch.clk.p.window_ns),
         }
     else:
-        if getattr(args, 'use_avg_frames_for_path_a', False) and int(args.avg_frames) > 1:
-            import numpy as _np
-            N = int(args.avg_frames)
-            errs = []
-            for _ in range(min(args.trials, 200)):
-                tern = orch.rng.integers(-1, 2, size=orch.sys.channels)
-                acc = _np.zeros(orch.sys.channels, dtype=float)
-                for _j in range(N):
-                    r = orch.step(force_ternary=tern)
-                    acc += _np.array(r.get("dv_mV", [0]*orch.sys.channels))
-                if vth_vec_pa is not None:
-                    pred = _np.sign(acc - vth_vec_pa)
-                else:
-                    pred = _np.sign(acc)
-                errs.append(float(_np.mean(pred != tern)))
-            path_a_summary = {
-                "p50_ber": float(_np.median(errs)) if errs else None,
-                "p50_energy_pj": None,
-                "window_ns": float(orch.clk.p.window_ns),
-            }
-        else:
-            path_a_summary = orch.run(trials=args.trials)
+        path_a_summary = orch.run(trials=args.trials)
     # Add mean_ber to path_a using a lightweight re-run (bounded)
     try:
         _rows_a = run_trials(orch, min(args.trials, 200))

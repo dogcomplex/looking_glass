@@ -36,10 +36,11 @@ class Comparator:
             self._vth_offset = float(self.rng.normal(0.0, self.p.vth_sigma_mV))
         else:
             self._vth_offset = self._vth_offset or 0.0
-        base_vth = self.p.vth_mV + (temp_C-25.0)*self.p.drift_mV_per_C + self._vth_offset
         if self._vth_per_ch is not None and self._vth_per_ch.shape[0] == dv.shape[0]:
-            vth_vec = base_vth + self._vth_per_ch
+            # Treat provided per-channel thresholds as absolute vth (mV)
+            vth_vec = self._vth_per_ch
         else:
+            base_vth = self.p.vth_mV + (temp_C-25.0)*self.p.drift_mV_per_C + self._vth_offset
             vth_vec = _np.full_like(dv, base_vth, dtype=float)
         hyst = self.p.hysteresis_mV
         noise = self.rng.normal(0.0, self.p.input_noise_mV_rms, size=dv.shape)
