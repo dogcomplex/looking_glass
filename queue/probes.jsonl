@@ -1,0 +1,7 @@
+{"label":"single_avg","trials":200,"seed":123,"base_window_ns":14,"classifier":"avg","avg_frames":1,"apply_calibration":true,"no_adaptive_input":true,"no_cold_input":true,"no_path_b":true,"path_b_depth":0,"no_path_b_analog":true,"json_out":"out/queue_probe_win14.json"}
+{"label":"single_avg","trials":200,"seed":123,"base_window_ns":16,"classifier":"avg","avg_frames":1,"apply_calibration":true,"no_adaptive_input":true,"no_cold_input":true,"no_path_b":true,"path_b_depth":0,"no_path_b_analog":true,"json_out":"out/queue_probe_win16.json"}
+{"label":"single_avg","trials":200,"seed":123,"base_window_ns":18,"classifier":"avg","avg_frames":1,"apply_calibration":true,"no_adaptive_input":true,"no_cold_input":true,"no_path_b":true,"path_b_depth":0,"no_path_b_analog":true,"json_out":"out/queue_probe_win18.json"}
+{"label":"single_avg","trials":200,"seed":123,"base_window_ns":16,"classifier":"avg","avg_frames":2,"apply_calibration":true,"no_adaptive_input":true,"no_cold_input":true,"no_path_b":true,"path_b_depth":0,"no_path_b_analog":true,"json_out":"out/queue_probe_win16_avg2.json"}
+{"label":"single_avg","trials":200,"seed":123,"base_window_ns":14,"classifier":"avg","avg_frames":2,"apply_calibration":true,"no_adaptive_input":true,"no_cold_input":true,"no_path_b":true,"path_b_depth":0,"no_path_b_analog":true,"json_out":"out/queue_probe_win14_avg2.json"}
+
+
