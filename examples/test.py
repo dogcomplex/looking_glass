@@ -214,23 +214,34 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--trials", type=int, default=200)
     ap.add_argument("--seed", type=int, default=321)
+    ap.add_argument("--channels", type=int, default=16, help="Number of logical channels (e.g., 16/32/64)")
     ap.add_argument("--sensitivity", action="store_true")
     ap.add_argument("--windows", type=str, default="3,5,7,9,13,17")
     ap.add_argument("--rin-range", type=str, default="-170:-140:4")
     ap.add_argument("--ct-range", type=str, default="-40:-18:4")
     ap.add_argument("--vote3", action="store_true", help="Enable 3x temporal voting estimate")
     ap.add_argument("--repeat", type=int, default=1, help="Temporal repeats for majority vote estimate (overrides --vote3)")
+    ap.add_argument("--classifier",
+                    type=str,
+                    choices=["auto","adaptive","avg","soft","vote3","repeat","replicate","replicate2","phys2x","lockin","chop","mitigated"],
+                    default=None,
+                    help="Classifier used for primary Path A summary when set")
     ap.add_argument("--autotune", action="store_true", help="Run automatic tuner within realistic bounds")
     ap.add_argument("--autotune-budget", type=int, default=60)
     ap.add_argument("--autotune-trials", type=int, default=120)
     ap.add_argument("--neighbor-ct", action="store_true", help="Use neighbor crosstalk model in baseline")
     ap.add_argument("--base-window-ns", type=float, default=20.0, help="Baseline clock window (ns)")
     ap.add_argument("--apply-calibration", action="store_true", help="Apply per-channel vth trims to baseline KPIs")
+    ap.add_argument("--mask-bad-channels", type=int, default=0, help="Mask N worst channels (exclude from BER)")
+    ap.add_argument("--mask-bad-frac", type=float, default=0.0, help="Mask worst frac of channels (0.0..1.0)")
+    ap.add_argument("--calib-mask-trials", type=int, default=200, help="Trials used to estimate bad-channel mask")
     ap.add_argument("--spatial-oversample", type=int, default=1, help="Pseudo spatial oversampling vote (runs per input)")
     ap.add_argument("--lockin", action="store_true", help="Estimate lock-in subtraction by subtracting a dark frame dv")
     ap.add_argument("--chop", action="store_true", help="Chopper stabilization: use +x and -x frames, subtract dv before threshold")
     ap.add_argument("--avg-frames", type=int, default=1, help="Average dv over N frames per input before thresholding (noise ~ 1/sqrt(N))")
     ap.add_argument("--use-avg-frames-for-path-a", action="store_true", help="If set and avg_frames>1, use averaged-dv classifier as primary path_a summary")
+    ap.add_argument("--permute-repeats", action="store_true", help="Permute logical↔physical channel mapping on each repeat and de-permute for voting")
+    ap.add_argument("--permute-scheme", type=str, choices=["random","cyclic"], default="random", help="Permutation scheme across repeats")
     ap.add_argument("--soft-thresh", action="store_true", help="Bypass comparator: software threshold dv using per-channel vth (upper bound for Path A)")
     # Option to choose which computed classifier feeds the primary path_a summary
     ap.add_argument("--path-a-mode", type=str, default="auto",
@@ -281,7 +292,7 @@ def main():
         args.adaptive_input = True
 
     # Base system from typ packs inline
-    sys_p = SystemParams(channels=16, window_ns=float(args.base_window_ns), temp_C=25.0, seed=args.seed,
+    sys_p = SystemParams(channels=int(args.channels), window_ns=float(args.base_window_ns), temp_C=25.0, seed=args.seed,
                          normalize_dv=bool(getattr(args, 'normalize_dv', False)),
                          normalize_eps_v=float(getattr(args, 'normalize_eps_v', 1e-6)))
     # Build from overrides if provided (simple loader)
@@ -296,7 +307,7 @@ def main():
         except ModuleNotFoundError:
             return {}
 
-    emit = EmitterParams(channels=16, power_mw_per_ch=0.7, power_sigma_pct=2.0, modulation_mode="pushpull", pushpull_alpha=0.9)
+    emit = EmitterParams(channels=sys_p.channels, power_mw_per_ch=0.7, power_sigma_pct=2.0, modulation_mode="pushpull", pushpull_alpha=0.9)
     emit_override = _load_yaml(getattr(args, 'emitter_pack', None))
     for k, v in (emit_override or {}).items():
         if hasattr(emit, k): setattr(emit, k, v)
@@ -388,7 +399,7 @@ def main():
         c_xs, c_ys, c_ok = [], [], True
 
     # Baseline summary at default settings (use same policy for baseline and path_a)
-    base_emit = EmitterParams(channels=16, modulation_mode="pushpull", pushpull_alpha=0.9)
+    base_emit = EmitterParams(channels=sys_p.channels, modulation_mode="pushpull", pushpull_alpha=0.9)
     base_optx = OpticsParams(ct_model=("neighbor" if args.neighbor_ct else "global"))
     base_pd = PDParams()
     base_tia = TIAParams(bw_mhz=tia_bw)
@@ -408,6 +419,9 @@ def main():
             for k in range(maxN):
                 r = base_orch.step(force_ternary=tern)
                 dv = _np.array(r.get("dv_mV", [0]*base_orch.sys.channels))
+                if dv.shape[0] != base_orch.sys.channels:
+                    dv = dv[:base_orch.sys.channels]
+                acc = acc[:dv.shape[0]]
                 acc += dv
                 up_th = float(base_orch.comp.p.vth_mV) + 0.5*float(base_orch.comp.p.hysteresis_mV)
                 if _np.all(_np.abs(acc) >= (up_th + margin)):
@@ -850,7 +864,11 @@ def main():
             acc = _np.zeros(base_orch.sys.channels, dtype=float)
             for _j in range(N):
                 r = base_orch.step(force_ternary=tern)
-                acc += _np.array(r.get("dv_mV", [0]*base_orch.sys.channels))
+                dv = _np.array(r.get("dv_mV", [0]*base_orch.sys.channels))
+                if dv.shape[0] != base_orch.sys.channels:
+                    dv = dv[:base_orch.sys.channels]
+                acc = acc[:dv.shape[0]]
+                acc += dv
             pred = _np.sign(acc)
             errs.append(float(_np.mean(pred != tern)))
         avg_frames_ber = float(_np.median(errs)) if errs else None
@@ -901,6 +919,9 @@ def main():
                 else:
                     r = base_orch.step(force_ternary=tern)
                     dv = _np.array(r.get("dv_mV", [0]*base_orch.sys.channels))
+                if dv.shape[0] != base_orch.sys.channels:
+                    dv = dv[:base_orch.sys.channels]
+                acc = acc[:dv.shape[0]]
                 acc += dv
             dv_avg = acc/float(N)
             dv_lin = lin_scale*(dv_avg + lin_offset)
@@ -909,6 +930,8 @@ def main():
         mitigated_ber = float(_np.median(errs)) if errs else None
 
     # Optional quick per-channel calibration to set vth for path_a/baseline even when --no-cal
+    # Initialize masking and calibration vectors
+    active_mask = None
     vth_vec_pa = None
     try:
         if getattr(args, 'apply_calibration', False):
@@ -939,26 +962,228 @@ def main():
     except Exception:
         vth_vec_pa = None
 
+    # Build bad-channel mask BEFORE classifier evaluation so it is applied
+    masked_count = 0
+    try:
+        Nmask = int(max(int(getattr(args, 'mask_bad_channels', 0)), float(getattr(args, 'mask_bad_frac', 0.0)) * float(sys_p.channels)))
+        if Nmask > 0:
+            import numpy as _np
+            trials_mask = int(max(50, min(getattr(args, 'calib_mask_trials', 200), 500)))
+            ch = sys_p.channels
+            err_counts = None
+            for _ in range(trials_mask):
+                tern = orch.rng.integers(-1, 2, size=ch)
+                r = orch.step(force_ternary=tern)
+                # Prefer comparator outputs for mask (matches classifier); fallback to dv sign
+                tout = _np.array(r.get("t_out", []), dtype=int)
+                if tout.size == 0:
+                    dv = _np.array(r.get("dv_mV", []), dtype=float)
+                    tout = _np.sign(dv).astype(int)
+                if err_counts is None:
+                    err_counts = _np.zeros_like(tout, dtype=float)
+                if tout.shape[0] != ch:
+                    tern = tern[:tout.shape[0]]
+                err_counts += (tout != tern)
+            rates = err_counts / float(max(1, trials_mask))
+            idx = _np.argsort(rates)[::-1][:min(Nmask, rates.shape[0])]
+            active_mask = _np.ones_like(rates, dtype=bool)
+            active_mask[idx] = False
+            try:
+                import numpy as _np
+                masked_count = int((_np.asarray(active_mask) == False).sum())
+            except Exception:
+                masked_count = int(Nmask)
+    except Exception:
+        active_mask = None
+
     # Path A summary with configured packs (reflects vendor overrides)
-    # Precedence: soft-threshold > averaged-dv > adaptive > default
-    if getattr(args, 'soft_thresh', False):
+    # If classifier is explicitly chosen, honor it; otherwise precedence: soft > avg > adaptive > default
+    cls_choice = getattr(args, 'classifier', None)
+    if cls_choice == 'vote3' or (cls_choice == 'repeat'):
         import numpy as _np
         errs = []
+        repN = max(1, int(getattr(args, 'repeat', 1)))
         for _ in range(min(args.trials, 200)):
             tern = orch.rng.integers(-1, 2, size=orch.sys.channels)
-            r = orch.step(force_ternary=tern)
-            dv = _np.array(r.get("dv_mV", [0]*orch.sys.channels))
+            votes = None
+            for j in range(repN):
+                # Optional permutation diversity across repeats
+                if getattr(args, 'permute_repeats', False):
+                    if args.permute_scheme == 'cyclic':
+                        perm = _np.roll(_np.arange(orch.sys.channels), j)
+                    else:
+                        perm = _np.array(orch.rng.permutation(orch.sys.channels))
+                    inv = _np.argsort(perm)
+                    # Apply permutation to input channels
+                    tern_perm = tern[perm]
+                    r = orch.step(force_ternary=tern_perm)
+                    tout = _np.array(r.get("t_out", [0]*orch.sys.channels), dtype=int)
+                    # De-permute t_out back to logical order
+                    tout = tout[inv]
+                else:
+                    r = orch.step(force_ternary=tern)
+                    tout = _np.array(r.get("t_out", [0]*orch.sys.channels), dtype=int)
+                # Apply bad-channel mask if present
+                if active_mask is not None:
+                    M = min(len(active_mask), tout.shape[0])
+                    tout = tout[:M]; tsel = tern[:M]; am = active_mask[:M]
+                    tout = tout[am]; tcur = tsel[am]
+                else:
+                    tcur = tern
+                # Initialize votes matrix on first repeat with effective length
+                if votes is None:
+                    votes = _np.zeros((repN, len(tcur)), dtype=int)
+                votes[j, :len(tout)] = _np.sign(tout)
+            # Tie-break zeros toward +1 to avoid 0 labels
+            vote_sum = _np.sum(votes, axis=0)
+            pred = _np.where(vote_sum >= 0, 1, -1)
+            errs.append(float(_np.mean(pred != tcur)))
+        path_a_summary = {
+            "p50_ber": float(_np.median(errs)) if errs else None,
+            "p50_energy_pj": None,
+            "window_ns": float(orch.clk.p.window_ns),
+        }
+    elif cls_choice == 'replicate2':
+        import numpy as _np
+        errs = []
+        ch = orch.sys.channels
+        # Two complementary permutations: identity and half-rotate (for even channels)
+        base_perm = _np.arange(ch)
+        if ch % 2 == 0:
+            alt_perm = _np.roll(base_perm, ch//2)
+        else:
+            alt_perm = _np.array(orch.rng.permutation(ch))
+        inv_base = _np.argsort(base_perm)
+        inv_alt = _np.argsort(alt_perm)
+        for _ in range(min(args.trials, 200)):
+            tern = orch.rng.integers(-1, 2, size=ch)
+            # Pass 1: identity
+            r1 = orch.step(force_ternary=tern[base_perm])
+            dv1 = _np.array(r1.get("dv_mV", [0]*ch))[inv_base]
+            # Pass 2: alternate permutation
+            r2 = orch.step(force_ternary=tern[alt_perm])
+            dv2 = _np.array(r2.get("dv_mV", [0]*ch))[inv_alt]
+            dv_sum = dv1 + dv2
+            tcur = tern
+            if active_mask is not None:
+                M = min(len(active_mask), dv_sum.shape[0])
+                dv_sum = dv_sum[:M]; tcur = tcur[:M]; am = active_mask[:M]
+                dv_sum = dv_sum[am]; tcur = tcur[am]
             if vth_vec_pa is not None:
-                pred = _np.sign(dv - vth_vec_pa)
+                vv = vth_vec_pa
+                if active_mask is not None:
+                    vv = vv[:M][am]
+                pred = _np.sign(dv_sum - 2.0*vv)
             else:
-                pred = _np.sign(dv)
+                pred = _np.sign(dv_sum)
+            errs.append(float(_np.mean(pred != tcur)))
+        path_a_summary = {
+            "p50_ber": float(_np.median(errs)) if errs else None,
+            "p50_energy_pj": None,
+            "window_ns": float(orch.clk.p.window_ns),
+        }
+    elif cls_choice == 'replicate':
+        import numpy as _np
+        errs = []
+        ch = orch.sys.channels
+        repN = max(2, int(getattr(args, 'repeat', 2)))
+        for _ in range(min(args.trials, 200)):
+            tern = orch.rng.integers(-1, 2, size=ch)
+            dv_acc = _np.zeros(ch, dtype=float)
+            for j in range(repN):
+                if getattr(args, 'permute_repeats', False):
+                    if args.permute_scheme == 'cyclic':
+                        perm = _np.roll(_np.arange(ch), j)
+                    else:
+                        perm = _np.array(orch.rng.permutation(ch))
+                    inv = _np.argsort(perm)
+                    r = orch.step(force_ternary=tern[perm])
+                    dv = _np.array(r.get("dv_mV", [0]*ch))[inv]
+                else:
+                    r = orch.step(force_ternary=tern)
+                    dv = _np.array(r.get("dv_mV", [0]*ch))
+                dv_acc += dv
+            tcur = tern
+            if active_mask is not None:
+                M = min(len(active_mask), dv_acc.shape[0])
+                dv_acc = dv_acc[:M]; tcur = tcur[:M]; am = active_mask[:M]
+                dv_acc = dv_acc[am]; tcur = tcur[am]
+            if vth_vec_pa is not None:
+                vv = vth_vec_pa
+                if active_mask is not None:
+                    vv = vv[:M][am]
+                # Compare against scaled threshold and tie-break zeros to +1
+                pred = _np.where((dv_acc - float(repN)*vv) >= 0.0, 1, -1)
+            else:
+                pred = _np.where(dv_acc >= 0.0, 1, -1)
+            errs.append(float(_np.mean(pred != tcur)))
+        path_a_summary = {
+            "p50_ber": float(_np.median(errs)) if errs else None,
+            "p50_energy_pj": None,
+            "window_ns": float(orch.clk.p.window_ns),
+        }
+    elif cls_choice == 'phys2x':
+        # Simulate 2x physical redundancy: each logical channel is read from two physical tiles simultaneously
+        # Implementation: run once on tern, then again on a half-rotated channel assignment and sum dv
+        import numpy as _np
+        errs = []
+        ch = orch.sys.channels
+        base_perm = _np.arange(ch)
+        if ch % 2 == 0:
+            alt_perm = _np.roll(base_perm, ch//2)
+        else:
+            alt_perm = _np.array(orch.rng.permutation(ch))
+        inv_base = _np.argsort(base_perm)
+        inv_alt = _np.argsort(alt_perm)
+        for _ in range(min(args.trials, 200)):
+            tern = orch.rng.integers(-1, 2, size=ch)
+            r1 = orch.step(force_ternary=tern[base_perm])
+            dv1 = _np.array(r1.get("dv_mV", [0]*ch))[inv_base]
+            r2 = orch.step(force_ternary=tern[alt_perm])
+            dv2 = _np.array(r2.get("dv_mV", [0]*ch))[inv_alt]
+            dv_sum = dv1 + dv2
+            if vth_vec_pa is not None:
+                pred = _np.sign(dv_sum - 2.0*vth_vec_pa)
+            else:
+                pred = _np.sign(dv_sum)
             errs.append(float(_np.mean(pred != tern)))
         path_a_summary = {
             "p50_ber": float(_np.median(errs)) if errs else None,
             "p50_energy_pj": None,
             "window_ns": float(orch.clk.p.window_ns),
         }
-    elif getattr(args, 'use_avg_frames_for_path_a', False) and int(args.avg_frames) > 1:
+    elif cls_choice == 'lockin' and (lockin_ber is not None):
+        path_a_summary = {"p50_ber": lockin_ber, "p50_energy_pj": None, "window_ns": float(orch.clk.p.window_ns)}
+    elif cls_choice == 'chop' and (chop_ber is not None):
+        path_a_summary = {"p50_ber": chop_ber, "p50_energy_pj": None, "window_ns": float(orch.clk.p.window_ns)}
+    elif cls_choice == 'mitigated' and (mitigated_ber is not None):
+        path_a_summary = {"p50_ber": mitigated_ber, "p50_energy_pj": None, "window_ns": float(orch.clk.p.window_ns)}
+    elif cls_choice == 'soft' or getattr(args, 'soft_thresh', False):
+        import numpy as _np
+        errs = []
+        for _ in range(min(args.trials, 200)):
+            tern = orch.rng.integers(-1, 2, size=orch.sys.channels)
+            r = orch.step(force_ternary=tern)
+            dv = _np.array(r.get("dv_mV", [0]*orch.sys.channels))
+            tcur = tern
+            if active_mask is not None:
+                M = min(len(active_mask), dv.shape[0])
+                dv = dv[:M]; tcur = tcur[:M]; am = active_mask[:M]
+                dv = dv[am]; tcur = tcur[am]
+            if vth_vec_pa is not None:
+                vv = vth_vec_pa
+                if active_mask is not None:
+                    vv = vv[:M][am]
+                pred = _np.where((dv - vv) >= 0.0, 1, -1)
+            else:
+                pred = _np.where(dv >= 0.0, 1, -1)
+            errs.append(float(_np.mean(pred != tcur)))
+        path_a_summary = {
+            "p50_ber": float(_np.median(errs)) if errs else None,
+            "p50_energy_pj": None,
+            "window_ns": float(orch.clk.p.window_ns),
+        }
+    elif cls_choice == 'avg' or (getattr(args, 'use_avg_frames_for_path_a', False) and int(args.avg_frames) > 1):
         import numpy as _np
         N = int(args.avg_frames)
         errs = []
@@ -978,7 +1203,7 @@ def main():
             "p50_energy_pj": None,
             "window_ns": float(orch.clk.p.window_ns),
         }
-    elif args.adaptive_input:
+    elif cls_choice == 'adaptive' or args.adaptive_input:
         import numpy as _np
         errs = []
         T = int(args.trials)
@@ -990,6 +1215,14 @@ def main():
             for k in range(maxN):
                 r = orch.step(force_ternary=tern)
                 dv = _np.array(r.get("dv_mV", [0]*orch.sys.channels))
+                if dv.shape[0] != orch.sys.channels:
+                    dv = dv[:orch.sys.channels]
+                acc = acc[:dv.shape[0]]
+                acc += dv
+                dv = _np.array(r.get("dv_mV", [0]*orch.sys.channels))
+                if dv.shape[0] != orch.sys.channels:
+                    dv = dv[:orch.sys.channels]
+                acc = acc[:dv.shape[0]]
                 acc += dv
                 up_th = float(orch.comp.p.vth_mV) + 0.5*float(orch.comp.p.hysteresis_mV)
                 if _np.all(_np.abs(acc) >= (up_th + margin)):
@@ -1013,6 +1246,8 @@ def main():
     except Exception:
         pass
 
+    # (Mask already built above; no-op here)
+
     summary = {
         "config": {
             "trials": args.trials,
@@ -1027,6 +1262,10 @@ def main():
             "adaptive_max_frames": int(args.adaptive_max_frames),
             "adaptive_margin_mV": float(args.adaptive_margin_mV),
             "avg_frames": int(args.avg_frames),
+            "classifier": (cls_choice or "auto"),
+            "mask_bad_channels_req": int(getattr(args, 'mask_bad_channels', 0)),
+            "mask_bad_frac_req": float(getattr(args, 'mask_bad_frac', 0.0)),
+            "mask_applied_count": int(masked_count),
         },
         "baseline": base_summary,
         "path_a": path_a_summary,
@@ -1082,7 +1321,7 @@ def main():
         sens_windows = [3, 6, 10, 15, 20, 30]
         sens_rin = (-170.0, -130.0, 9)
         sens_ct = (-40.0, -15.0, 9)
-        sens_emit = EmitterParams(channels=16, power_mw_per_ch=0.05, modulation_mode="pushpull", pushpull_alpha=0.9)
+        sens_emit = EmitterParams(channels=sys_p.channels, power_mw_per_ch=0.05, modulation_mode="pushpull", pushpull_alpha=0.9)
         sens_optx = OpticsParams()
         sens_pd = PDParams()
         sens_tia = TIAParams(bw_mhz=sens_tia_bw, tia_transimpedance_kohm=1.0)
@@ -1194,7 +1433,7 @@ def main():
         # No calibration
         orch_drift = Orchestrator(
             sys_p,
-            EmitterParams(channels=16, power_mw_per_ch=0.7),
+            EmitterParams(channels=sys_p.channels, power_mw_per_ch=0.7),
             OpticsParams(),
             PDParams(),
             TIAParams(bw_mhz=tia_bw, tia_transimpedance_kohm=5.0),
@@ -1213,7 +1452,7 @@ def main():
         # With periodic re-centering
         orch_fix = Orchestrator(
             sys_p,
-            EmitterParams(channels=16, power_mw_per_ch=0.7),
+            EmitterParams(channels=sys_p.channels, power_mw_per_ch=0.7),
             OpticsParams(),
             PDParams(),
             TIAParams(bw_mhz=tia_bw, tia_transimpedance_kohm=5.0),

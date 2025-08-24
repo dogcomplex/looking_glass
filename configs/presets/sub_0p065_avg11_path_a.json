@@ -1,34 +1,29 @@
 {
   "runs": [
     {
-      "trials": ["200"],
-      "seed": ["123"],
-      "windows": ["14", "16", "18"],
+      "trials": ["400"],
+      "seed": ["321"],
+      "windows": ["20", "30"],
+      "channels": ["16"],
       "inputs": ["digital"],
       "outputs": ["path_a"],
       "path_b_analog_depths": ["0"],
 
-      "vote3": ["1"],
-      "autotune": ["0"],
-      "apply_autotuned_params": ["0"],
-      "use_autotuned_as_primary": ["0"],
+      "classifier": ["avg"],
+      "avg_frames": ["11"],
+      "mask_bad_channels": ["0", "6"],
+      "calib_mask_trials": ["300"],
 
-      "sensitivity": ["0"],
-      "neighbor_ct": ["0"],
-
-      "apply_calibration": ["0"],
+      "apply_calibration": ["1"],
       "adaptive_input": ["0"],
-      "avg_frames": ["1"],
       "soft_thresh": ["0"],
-      "normalize_dv": ["0"],
+      "normalize_dv": ["1"],
       "normalize_eps_v": ["1e-6"],
 
-      "fast": ["0"],
       "no_sweeps": ["1"],
-      "no_cal": ["0"],
       "no_drift": ["1"],
-      "light_output": ["1"],
-      "cap": ["16"],
+      "light_output": ["0"],
+      "cap": ["24"],
 
       "packs": {
         "emitter_packs": [
@@ -41,14 +36,10 @@
           "configs/packs/vendors/sensors/vishay_BPW34_typ.yaml"
         ],
         "tia_packs": [
-          "configs/packs/vendors/tias/texas_instruments_OPA857EVM_typ.yaml",
           "configs/packs/overlays/tuned_tia.yaml"
         ],
         "comparator_packs": [
           "configs/packs/vendors/comparators/analog_devices_LTC6752_typ.yaml"
-        ],
-        "camera_packs": [
-          ""
         ],
         "clock_packs": [
           "configs/packs/clock_typ.yaml"

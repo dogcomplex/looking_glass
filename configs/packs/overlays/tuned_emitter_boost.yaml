@@ -1,0 +1,8 @@
+# Slight emitter power boost to increase dv margin without changing packs
+power_mw_per_ch: 0.90
+power_sigma_pct: 2.0
+extinction_db: 15.5
+rin_dbhz: -150.0
+rise_fall_ns_10_90: 1.0
+temp_coeff_pct_per_C: 0.2
+

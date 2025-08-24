@@ -1,0 +1,6 @@
+ct_model: neighbor
+ct_neighbor_db: -45.0
+ct_diag_db: -48.0
+transmittance: 0.8
+psf_kernel: "lorentzian:w=2.0"
+

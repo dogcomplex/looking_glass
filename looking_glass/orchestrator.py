@@ -81,8 +81,18 @@ class Orchestrator:
             Vp = Vp / denom
             Vm = Vm / denom
         t_out = self.comp.simulate(Vp, Vm, self.sys.temp_C)
-        # crude "true" comparing to sign with 0 threshold
+        # Align lengths defensively (square grid backends may not match arbitrary channel counts)
         truth = tern
+        try:
+            M = int(min(len(t_out), len(truth)))
+            if len(t_out) != len(truth):
+                t_out = np.asarray(t_out)[:M]
+                truth = np.asarray(truth)[:M]
+                Vp = np.asarray(Vp)[:M]
+                Vm = np.asarray(Vm)[:M]
+        except Exception:
+            M = len(truth)
+        # crude "true" comparing to sign with 0 threshold
         ber = np.mean(t_out != truth)
         energy_pj = float((Pp2.sum()+Pm2.sum())*1e-3*dt*1e-9*1e12)  # mW * s -> J, to pJ
         # Simple per-module SNR proxies (avoid zero-divide)
@@ -97,15 +107,16 @@ class Orchestrator:
             "snr_emit": snr_emit,
             "snr_pd": snr_pd,
             "snr_tia": snr_tia,
-            "t_out": t_out.tolist(),
-            "truth": truth.tolist(),
+            "t_out": np.asarray(t_out).tolist(),
+            "truth": np.asarray(truth).tolist(),
             "blocks": int(np.sqrt(N)) if int(np.sqrt(N))**2 == N else None,
             "per_tile": {
                 "plus": per_tile_p.tolist() if per_tile_p is not None else None,
                 "minus": per_tile_m.tolist() if per_tile_m is not None else None,
             },
-            "dv_mV": (Vp - Vm).tolist(),
-            "vsum_mV": (np.abs(Vp) + np.abs(Vm)).tolist(),
+            "dv_mV": (np.asarray(Vp) - np.asarray(Vm)).tolist(),
+            "vsum_mV": (np.abs(np.asarray(Vp)) + np.abs(np.asarray(Vm))).tolist(),
+            "effective_channels": int(M),
         }
 
     def run(self, trials=100):

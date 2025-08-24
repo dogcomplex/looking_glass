@@ -209,6 +209,7 @@ def api_run():
     autotune = request.args.get("autotune", "1")
     sensitivity = request.args.get("sensitivity", "0")
     base_window = request.args.get("base_window_ns", "10.0")
+    channels = request.args.get("channels", "")
     neighbor_ct = request.args.get("neighbor_ct", "0")
     path_b_depth = request.args.get("path_b_depth", "5")
     path_b_sweep = request.args.get("path_b_sweep", "1")
@@ -230,6 +231,7 @@ def api_run():
     if sensitivity in ("1", "true", "True"): args.append("--sensitivity")
     if neighbor_ct in ("1", "true", "True"): args.append("--neighbor-ct")
     args += ["--base-window-ns", str(base_window)]
+    if channels not in (None, "", "None"): args += ["--channels", str(channels)]
     if str(path_b_depth) not in ("0", "false", "False", "", None): args += ["--path-b-depth", str(path_b_depth)]
     if str(path_b_sweep) in ("1", "true", "True"): args.append("--path-b-sweep")
     if path_b_analog_depth not in (None, "", "-1"): args += ["--path-b-analog-depth", str(path_b_analog_depth)]
@@ -525,6 +527,7 @@ def api_run_matrix():
         sens_csv = request.args.get("sensitivity", request.args.get("sensitivities", "0"))
         outputs_csv = request.args.get("outputs", "path_a,path_b_analog")
         windows_csv = request.args.get("windows", "")
+        channels_csv = request.args.get("channels", "")
         trials = request.args.get("trials", "300")
         seed = request.args.get("seed", "123")
         pba_depth = request.args.get("path_b_analog_depth", "5")
@@ -536,6 +539,10 @@ def api_run_matrix():
         adapt_max_csv = request.args.get("adaptive_max_frames", "12")
         adapt_margin_csv = request.args.get("adaptive_margin_mV", "0.8")
         light_csv = request.args.get("light_output", "0")
+        classifier_csv = request.args.get("classifier", "")
+        repeat_csv = request.args.get("repeat", "")
+        permute_csv = request.args.get("permute_repeats", "0")
+        perm_scheme_csv = request.args.get("permute_scheme", "random")
         # extra flags to mirror preset capabilities
         apply_cal_csv = request.args.get("apply_calibration", "0")
         avg_frames_csv = request.args.get("avg_frames", "1")
@@ -584,6 +591,11 @@ def api_run_matrix():
         use_at_primary_list = [s.strip() for s in use_at_primary_csv.split(',') if s.strip()]
         light_list = [s.strip() for s in light_csv.split(',') if s.strip()]
         outputs = [s.strip() for s in outputs_csv.split(',') if s.strip()]
+        channels_list = [s.strip() for s in channels_csv.split(',') if s.strip()]
+        classifier_list = [s.strip() for s in classifier_csv.split(',') if s.strip()]
+        repeat_list = [s.strip() for s in repeat_csv.split(',') if s.strip()]
+        permute_list = [s.strip() for s in permute_csv.split(',') if s.strip()]
+        perm_scheme_list = [s.strip() for s in perm_scheme_csv.split(',') if s.strip()]
         windows = [w.strip() for w in windows_csv.split(',') if w.strip()]
         depths = [d.strip() for d in pba_depths_csv.split(',') if d.strip()]
         if not windows:
@@ -620,12 +632,13 @@ def api_run_matrix():
         from .preflight import validate_combo
         combos = []
         pruned = 0
-        for (inp, sens, outp, win, depth, v3, neighb, apc, adf, admx, admr, avf, sth, uap, aap, lct, ff, ns, nc, nd, lo, uatp) in itertools.product(
+        for (inp, sens, outp, win, depth, v3, neighb, apc, adf, admx, admr, avf, sth, uap, aap, lct, ff, ns, nc, nd, lo, uatp, cls, rep, prm, ps) in itertools.product(
             inputs, sens_list, outputs, windows, depths, vote_list, neigh_list,
             apply_cal_list or ["0"], adapt_list, adapt_max_list, adapt_margin_list,
             avg_frames_list or ["1"], soft_thresh_list or ["0"], use_avg_path_a_list or ["0"],
             apply_auto_list or ["0"], lock_ct_list or ["0"], fast_list or ["0"],
-            no_sweeps_list or ["0"], no_cal_list or ["0"], no_drift_list or ["0"], light_list or ["0"], use_at_primary_list or ["0"]
+            no_sweeps_list or ["0"], no_cal_list or ["0"], no_drift_list or ["0"], light_list or ["0"], use_at_primary_list or ["0"],
+            (classifier_list or [None]), (repeat_list or [None]), (permute_list or ["0"]), (perm_scheme_list or ["random"]) 
         ):
             for ep in pack_lists["emitter_pack"]:
                 for op in pack_lists["optics_pack"]:
@@ -649,7 +662,7 @@ def api_run_matrix():
                                             if v.get("status") == "fail":
                                                 pruned += 1
                                                 continue
-                                            combos.append((inp, sens, outp, win, depth, v3, neighb, apc, adf, admx, admr, avf, sth, uap, aap, lct, ff, ns, nc, nd, lo, uatp, ep, op, sp, tp, cp, cap, clp, thp, v))
+                                            combos.append((inp, sens, outp, win, depth, v3, neighb, apc, adf, admx, admr, avf, sth, uap, aap, lct, ff, ns, nc, nd, lo, uatp, cls, rep, prm, ps, ep, op, sp, tp, cp, cap, clp, thp, v))
         # soft cap (configurable via query)
         cap = int(request.args.get("cap", "96"))
         if len(combos) > cap:
@@ -657,7 +670,7 @@ def api_run_matrix():
 
         # Prepare jobs
         jobs = []
-        for (inp, sens, outp, win, depth, v3, neighb, apc, adf, admx, admr, avf, sth, uap, aap, lct, ff, ns, nc, nd, lo, uatp, ep, op, sp, tp, cp, cap, clp, thp, vres) in combos:
+        for (inp, sens, outp, win, depth, v3, neighb, apc, adf, admx, admr, avf, sth, uap, aap, lct, ff, ns, nc, nd, lo, uatp, cls, rep, prm, ps, ep, op, sp, tp, cp, cap, clp, thp, vres) in combos:
             run_id = str(uuid.uuid4())
             out_path = ROOT / "out" / f"test_summary_{run_id}.json"
             cmd = ["python", "examples/test.py",
@@ -697,6 +710,10 @@ def api_run_matrix():
             if aap in ("1","true","True"): cmd.append("--apply-autotuned-params")
             if uatp in ("1","true","True"): cmd.append("--use-autotuned-as-primary")
             if uap in ("1","true","True"): cmd.append("--use-avg-frames-for-path-a")
+            if cls not in (None, "", "None"): cmd += ["--classifier", str(cls)]
+            if rep not in (None, "", "None"): cmd += ["--repeat", str(rep)]
+            if prm in ("1","true","True"): cmd.append("--permute-repeats")
+            if ps not in (None, "", "None"): cmd += ["--permute-scheme", str(ps)]
             if lct in ("1","true","True"): cmd.append("--lock-optics-ct")
             if sth in ("1","true","True"): cmd.append("--soft-thresh")
             if ep: cmd += ["--emitter-pack", str(ep)]
@@ -707,6 +724,10 @@ def api_run_matrix():
             if cap: cmd += ["--camera-pack", str(cap)]
             if clp: cmd += ["--clock-pack", str(clp)]
             if thp: cmd += ["--thermal-pack", str(thp)]
+            # Channels (if provided globally for matrix)
+            if channels_list:
+                chv = channels_list[0]
+                cmd += ["--channels", str(chv)]
             jobs.append((cmd, run_id, out_path, inp, sens, outp, win, depth, ep, op, sp, tp, cp, cap, clp, thp, vres))
 
         def _worker(jobs_list):
@@ -840,6 +861,7 @@ def api_run_preset():
             trialsL = _parse_list(branch.get("trials"), ["300"])
             seedL = _parse_list(branch.get("seed"), ["123"])
             winL = _parse_list(branch.get("windows"), ["20"])  # base window ns
+            chanL = _parse_list(branch.get("channels"), [None])
             inputsL = _parse_list(branch.get("inputs"), ["digital"])
             outputsL = _parse_list(branch.get("outputs"), ["path_a"])  # path_a or path_b_analog
             depthL = _parse_list(branch.get("path_b_analog_depths"), ["5"])
@@ -870,6 +892,15 @@ def api_run_preset():
             useAvgPathAL = _parse_list(branch.get("use_avg_frames_for_path_a"), ["0"])
             lockCtL = _parse_list(branch.get("lock_optics_ct"), ["0"])
             softThreshL = _parse_list(branch.get("soft_thresh"), ["0"])
+            # Classifier controls (optional)
+            classifierL = _parse_list(branch.get("classifier"), [None])
+            repeatL = _parse_list(branch.get("repeat"), [None])
+            permuteL = _parse_list(branch.get("permute_repeats"), ["0"])
+            permSchemeL = _parse_list(branch.get("permute_scheme"), ["random"])
+            # Bad-channel mask controls
+            maskBadChL = _parse_list(branch.get("mask_bad_channels"), [None])
+            maskBadFracL = _parse_list(branch.get("mask_bad_frac"), [None])
+            calibMaskTrialsL = _parse_list(branch.get("calib_mask_trials"), [None])
 
             packs = branch.get("packs", {})
             def P(key):
@@ -892,8 +923,9 @@ def api_run_preset():
                         pack_data[lst] = {}
 
             for (tr, sd) in itertools.product(trialsL, seedL):
-                for (inp, outp, win, depth, v3, au, se, ne, apc, adf, admx, admr, avf, ff, ns, nc, nd, ndv, neps, tb, tt, aap, uatp, uap, lct, sth, lo) in itertools.product(
-                    inputsL, outputsL, winL, depthL, voteL, autoL, sensL, neighL, applyCalL, adaptL, adaptMaxL, adaptMargL, avgFramesL, fastL, noSweepsL, noCalL, noDriftL, normDvL, normEpsVL, tuneBudgetL, tuneTrialsL, applyAutoL, useAutoPrimaryL, useAvgPathAL, lockCtL, softThreshL, lightOutL
+                for (inp, outp, win, depth, v3, au, se, ne, apc, adf, admx, admr, avf, ff, ns, nc, nd, ndv, neps, tb, tt, aap, uatp, uap, lct, sth, lo, cls, rep, prm, ps, ch, mbc, mbf, cmt) in itertools.product(
+                    inputsL, outputsL, winL, depthL, voteL, autoL, sensL, neighL, applyCalL, adaptL, adaptMaxL, adaptMargL, avgFramesL, fastL, noSweepsL, noCalL, noDriftL, normDvL, normEpsVL, tuneBudgetL, tuneTrialsL, applyAutoL, useAutoPrimaryL, useAvgPathAL, lockCtL, softThreshL, lightOutL,
+                    classifierL, repeatL, permuteL, permSchemeL, chanL, maskBadChL, maskBadFracL, calibMaskTrialsL
                 ):
                     for (ep, op, spk, tpv, cpv, cav, clv, thv) in itertools.product(epL, opL, spL, tpL, cpL, capL, clpL, thpL):
                         total_combos += 1
@@ -944,6 +976,14 @@ def api_run_preset():
                         if uap in ("1","true","True"): cmd.append("--use-avg-frames-for-path-a")
                         if lct in ("1","true","True"): cmd.append("--lock-optics-ct")
                         if sth in ("1","true","True"): cmd.append("--soft-thresh")
+                        if ch not in (None, "", "None"): cmd += ["--channels", str(ch)]
+                        if cls not in (None, "", "None"): cmd += ["--classifier", str(cls)]
+                        if rep not in (None, "", "None"): cmd += ["--repeat", str(rep)]
+                        if prm in ("1","true","True"): cmd.append("--permute-repeats")
+                        if ps not in (None, "", "None"): cmd += ["--permute-scheme", str(ps)]
+                        if mbc not in (None, "", "None"): cmd += ["--mask-bad-channels", str(mbc)]
+                        if mbf not in (None, "", "None"): cmd += ["--mask-bad-frac", str(mbf)]
+                        if cmt not in (None, "", "None"): cmd += ["--calib-mask-trials", str(cmt)]
                         if ep: cmd += ["--emitter-pack", str(ep)]
                         if op: cmd += ["--optics-pack", str(op)]
                         if spk: cmd += ["--sensor-pack", str(spk)]

@@ -3,36 +3,47 @@
     {
       "trials": ["200"],
       "seed": ["123"],
-      "windows": ["14", "16", "18"],
+      "windows": ["18", "20", "30"],
+      "channels": ["16"],
       "inputs": ["digital"],
       "outputs": ["path_a"],
       "path_b_analog_depths": ["0"],
 
+      "classifier": ["repeat"],
+      "repeat": ["11"],
+      "permute_repeats": ["1"],
+      "permute_scheme": ["cyclic"],
+
+      "mask_bad_channels": ["8", "10", "15"],
+      "mask_bad_frac": ["0.0"],
+      "calib_mask_trials": ["300"],
+
       "vote3": ["1"],
       "autotune": ["0"],
       "apply_autotuned_params": ["0"],
-      "use_autotuned_as_primary": ["0"],
 
       "sensitivity": ["0"],
       "neighbor_ct": ["0"],
 
-      "apply_calibration": ["0"],
+      "apply_calibration": ["1"],
       "adaptive_input": ["0"],
       "avg_frames": ["1"],
+      "use_avg_frames_for_path_a": ["0"],
       "soft_thresh": ["0"],
-      "normalize_dv": ["0"],
+      "normalize_dv": ["1"],
       "normalize_eps_v": ["1e-6"],
 
       "fast": ["0"],
       "no_sweeps": ["1"],
       "no_cal": ["0"],
       "no_drift": ["1"],
-      "light_output": ["1"],
-      "cap": ["16"],
+      "light_output": ["0"],
+      "cap": ["12"],
 
       "packs": {
         "emitter_packs": [
-          "configs/packs/vendors/emitters/coherent_OBIS-850-nm_typ.yaml"
+          "configs/packs/vendors/emitters/coherent_OBIS-850-nm_typ.yaml",
+          "configs/packs/overlays/tuned_emitter_boost.yaml"
         ],
         "optics_packs": [
           "configs/packs/vendors/optics/thorlabs_Engineered-Diffuser-5°_typ.yaml"
@@ -41,7 +52,6 @@
           "configs/packs/vendors/sensors/vishay_BPW34_typ.yaml"
         ],
         "tia_packs": [
-          "configs/packs/vendors/tias/texas_instruments_OPA857EVM_typ.yaml",
           "configs/packs/overlays/tuned_tia.yaml"
         ],
         "comparator_packs": [

@@ -11,14 +11,14 @@
       "vote3": ["1"],
       "autotune": ["0"],
       "apply_autotuned_params": ["0"],
-      "use_autotuned_as_primary": ["0"],
 
       "sensitivity": ["0"],
       "neighbor_ct": ["0"],
 
-      "apply_calibration": ["0"],
+      "apply_calibration": ["1"],
       "adaptive_input": ["0"],
       "avg_frames": ["1"],
+      "use_avg_frames_for_path_a": ["0"],
       "soft_thresh": ["0"],
       "normalize_dv": ["0"],
       "normalize_eps_v": ["1e-6"],
