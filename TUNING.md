@@ -20,3 +20,8 @@ Be careful to make non-destructive changes where possible, at least when modifyi
 Try to give brief layman summaries of progress on what was achieved where relevant, to mark progress.  Try to track and update the history of what was tried to avoid repeating past mistakes.
 
 Please proceed with designing your next test probes.
+
+UPDATE: we now use a queue design to set probes to run, which is run by an external process.
+
+APPEND ONLY to queue/probes.jsonl
+NEVER modify queue/completed.jsonl
