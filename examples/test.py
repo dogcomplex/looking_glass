@@ -223,7 +223,7 @@ def main():
     ap.add_argument("--repeat", type=int, default=1, help="Temporal repeats for majority vote estimate (overrides --vote3)")
     ap.add_argument("--classifier",
                     type=str,
-                    choices=["auto","adaptive","avg","soft","vote3","repeat","replicate","replicate2","phys2x","lockin","chop","mitigated"],
+                    choices=["auto","adaptive","avg","soft","vote3","vote5","repeat","replicate","replicate2","phys2x","lockin","chop","mitigated"],
                     default=None,
                     help="Classifier used for primary Path A summary when set")
     ap.add_argument("--autotune", action="store_true", help="Run automatic tuner within realistic bounds")
@@ -239,6 +239,8 @@ def main():
     ap.add_argument("--lockin", action="store_true", help="Estimate lock-in subtraction by subtracting a dark frame dv")
     ap.add_argument("--chop", action="store_true", help="Chopper stabilization: use +x and -x frames, subtract dv before threshold")
     ap.add_argument("--avg-frames", type=int, default=1, help="Average dv over N frames per input before thresholding (noise ~ 1/sqrt(N))")
+    ap.add_argument("--avg-kernel", type=str, choices=["sum", "ewma"], default="sum", help="Averaging kernel for dv over frames: sum or ewma")
+    ap.add_argument("--avg-ema-alpha", type=float, default=0.6, help="EWMA alpha (0..1], only used when --avg-kernel=ewma")
     ap.add_argument("--use-avg-frames-for-path-a", action="store_true", help="If set and avg_frames>1, use averaged-dv classifier as primary path_a summary")
     ap.add_argument("--permute-repeats", action="store_true", help="Permute logical↔physical channel mapping on each repeat and de-permute for voting")
     ap.add_argument("--permute-scheme", type=str, choices=["random","cyclic"], default="random", help="Permutation scheme across repeats")
@@ -284,6 +286,8 @@ def main():
     # Normalization/mitigation toggles
     ap.add_argument("--normalize-dv", action="store_true", help="Normalize dv to comparator threshold scale inside orchestrator")
     ap.add_argument("--normalize-eps-v", type=float, default=1e-6, help="Epsilon to avoid divide-by-zero during dv normalization (V)")
+    ap.add_argument("--export-vth", type=str, default=None, help="Export per-channel comparator vth (mV) learned during calibration to this JSON file")
+    ap.add_argument("--import-vth", type=str, default=None, help="Import per-channel comparator vth (mV) from JSON file and apply to comparator")
     args = ap.parse_args()
     # Defaults to run full non-destructive suite
     run_path_b_sweep = (not getattr(args, 'no_path_b_sweep', False)) or getattr(args, 'path_b_sweep', False)
@@ -383,6 +387,22 @@ def main():
         pass
     orch = Orchestrator(sys_p, emit, optx, pd, tia, comp, clk)
 
+    # Helper: accumulate dv across frames using selected kernel
+    def _accumulate_dv_over_frames(_orch, _tern, _N: int, _kernel: str, _alpha: float):
+        import numpy as _np
+        acc = None
+        for _j in range(max(1, int(_N))):
+            r = _orch.step(force_ternary=_tern)
+            dv = _np.array(r.get("dv_mV", [0]*_orch.sys.channels))
+            if acc is None:
+                acc = dv.astype(float)
+            else:
+                if _kernel == "ewma":
+                    acc = float(_alpha)*dv + (1.0-float(_alpha))*acc
+                else:  # sum
+                    acc = acc + dv
+        return acc if acc is not None else _np.zeros(_orch.sys.channels, dtype=float)
+
     # Parse windows and ranges
     windows = [float(w) for w in args.windows.split(",") if w.strip()]
     rin_s, rin_e, rin_n = [v.strip() for v in args.rin_range.split(":")]
@@ -406,6 +426,20 @@ def main():
     base_comp = ComparatorParams(input_noise_mV_rms=comp_noise, vth_mV=5.0, hysteresis_mV=1.8, vth_sigma_mV=0.2)
     base_clk = ClockParams(window_ns=float(args.base_window_ns), jitter_ps_rms=10.0)
     base_orch = Orchestrator(sys_p, base_emit, base_optx, base_pd, base_tia, base_comp, base_clk)
+    # Optional: import per-channel vth (mV) and apply to primary and baseline comparators
+    try:
+        imp_path = getattr(args, 'import_vth', None)
+        if isinstance(imp_path, str) and imp_path:
+            import json as _json, pathlib as _pathlib, numpy as _np
+            arr = _json.loads(_pathlib.Path(imp_path).read_text(encoding="utf-8"))
+            vec = _np.asarray(arr, dtype=float)
+            orch.comp.set_vth_per_channel(vec)
+            try:
+                base_orch.comp.set_vth_per_channel(vec)
+            except Exception:
+                pass
+    except Exception:
+        pass
     # Optional adaptive integration for input stage only (baseline)
     if args.adaptive_input:
         import numpy as _np
@@ -861,14 +895,7 @@ def main():
         errs = []
         for _ in range(min(args.trials, 200)):
             tern = base_orch.rng.integers(-1, 2, size=base_orch.sys.channels)
-            acc = _np.zeros(base_orch.sys.channels, dtype=float)
-            for _j in range(N):
-                r = base_orch.step(force_ternary=tern)
-                dv = _np.array(r.get("dv_mV", [0]*base_orch.sys.channels))
-                if dv.shape[0] != base_orch.sys.channels:
-                    dv = dv[:base_orch.sys.channels]
-                acc = acc[:dv.shape[0]]
-                acc += dv
+            acc = _accumulate_dv_over_frames(base_orch, tern, N, str(getattr(args, 'avg_kernel', 'sum')), float(getattr(args, 'avg_ema_alpha', 0.6)))
             pred = _np.sign(acc)
             errs.append(float(_np.mean(pred != tern)))
         avg_frames_ber = float(_np.median(errs)) if errs else None
@@ -959,6 +986,16 @@ def main():
                 orch.comp.set_vth_per_channel(vth_vec_pa)
             except Exception:
                 pass
+            # Optionally export the learned per-channel vth (mV)
+            try:
+                exp_path = getattr(args, 'export_vth', None)
+                if isinstance(exp_path, str) and exp_path:
+                    import json as _json, os as _os
+                    _os.makedirs(_os.path.dirname(exp_path), exist_ok=True)
+                    with open(exp_path, "w", encoding="utf-8") as _f:
+                        _json.dump([float(x) for x in vth_vec_pa.tolist()], _f)
+            except Exception:
+                pass
     except Exception:
         vth_vec_pa = None
 
@@ -999,10 +1036,15 @@ def main():
     # Path A summary with configured packs (reflects vendor overrides)
     # If classifier is explicitly chosen, honor it; otherwise precedence: soft > avg > adaptive > default
     cls_choice = getattr(args, 'classifier', None)
-    if cls_choice == 'vote3' or (cls_choice == 'repeat'):
+    if cls_choice in ('vote3','vote5','repeat'):
         import numpy as _np
         errs = []
-        repN = max(1, int(getattr(args, 'repeat', 1)))
+        if cls_choice == 'vote3':
+            repN = 3
+        elif cls_choice == 'vote5':
+            repN = 5
+        else:
+            repN = max(1, int(getattr(args, 'repeat', 1)))
         for _ in range(min(args.trials, 200)):
             tern = orch.rng.integers(-1, 2, size=orch.sys.channels)
             votes = None
@@ -1189,10 +1231,7 @@ def main():
         errs = []
         for _ in range(min(args.trials, 200)):
             tern = orch.rng.integers(-1, 2, size=orch.sys.channels)
-            acc = _np.zeros(orch.sys.channels, dtype=float)
-            for _j in range(N):
-                r = orch.step(force_ternary=tern)
-                acc += _np.array(r.get("dv_mV", [0]*orch.sys.channels))
+            acc = _accumulate_dv_over_frames(orch, tern, N, str(getattr(args, 'avg_kernel', 'sum')), float(getattr(args, 'avg_ema_alpha', 0.6)))
             if vth_vec_pa is not None:
                 pred = _np.sign(acc - vth_vec_pa)
             else:
