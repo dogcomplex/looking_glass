@@ -857,7 +857,7 @@ def main():
 
     # Lock-in estimate: subtract a dark dv per trial and threshold on sign
     lockin_ber = None
-    if args.lockin:
+    if args.lockin or (getattr(args, 'classifier', None) == 'lockin'):
         import numpy as _np
         errs = []
         for _ in range(min(args.trials, 200)):
@@ -873,7 +873,7 @@ def main():
 
     # Chopper stabilization: use +x and -x frames, subtract, then threshold
     chop_ber = None
-    if args.chop:
+    if args.chop or (getattr(args, 'classifier', None) == 'chop'):
         import numpy as _np
         errs = []
         for _ in range(min(args.trials, 200)):
@@ -889,7 +889,7 @@ def main():
 
     # Frame averaging on dv: average N frames per input, then threshold
     avg_frames_ber = None
-    if int(args.avg_frames) > 1:
+    if (int(args.avg_frames) > 1) or (getattr(args, 'classifier', None) == 'avg'):
         import numpy as _np
         N = int(args.avg_frames)
         errs = []
