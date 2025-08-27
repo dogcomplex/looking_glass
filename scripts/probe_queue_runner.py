@@ -156,6 +156,22 @@ def build_argv_from_job(job: dict, out_path: str) -> list[str]:
         *flag(bool(job.get("mitigated", False)), "--mitigated"),
         *flag(bool(job.get("use_avg_frames_for_path_a", False)), "--use-avg-frames-for-path-a"),
         *flag(bool(job.get("normalize_dv", False)), "--normalize-dv"),
+        # Masking controls
+        "--mask-bad-frac", str(job.get("mask_bad_frac", 0.0)),
+        "--mask-bad-channels", str(int(job.get("mask_bad_channels", 0)))),
+        "--calib-mask-trials", str(int(job.get("calib_mask_trials", 200))),
+        *(["--mask-mode", str(job.get("mask_mode"))] if job.get("mask_mode") else []),
+        # Comparator overrides
+        *(["--comp-hysteresis-mV", str(job.get("comp_hysteresis_mV"))] if job.get("comp_hysteresis_mV") is not None else []),
+        *(["--comp-input-noise-mV", str(job.get("comp_input_noise_mV"))] if job.get("comp_input_noise_mV") is not None else []),
+        *(["--comp-vth-mV", str(job.get("comp_vth_mV"))] if job.get("comp_vth_mV") is not None else []),
+        *(["--comp-vth-sigma-mV", str(job.get("comp_vth_sigma_mV"))] if job.get("comp_vth_sigma_mV") is not None else []),
+        # Per-channel vth workflows
+        *(["--export-vth", str(job.get("export_vth"))] if job.get("export_vth") else []),
+        *(["--import-vth", str(job.get("import_vth"))] if job.get("import_vth") else []),
+        *(["--vth-inline", str(job.get("vth_inline"))] if job.get("vth_inline") else []),
+        *(["--vth-scale", str(job.get("vth_scale"))] if job.get("vth_scale") is not None else []),
+        *(["--vth-bias-mV", str(job.get("vth_bias_mV"))] if job.get("vth_bias_mV") is not None else []),
         # Packs
         "--emitter-pack", str(job.get("emitter_pack", "configs/packs/vendors/emitters/coherent_OBIS-850-nm_typ.yaml")),
         "--optics-pack", optics_pack_path,

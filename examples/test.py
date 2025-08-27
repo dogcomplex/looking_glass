@@ -235,6 +235,7 @@ def main():
     ap.add_argument("--mask-bad-channels", type=int, default=0, help="Mask N worst channels (exclude from BER)")
     ap.add_argument("--mask-bad-frac", type=float, default=0.0, help="Mask worst frac of channels (0.0..1.0)")
     ap.add_argument("--calib-mask-trials", type=int, default=200, help="Trials used to estimate bad-channel mask")
+    ap.add_argument("--mask-mode", type=str, choices=["error","dvspan"], default="error", help="Mask criterion: error (default) or dvspan (use |pos_mean-neg_mean|)")
     ap.add_argument("--spatial-oversample", type=int, default=1, help="Pseudo spatial oversampling vote (runs per input)")
     ap.add_argument("--lockin", action="store_true", help="Estimate lock-in subtraction by subtracting a dark frame dv")
     ap.add_argument("--chop", action="store_true", help="Chopper stabilization: use +x and -x frames, subtract dv before threshold")
@@ -288,6 +289,19 @@ def main():
     ap.add_argument("--normalize-eps-v", type=float, default=1e-6, help="Epsilon to avoid divide-by-zero during dv normalization (V)")
     ap.add_argument("--export-vth", type=str, default=None, help="Export per-channel comparator vth (mV) learned during calibration to this JSON file")
     ap.add_argument("--import-vth", type=str, default=None, help="Import per-channel comparator vth (mV) from JSON file and apply to comparator")
+    ap.add_argument("--vth-inline", type=str, default=None, help="Comma-separated per-channel vth (mV) to apply (overrides import)")
+    ap.add_argument("--vth-scale", type=float, default=1.0, help="Scale factor applied to per-channel vth vector before use")
+    ap.add_argument("--vth-bias-mV", type=float, default=0.0, help="Bias (mV) added to per-channel vth vector before use")
+    # Lightweight local autotuner for window/mask/avg
+    ap.add_argument("--local-autotune", action="store_true", help="Run a local search over window/mask/avg and report best path_a")
+    ap.add_argument("--la-windows", type=str, default="18,19,20,21", help="Comma-separated window ns for local autotune")
+    ap.add_argument("--la-mask-fracs", type=str, default="0.0625,0.09375,0.125", help="Comma-separated mask fractions for local autotune")
+    ap.add_argument("--la-avg-frames", type=str, default="2,3", help="Comma-separated avg-frames for local autotune")
+    # Comparator override knobs
+    ap.add_argument("--comp-hysteresis-mV", type=float, default=None, help="Override comparator hysteresis (mV)")
+    ap.add_argument("--comp-input-noise-mV", type=float, default=None, help="Override comparator input noise RMS (mV)")
+    ap.add_argument("--comp-vth-mV", type=float, default=None, help="Override comparator base vth (mV)")
+    ap.add_argument("--comp-vth-sigma-mV", type=float, default=None, help="Override comparator vth sigma (mV)")
     args = ap.parse_args()
     # Defaults to run full non-destructive suite
     run_path_b_sweep = (not getattr(args, 'no_path_b_sweep', False)) or getattr(args, 'path_b_sweep', False)
@@ -375,6 +389,18 @@ def main():
     comp_override = _load_yaml(getattr(args, 'comparator_pack', None))
     for k, v in (comp_override or {}).items():
         if hasattr(comp, k): setattr(comp, k, v)
+    # Apply comparator CLI overrides if provided
+    try:
+        if getattr(args, 'comp_hysteresis_mV', None) is not None:
+            comp.hysteresis_mV = float(args.comp_hysteresis_mV)
+        if getattr(args, 'comp_input_noise_mV', None) is not None:
+            comp.input_noise_mV_rms = float(args.comp_input_noise_mV)
+        if getattr(args, 'comp_vth_mV', None) is not None:
+            comp.vth_mV = float(args.comp_vth_mV)
+        if getattr(args, 'comp_vth_sigma_mV', None) is not None:
+            comp.vth_sigma_mV = float(args.comp_vth_sigma_mV)
+    except Exception:
+        pass
 
     clk = ClockParams(window_ns=float(args.base_window_ns), jitter_ps_rms=10.0)
     clk_override = _load_yaml(getattr(args, 'clock_pack', None))
@@ -429,13 +455,40 @@ def main():
     # Optional: import per-channel vth (mV) and apply to primary and baseline comparators
     try:
         imp_path = getattr(args, 'import_vth', None)
-        if isinstance(imp_path, str) and imp_path:
-            import json as _json, pathlib as _pathlib, numpy as _np
+        inline = getattr(args, 'vth_inline', None)
+        import numpy as _np
+        vec = None
+        if isinstance(inline, str) and inline:
+            parts = [p.strip() for p in inline.split(',') if p.strip()]
+            if parts:
+                vec = _np.asarray([float(p) for p in parts], dtype=float)
+        elif isinstance(imp_path, str) and imp_path:
+            import json as _json, pathlib as _pathlib
             arr = _json.loads(_pathlib.Path(imp_path).read_text(encoding="utf-8"))
             vec = _np.asarray(arr, dtype=float)
+        # Apply vector if provided
+        if vec is not None:
+            # Optional global scale/bias on per-channel vth
+            try:
+                s = float(getattr(args, 'vth_scale', 1.0)); b = float(getattr(args, 'vth_bias_mV', 0.0))
+                vec = s*vec + b
+            except Exception:
+                pass
             orch.comp.set_vth_per_channel(vec)
             try:
                 base_orch.comp.set_vth_per_channel(vec)
+            except Exception:
+                pass
+    except Exception:
+        pass
+    # Apply per-channel vth from comparator pack if provided (key: vth_per_channel_mV)
+    try:
+        if isinstance(comp_override, dict) and isinstance(comp_override.get('vth_per_channel_mV'), list):
+            import numpy as _np
+            v = _np.asarray(comp_override.get('vth_per_channel_mV'), dtype=float)
+            orch.comp.set_vth_per_channel(v)
+            try:
+                base_orch.comp.set_vth_per_channel(v)
             except Exception:
                 pass
     except Exception:
@@ -1008,6 +1061,10 @@ def main():
             trials_mask = int(max(50, min(getattr(args, 'calib_mask_trials', 200), 500)))
             ch = sys_p.channels
             err_counts = None
+            pos_sum = _np.zeros(ch, dtype=float)
+            pos_cnt = _np.zeros(ch, dtype=float)
+            neg_sum = _np.zeros(ch, dtype=float)
+            neg_cnt = _np.zeros(ch, dtype=float)
             for _ in range(trials_mask):
                 tern = orch.rng.integers(-1, 2, size=ch)
                 r = orch.step(force_ternary=tern)
@@ -1021,8 +1078,24 @@ def main():
                 if tout.shape[0] != ch:
                     tern = tern[:tout.shape[0]]
                 err_counts += (tout != tern)
-            rates = err_counts / float(max(1, trials_mask))
-            idx = _np.argsort(rates)[::-1][:min(Nmask, rates.shape[0])]
+                # dv stats for dvspan mode
+                dv_cur = _np.array(r.get("dv_mV", [0]*tout.shape[0]), dtype=float)
+                pos = tern > 0; neg = tern < 0
+                pos_sum[:dv_cur.shape[0]][pos[:dv_cur.shape[0]]] += dv_cur[pos[:dv_cur.shape[0]]]
+                pos_cnt[:dv_cur.shape[0]][pos[:dv_cur.shape[0]]] += 1.0
+                neg_sum[:dv_cur.shape[0]][neg[:dv_cur.shape[0]]] += dv_cur[neg[:dv_cur.shape[0]]]
+                neg_cnt[:dv_cur.shape[0]][neg[:dv_cur.shape[0]]] += 1.0
+            mode = (getattr(args, 'mask_mode', 'error') or 'error')
+            if mode == 'dvspan':
+                with _np.errstate(divide='ignore', invalid='ignore'):
+                    pos_mean = _np.divide(pos_sum, _np.clip(pos_cnt, 1.0, None))
+                    neg_mean = _np.divide(neg_sum, _np.clip(neg_cnt, 1.0, None))
+                    span = _np.abs(pos_mean - neg_mean)
+                # Mask smallest span channels first
+                idx = _np.argsort(span)[:min(Nmask, span.shape[0])]
+            else:
+                rates = err_counts / float(max(1, trials_mask))
+                idx = _np.argsort(rates)[::-1][:min(Nmask, rates.shape[0])]
             active_mask = _np.ones_like(rates, dtype=bool)
             active_mask[idx] = False
             try:
@@ -1557,6 +1630,61 @@ def main():
                     constraints[("optics", "ct_diag_db")] = {"min": float(optx.ct_diag_db), "max": float(optx.ct_diag_db)}
         except Exception:
             pass
+    # Local autotune (window/mask/avg)
+    local_best = None
+    try:
+        if getattr(args, 'local_autotune', False):
+            import numpy as _np
+            la_w = [float(w) for w in str(getattr(args, 'la_windows', '18,19,20')).split(',') if w.strip()]
+            la_m = [float(m) for m in str(getattr(args, 'la_mask_fracs', '0.0625,0.09375,0.125')).split(',') if m.strip()]
+            la_a = [int(a) for a in str(getattr(args, 'la_avg_frames', '2,3')).split(',') if a.strip()]
+            best = {"ber": 1.0, "window_ns": None, "mask_frac": None, "avg_frames": None}
+            T = int(min(args.trials, 160))
+            for w in la_w:
+                orch.clk.p.window_ns = float(w)
+                for mf in la_m:
+                    for af in la_a:
+                        # Build a short-run evaluation using current classifier
+                        errs = []
+                        for _ in range(T):
+                            tern = orch.rng.integers(-1, 2, size=orch.sys.channels)
+                            r = orch.step(force_ternary=tern)
+                            dv = _np.array(r.get("dv_mV", [0]*orch.sys.channels))
+                            # Apply avg frames if requested
+                            if af > 1:
+                                acc = dv.copy().astype(float)
+                                for _j in range(af-1):
+                                    r2 = orch.step(force_ternary=tern)
+                                    acc += _np.array(r2.get("dv_mV", [0]*orch.sys.channels))
+                                dv_eff = acc
+                            else:
+                                dv_eff = dv
+                            # Apply mask fraction (select best channels only)
+                            M = orch.sys.channels
+                            keep = int(max(0, M - int(round(mf*M))))
+                            if keep > 0 and keep < M:
+                                # Score by |dv|; keep largest
+                                idx = _np.argsort(_np.abs(dv_eff))[::-1][:keep]
+                                dv_sel = dv_eff[idx]
+                                t_sel = tern[idx]
+                            else:
+                                dv_sel = dv_eff
+                                t_sel = tern
+                            pred = _np.sign(dv_sel)
+                            errs.append(float(_np.mean(pred != t_sel)))
+                        med = float(_np.median(errs)) if errs else None
+                        if (med is not None) and (med < best["ber"]):
+                            best = {"ber": med, "window_ns": float(w), "mask_frac": float(mf), "avg_frames": int(af)}
+            local_best = best
+            summary["local_autotune"] = best
+            # Optionally override primary path_a with local best estimate
+            try:
+                if getattr(args, 'use_autotuned_as_primary', False) and best.get("ber") is not None:
+                    summary["path_a"] = {"p50_ber": best["ber"], "window_ns": best["window_ns"], "note": "local_autotune"}
+            except Exception:
+                pass
+    except Exception:
+        pass
 
         tune_res = auto_tune(
             sys_p,
