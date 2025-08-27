@@ -293,6 +293,11 @@ def main():
     ap.add_argument("--vth-scale", type=float, default=1.0, help="Scale factor applied to per-channel vth vector before use")
     ap.add_argument("--vth-bias-mV", type=float, default=0.0, help="Bias (mV) added to per-channel vth vector before use")
     ap.add_argument("--use-linear-calibration", action="store_true", help="Apply per-channel linear dv correction learned during calibration to classifiers")
+    # Per-channel linear optimizer (adjusts lin_offset per channel)
+    ap.add_argument("--optimize-linear", action="store_true", help="Greedy coordinate updates to per-channel dv linear offset to reduce BER on a small fixed set")
+    ap.add_argument("--opt-lin-iters", type=int, default=6, help="Linear optimizer iterations")
+    ap.add_argument("--opt-lin-step-mV", type=float, default=0.1, help="Per-iteration linear offset step (mV)")
+    ap.add_argument("--opt-lin-use-mask", action="store_true", help="Restrict linear optimizer to unmasked channels")
     # Lightweight local autotuner for window/mask/avg
     ap.add_argument("--local-autotune", action="store_true", help="Run a local search over window/mask/avg and report best path_a")
     ap.add_argument("--la-windows", type=str, default="18,19,20,21", help="Comma-separated window ns for local autotune")
@@ -1167,6 +1172,41 @@ def main():
             except Exception:
                 pass
             vth_vec_pa = vth
+    except Exception:
+        pass
+
+    # Optional per-channel linear offset optimizer for dv (uses lin_scale baseline, tunes lin_offset per channel)
+    try:
+        if getattr(args, 'optimize_linear', False) and (lin_scale is not None):
+            import numpy as _np
+            K = int(max(1, getattr(args, 'opt_lin_iters', 6)))
+            step = float(getattr(args, 'opt_lin_step_mV', 0.1))
+            use_mask = bool(getattr(args, 'opt_lin_use_mask', False))
+            # Initialize lin_offset if missing
+            if lin_offset is None:
+                lin_offset = _np.zeros(orch.sys.channels, dtype=float)
+            lo = _np.array(lin_offset, dtype=float)
+            for _iter in range(K):
+                grad = _np.zeros_like(lo)
+                cnt = _np.zeros_like(lo)
+                for _ in range(min(args.trials, 160)):
+                    tern = orch.rng.integers(-1, 2, size=orch.sys.channels)
+                    r = orch.step(force_ternary=tern)
+                    dv = _np.array(r.get("dv_mV", [0]*orch.sys.channels), dtype=float)
+                    dv_lin = lin_scale*(dv + lo)
+                    pred = _np.sign(dv_lin)
+                    err = (pred != tern)
+                    grad += _np.where(err, -_np.sign(dv_lin), 0.0)
+                    cnt += 1.0
+                cnt = _np.clip(cnt, 1.0, None)
+                upd = (step * grad / cnt)
+                if use_mask and (active_mask is not None):
+                    M = min(len(active_mask), upd.shape[0])
+                    maskv = _np.array(active_mask[:M], dtype=bool)
+                    upd[:M] = _np.where(maskv, upd[:M], 0.0)
+                lo = lo + upd
+            # Apply tuned linear offset (keep scale)
+            lin_offset = lo
     except Exception:
         pass
 
