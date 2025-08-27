@@ -311,6 +311,17 @@ def main():
     ap.add_argument("--decoder-l2", type=float, default=0.1, help="Ridge regularization for decoder training")
     ap.add_argument("--decoder-samples", type=int, default=320, help="Samples used to train decoder")
     ap.add_argument("--use-decoder-for-path-a", action="store_true", help="Use decoder as primary classifier for path_a summary")
+    # MLP decoder
+    ap.add_argument("--decoder-mlp", action="store_true", help="Train a tiny MLP decoder on dv features and use it for decisions")
+    ap.add_argument("--decoder-mlp-hidden", type=int, default=8, help="Hidden units for MLP decoder")
+    ap.add_argument("--decoder-mlp-epochs", type=int, default=10, help="Training epochs for MLP decoder")
+    ap.add_argument("--decoder-mlp-lr", type=float, default=0.01, help="Learning rate for MLP decoder")
+    # Simple ECC (single parity correction within blocks)
+    ap.add_argument("--use-ecc", action="store_true", help="Apply single-parity correction within fixed-size channel blocks to decoder outputs")
+    ap.add_argument("--ecc-spc-block", type=int, default=4, help="Block size for single-parity correction")
+    # Software autotune (decoder/deblur/gating/mask)
+    ap.add_argument("--soft-autotune", action="store_true", help="Autotune software params (decoder/deblur/gating/mask/avg/window) and select best")
+    ap.add_argument("--soft-budget", type=int, default=60, help="Number of configurations to evaluate in software autotune")
     # Lightweight local autotuner for window/mask/avg
     ap.add_argument("--local-autotune", action="store_true", help="Run a local search over window/mask/avg and report best path_a")
     ap.add_argument("--la-windows", type=str, default="18,19,20,21", help="Comma-separated window ns for local autotune")
@@ -1291,6 +1302,47 @@ def main():
             b = XT @ y
             w = _np.linalg.solve(A, b)
             decoder = {"w": w}
+        if getattr(args, 'decoder_mlp', False):
+            import numpy as _np
+            S = int(max(200, getattr(args, 'decoder_samples', 400)))
+            H = int(max(4, getattr(args, 'decoder_mlp_hidden', 8)))
+            epochs = int(max(5, getattr(args, 'decoder_mlp_epochs', 10)))
+            lr = float(max(1e-4, getattr(args, 'decoder_mlp_lr', 0.01)))
+            # Build training set
+            Xs = []; Ys = []
+            for _ in range(S):
+                tern = orch.rng.integers(-1, 2, size=orch.sys.channels)
+                r = orch.step(force_ternary=tern)
+                dv = _np.array(r.get("dv_mV", [0]*orch.sys.channels), dtype=float)
+                l = _np.roll(dv, 1); rr = _np.roll(dv, -1)
+                feats = _np.stack([dv, l, rr, _np.abs(dv), dv*dv], axis=1)
+                Xs.append(feats)
+                Ys.append(tern)
+            X = _np.vstack(Xs)  # [S*ch, F]
+            y = _np.where(_np.concatenate(Ys) > 0, 1.0, 0.0)  # map {-1,+1}→{0,1}
+            F = X.shape[1]
+            rng = _np.random.default_rng(int(args.seed))
+            W1 = rng.normal(0, 0.1, size=(F, H)); b1 = _np.zeros(H)
+            W2 = rng.normal(0, 0.1, size=(H, 1)); b2 = _np.zeros(1)
+            def sigmoid(z): return 1.0/(1.0+_np.exp(-z))
+            for _ in range(epochs):
+                # Forward
+                Z1 = X @ W1 + b1
+                A1 = _np.tanh(Z1)
+                Z2 = A1 @ W2 + b2
+                P = sigmoid(Z2).reshape(-1)
+                # Gradients (log-loss)
+                dZ2 = (P - y).reshape(-1,1)
+                dW2 = A1.T @ dZ2 / X.shape[0]
+                db2 = dZ2.mean(axis=0)
+                dA1 = dZ2 @ W2.T
+                dZ1 = dA1 * (1.0 - A1*A1)
+                dW1 = X.T @ dZ1 / X.shape[0]
+                db1 = dZ1.mean(axis=0)
+                # Update
+                W1 -= lr * dW1; b1 -= lr * db1
+                W2 -= lr * dW2; b2 -= lr * db2
+            decoder = {"mlp": True, "W1": W1, "b1": b1, "W2": W2, "b2": b2}
     except Exception:
         decoder = None
 
@@ -1541,14 +1593,22 @@ def main():
         import numpy as _np
         errs = []
         w = decoder.get("w")
+        is_mlp = bool(decoder.get("mlp"))
         for _ in range(min(args.trials, 200)):
             tern = orch.rng.integers(-1, 2, size=orch.sys.channels)
             r = orch.step(force_ternary=tern)
             dv = _np.array(r.get("dv_mV", [0]*orch.sys.channels), dtype=float)
             l = _np.roll(dv, 1); rr = _np.roll(dv, -1)
             feats = _np.stack([dv, l, rr, _np.abs(dv), dv*dv], axis=1)
-            score = feats @ w
-            pred = _np.where(score >= 0.0, 1, -1)
+            if is_mlp:
+                Z1 = feats @ decoder["W1"] + decoder["b1"]
+                A1 = _np.tanh(Z1)
+                Z2 = A1 @ decoder["W2"] + decoder["b2"]
+                P = 1.0/(1.0+_np.exp(-Z2.reshape(-1)))
+                pred = _np.where(P >= 0.5, 1, -1)
+            else:
+                score = feats @ w
+                pred = _np.where(score >= 0.0, 1, -1)
             if active_mask is not None:
                 M = min(len(active_mask), pred.shape[0])
                 am = _np.array(active_mask[:M], dtype=bool)
