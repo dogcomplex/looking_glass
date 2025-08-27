@@ -292,6 +292,7 @@ def main():
     ap.add_argument("--vth-inline", type=str, default=None, help="Comma-separated per-channel vth (mV) to apply (overrides import)")
     ap.add_argument("--vth-scale", type=float, default=1.0, help="Scale factor applied to per-channel vth vector before use")
     ap.add_argument("--vth-bias-mV", type=float, default=0.0, help="Bias (mV) added to per-channel vth vector before use")
+    ap.add_argument("--use-linear-calibration", action="store_true", help="Apply per-channel linear dv correction learned during calibration to classifiers")
     # Lightweight local autotuner for window/mask/avg
     ap.add_argument("--local-autotune", action="store_true", help="Run a local search over window/mask/avg and report best path_a")
     ap.add_argument("--la-windows", type=str, default="18,19,20,21", help="Comma-separated window ns for local autotune")
@@ -302,6 +303,12 @@ def main():
     ap.add_argument("--comp-input-noise-mV", type=float, default=None, help="Override comparator input noise RMS (mV)")
     ap.add_argument("--comp-vth-mV", type=float, default=None, help="Override comparator base vth (mV)")
     ap.add_argument("--comp-vth-sigma-mV", type=float, default=None, help="Override comparator vth sigma (mV)")
+    # Per-channel vth optimizer
+    ap.add_argument("--optimize-vth", action="store_true", help="Iteratively adjust per-channel vth to reduce classification errors on a small fixed set")
+    ap.add_argument("--opt-vth-iters", type=int, default=6, help="Optimizer iterations")
+    ap.add_argument("--opt-vth-step-mV", type=float, default=0.2, help="Per-iteration vth step size (mV)")
+    ap.add_argument("--opt-vth-margin-mV", type=float, default=0.0, help="Optional margin when deciding errors for optimizer")
+    ap.add_argument("--opt-vth-use-mask", action="store_true", help="Restrict vth optimization to unmasked channels (ignore masked)")
     args = ap.parse_args()
     # Defaults to run full non-destructive suite
     run_path_b_sweep = (not getattr(args, 'no_path_b_sweep', False)) or getattr(args, 'path_b_sweep', False)
@@ -1105,6 +1112,63 @@ def main():
                 masked_count = int(Nmask)
     except Exception:
         active_mask = None
+
+    # Optional per-channel vth optimizer (small fixed set, greedy updates)
+    try:
+        if getattr(args, 'optimize_vth', False):
+            import numpy as _np
+            K = int(max(1, getattr(args, 'opt_vth_iters', 6)))
+            step = float(getattr(args, 'opt_vth_step_mV', 0.2))
+            margin = float(getattr(args, 'opt_vth_margin_mV', 0.0))
+            use_mask = bool(getattr(args, 'opt_vth_use_mask', False))
+            # Initialize from current suggestion if available
+            if vth_vec_pa is None:
+                # derive quick vth vector from a short calibration set
+                pos_sum = _np.zeros(orch.sys.channels, dtype=float)
+                pos_cnt = _np.zeros(orch.sys.channels, dtype=float)
+                neg_sum = _np.zeros(orch.sys.channels, dtype=float)
+                neg_cnt = _np.zeros(orch.sys.channels, dtype=float)
+                for _ in range(min(args.trials, 120)):
+                    tern = orch.rng.integers(-1, 2, size=orch.sys.channels)
+                    r = orch.step(force_ternary=tern)
+                    dv = _np.array(r.get("dv_mV", [0]*orch.sys.channels), dtype=float)
+                    pos = tern > 0; neg = tern < 0
+                    pos_sum[pos] += dv[pos]; pos_cnt[pos] += 1
+                    neg_sum[neg] += dv[neg]; neg_cnt[neg] += 1
+                pos_mean = _np.divide(pos_sum, _np.clip(pos_cnt, 1.0, None))
+                neg_mean = _np.divide(neg_sum, _np.clip(neg_cnt, 1.0, None))
+                vth_vec_pa = 0.5*(pos_mean + neg_mean)
+            vth = _np.array(vth_vec_pa, dtype=float)
+            for _iter in range(K):
+                # Evaluate errors and push vth opposite the error direction per channel
+                grad = _np.zeros_like(vth)
+                cnt = _np.zeros_like(vth)
+                for _ in range(min(args.trials, 160)):
+                    tern = orch.rng.integers(-1, 2, size=orch.sys.channels)
+                    r = orch.step(force_ternary=tern)
+                    dv = _np.array(r.get("dv_mV", [0]*orch.sys.channels), dtype=float)
+                    # Marginized errors: treat near-threshold as errors to encourage separation
+                    err_pos = (tern > 0) & ((dv - vth) < margin)
+                    err_neg = (tern < 0) & ((dv - vth) > -margin)
+                    grad[err_pos] -= 1.0
+                    grad[err_neg] += 1.0
+                    cnt += 1.0
+                cnt = _np.clip(cnt, 1.0, None)
+                upd = (step * grad / cnt)
+                if use_mask and (active_mask is not None):
+                    M = min(len(active_mask), upd.shape[0])
+                    maskv = _np.array(active_mask[:M], dtype=bool)
+                    upd[:M] = _np.where(maskv, upd[:M], 0.0)
+                vth = vth + upd
+            # Apply tuned vector
+            orch.comp.set_vth_per_channel(vth)
+            try:
+                base_orch.comp.set_vth_per_channel(vth)
+            except Exception:
+                pass
+            vth_vec_pa = vth
+    except Exception:
+        pass
 
     # Path A summary with configured packs (reflects vendor overrides)
     # If classifier is explicitly chosen, honor it; otherwise precedence: soft > avg > adaptive > default
