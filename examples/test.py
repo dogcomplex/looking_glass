@@ -241,6 +241,14 @@ def main():
     ap.add_argument("--chop", action="store_true", help="Chopper stabilization: use +x and -x frames, subtract dv before threshold")
     ap.add_argument("--avg-frames", type=int, default=1, help="Average dv over N frames per input before thresholding (noise ~ 1/sqrt(N))")
     ap.add_argument("--avg-kernel", type=str, choices=["sum", "ewma"], default="sum", help="Averaging kernel for dv over frames: sum or ewma")
+    # Simple spatial deblurring (neighbor deconvolution)
+    ap.add_argument("--deblur-neigh-alpha", type=float, default=0.0, help="Neighbor deblurring strength alpha; dv' = dv - alpha*(left+right)")
+    ap.add_argument("--learn-deblur", action="store_true", help="Learn per-channel neighbor deblur weights (left/right) from calibration dv")
+    ap.add_argument("--deblur-l2", type=float, default=0.1, help="Ridge penalty for learned deblur weights")
+    ap.add_argument("--deblur-samples", type=int, default=240, help="Samples to gather for learned deblur weights")
+    # Confidence gating (selective extra frames for low-margin channels)
+    ap.add_argument("--gate-thresh-mV", type=float, default=0.0, help="If |dv| < thresh, take extra frames and add to dv before decision")
+    ap.add_argument("--gate-extra-frames", type=int, default=0, help="Number of extra frames to integrate for gated channels")
     ap.add_argument("--avg-ema-alpha", type=float, default=0.6, help="EWMA alpha (0..1], only used when --avg-kernel=ewma")
     ap.add_argument("--use-avg-frames-for-path-a", action="store_true", help="If set and avg_frames>1, use averaged-dv classifier as primary path_a summary")
     ap.add_argument("--permute-repeats", action="store_true", help="Permute logical↔physical channel mapping on each repeat and de-permute for voting")
@@ -298,6 +306,11 @@ def main():
     ap.add_argument("--opt-lin-iters", type=int, default=6, help="Linear optimizer iterations")
     ap.add_argument("--opt-lin-step-mV", type=float, default=0.1, help="Per-iteration linear offset step (mV)")
     ap.add_argument("--opt-lin-use-mask", action="store_true", help="Restrict linear optimizer to unmasked channels")
+    # Simple linear decoder (per-channel linear classifier on dv and neighbors)
+    ap.add_argument("--decoder-linear", action="store_true", help="Train a per-channel linear decoder on dv features and use it for decisions")
+    ap.add_argument("--decoder-l2", type=float, default=0.1, help="Ridge regularization for decoder training")
+    ap.add_argument("--decoder-samples", type=int, default=320, help="Samples used to train decoder")
+    ap.add_argument("--use-decoder-for-path-a", action="store_true", help="Use decoder as primary classifier for path_a summary")
     # Lightweight local autotuner for window/mask/avg
     ap.add_argument("--local-autotune", action="store_true", help="Run a local search over window/mask/avg and report best path_a")
     ap.add_argument("--la-windows", type=str, default="18,19,20,21", help="Comma-separated window ns for local autotune")
@@ -426,12 +439,22 @@ def main():
     orch = Orchestrator(sys_p, emit, optx, pd, tia, comp, clk)
 
     # Helper: accumulate dv across frames using selected kernel
+    deblur_params = {"aL": None, "aR": None}
+
     def _accumulate_dv_over_frames(_orch, _tern, _N: int, _kernel: str, _alpha: float):
         import numpy as _np
         acc = None
         for _j in range(max(1, int(_N))):
             r = _orch.step(force_ternary=_tern)
             dv = _np.array(r.get("dv_mV", [0]*_orch.sys.channels))
+            # Deblur with learned taps if available
+            if deblur_params.get("aL") is not None and dv.size > 1:
+                l = _np.roll(dv, 1); rr = _np.roll(dv, -1)
+                dv = dv - deblur_params["aL"]*l - deblur_params["aR"]*rr
+            # Deblur with fixed neighbor taps if enabled
+            if float(_alpha) > 0.0 and dv.size > 1:
+                dv_l = _np.roll(dv, 1); dv_r = _np.roll(dv, -1)
+                dv = dv - float(_alpha)*(dv_l + dv_r)
             if acc is None:
                 acc = dv.astype(float)
             else:
@@ -961,6 +984,13 @@ def main():
         for _ in range(min(args.trials, 200)):
             tern = base_orch.rng.integers(-1, 2, size=base_orch.sys.channels)
             acc = _accumulate_dv_over_frames(base_orch, tern, N, str(getattr(args, 'avg_kernel', 'sum')), float(getattr(args, 'avg_ema_alpha', 0.6)))
+            # Confidence gating: add extra frames for low-margin channels
+            g_th = float(getattr(args, 'gate_thresh_mV', 0.0)); g_ex = int(getattr(args, 'gate_extra_frames', 0))
+            if g_ex > 0 and g_th > 0.0:
+                low = _np.abs(acc) < g_th
+                if low.any():
+                    add = _accumulate_dv_over_frames(base_orch, tern, g_ex, str(getattr(args, 'avg_kernel', 'sum')), float(getattr(args, 'avg_ema_alpha', 0.6)))
+                    acc[low] = acc[low] + add[low]
             pred = _np.sign(acc)
             errs.append(float(_np.mean(pred != tern)))
         avg_frames_ber = float(_np.median(errs)) if errs else None
@@ -1046,6 +1076,31 @@ def main():
             pos_mean = _np.divide(pos_sum, _np.clip(pos_cnt, 1.0, None))
             neg_mean = _np.divide(neg_sum, _np.clip(neg_cnt, 1.0, None))
             vth_vec_pa = 0.5*(pos_mean + neg_mean)
+            # Learn deblur taps per channel if requested: minimize ||dv - aL*left - aR*right|| over calibration set
+            try:
+                if getattr(args, 'learn_deblur', False):
+                    import numpy as _np
+                    M = sys_p.channels
+                    S = int(max(120, getattr(args, 'deblur_samples', 240)))
+                    lam = float(getattr(args, 'deblur_l2', 0.1))
+                    # Gather dv snapshots
+                    D = _np.zeros((S, M), dtype=float)
+                    for si in range(S):
+                        rr = orch_cal.step()
+                        D[si, :] = _np.array(rr.get("dv_mV", [0]*M), dtype=float)
+                    # Build regression X (left,right), y=dv per channel solved independently with ridge
+                    L = _np.roll(D, 1, axis=1); R = _np.roll(D, -1, axis=1)
+                    # Solve (X^T X + lam I) w = X^T y where X=[L,R]
+                    # Approximate shared taps across channels (global) for stability
+                    X = _np.concatenate([L.reshape(-1,1), R.reshape(-1,1)], axis=1)
+                    y = D.reshape(-1)
+                    XT = X.T
+                    A = XT @ X + lam*_np.eye(2)
+                    b = XT @ y
+                    w = _np.linalg.solve(A, b)
+                    deblur_params["aL"], deblur_params["aR"] = float(w[0]), float(w[1])
+            except Exception:
+                pass
             # Apply to comparator for main orchestrator
             try:
                 orch.comp.set_vth_per_channel(vth_vec_pa)
@@ -1209,6 +1264,35 @@ def main():
             lin_offset = lo
     except Exception:
         pass
+
+    # Optional simple linear decoder (per-channel) trained on dv features
+    decoder = None
+    try:
+        if getattr(args, 'decoder_linear', False):
+            import numpy as _np
+            S = int(max(100, getattr(args, 'decoder_samples', 320)))
+            lam = float(getattr(args, 'decoder_l2', 0.1))
+            Xs = []; Ys = []
+            for _ in range(S):
+                tern = orch.rng.integers(-1, 2, size=orch.sys.channels)
+                r = orch.step(force_ternary=tern)
+                dv = _np.array(r.get("dv_mV", [0]*orch.sys.channels), dtype=float)
+                # Features: [dv, left, right, |dv|, dv^2]
+                l = _np.roll(dv, 1); rr = _np.roll(dv, -1)
+                feats = _np.stack([dv, l, rr, _np.abs(dv), dv*dv], axis=1)
+                Xs.append(feats)
+                Ys.append(tern)
+            X = _np.vstack(Xs)
+            y = _np.concatenate(Ys)
+            # Ridge regression for each channel independently (shared weights approximated by pooled solution)
+            # Solve (X^T X + lam I)w = X^T y
+            XT = X.T
+            A = XT @ X + lam*_np.eye(X.shape[1])
+            b = XT @ y
+            w = _np.linalg.solve(A, b)
+            decoder = {"w": w}
+    except Exception:
+        decoder = None
 
     # Path A summary with configured packs (reflects vendor overrides)
     # If classifier is explicitly chosen, honor it; otherwise precedence: soft > avg > adaptive > default
@@ -1448,6 +1532,30 @@ def main():
             else:
                 pred = _np.sign(acc)
             errs.append(float(_np.mean(pred != tern)))
+        path_a_summary = {
+            "p50_ber": float(_np.median(errs)) if errs else None,
+            "p50_energy_pj": None,
+            "window_ns": float(orch.clk.p.window_ns),
+        }
+    elif getattr(args, 'use_decoder_for_path_a', False) and decoder is not None:
+        import numpy as _np
+        errs = []
+        w = decoder.get("w")
+        for _ in range(min(args.trials, 200)):
+            tern = orch.rng.integers(-1, 2, size=orch.sys.channels)
+            r = orch.step(force_ternary=tern)
+            dv = _np.array(r.get("dv_mV", [0]*orch.sys.channels), dtype=float)
+            l = _np.roll(dv, 1); rr = _np.roll(dv, -1)
+            feats = _np.stack([dv, l, rr, _np.abs(dv), dv*dv], axis=1)
+            score = feats @ w
+            pred = _np.where(score >= 0.0, 1, -1)
+            if active_mask is not None:
+                M = min(len(active_mask), pred.shape[0])
+                am = _np.array(active_mask[:M], dtype=bool)
+                pred = pred[:M][am]; tcur = tern[:M][am]
+            else:
+                tcur = tern
+            errs.append(float(_np.mean(pred != tcur)))
         path_a_summary = {
             "p50_ber": float(_np.median(errs)) if errs else None,
             "p50_energy_pj": None,
