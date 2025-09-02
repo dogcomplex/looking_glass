@@ -1,5 +1,35 @@
 # LookingGlassSim
 
+## Start the probe queue (Windows CMD)
+
+Use these commands in a fresh Administrator CMD session (not PowerShell):
+
+```bat
+cd G:\LOKI\LOCUS\SENSUS\looking_glass
+
+:: (first-time only) create and activate venv, then install deps
+python -m venv .venv
+.venv\Scripts\activate.bat
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+
+:: ensure queue directories exist
+mkdir queue 2> NUL
+mkdir out 2> NUL
+
+:: optional: reduce skip spam in logs
+set QUIET_SKIPS=1
+
+:: start the queue runner (blocking)
+.venv\Scripts\python scripts\probe_queue_runner.py
+```
+
+Notes:
+- Append jobs to `queue\probes.jsonl` (append-only). The runner picks up new lines automatically.
+- Results are written to `out\*.json` and minimal summaries to `queue\completed.jsonl`.
+- To rerun everything from scratch, stop the runner, delete `queue\completed.jsonl`, then start the runner again.
+- If using PowerShell instead of CMD, activate with `.venv\Scripts\Activate.ps1`.
+
 Hybrid analog–digital optical AI co‑processor simulator for ternary Transformer feature extraction. This repo is a pragmatic, staged scaffold you can run today on a laptop, then swap in measured hardware packs as you build up a real bench.
 
 ## What this project does (verbose overview)

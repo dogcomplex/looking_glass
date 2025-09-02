@@ -40,8 +40,8 @@ def load_completed_signatures() -> set[str]:
                 rec = json.loads(line)
                 s = rec.get("signature")
                 status = rec.get("status")
-                # Only skip if previously completed successfully
-                if isinstance(s, str) and status == "ok":
+                # Skip signatures that have already been processed (ok or error)
+                if isinstance(s, str) and status in ("ok", "error"):
                     sigs.add(s)
             except json.JSONDecodeError:
                 continue
@@ -196,6 +196,75 @@ def run_job(job: dict) -> dict:
     # RAW passthrough modes: job["raw"] string or job["cmd"] array
     if isinstance(job.get("cmd"), list):
         argv = ["examples/test.py", *[str(x) for x in job["cmd"]]]
+        # If overlays are provided on the job, append merged packs unless already present
+        try:
+            def has_flag(flag: str) -> bool:
+                try:
+                    return flag in argv
+                except Exception:
+                    return False
+
+            # Reuse merge logic
+            tmp_dir = Path("queue/tmp")
+            tmp_dir.mkdir(parents=True, exist_ok=True)
+
+            def prepare_merged_pack(base_key: str, overlay_key: str, default_path: str, tag: str) -> str:
+                base = str(job.get(base_key, default_path))
+                over = str(job.get(overlay_key, ""))
+                if not over:
+                    return base
+                try:
+                    import yaml  # type: ignore
+                    base_d = {}
+                    over_d = {}
+                    if Path(base).exists():
+                        base_d = yaml.safe_load(Path(base).read_text(encoding="utf-8")) or {}
+                    if Path(over).exists():
+                        over_d = yaml.safe_load(Path(over).read_text(encoding="utf-8")) or {}
+                    merged = dict(base_d)
+                    merged.update(over_d)
+                    sig = hashlib.sha1(json.dumps({"b": base, "o": over}, sort_keys=True).encode("utf-8")).hexdigest()[:10]
+                    outp = tmp_dir / f"merged_{tag}_{sig}.yaml"
+                    outp.write_text(yaml.safe_dump(merged, sort_keys=False), encoding="utf-8")
+                    return str(outp)
+                except ModuleNotFoundError:
+                    return base
+                except Exception:
+                    return base
+
+            # Compute merged pack paths
+            optics_pack_path = prepare_merged_pack(
+                "optics_pack", "optics_overlay",
+                "configs/packs/vendors/optics/thorlabs_Engineered-Diffuser-5°_typ.yaml", "optics"
+            )
+            comparator_pack_path = prepare_merged_pack(
+                "comparator_pack", "comparator_overlay",
+                "configs/packs/vendors/comparators/analog_devices_LTC6752_typ.yaml", "comp"
+            )
+            tia_pack_base = str(job.get("tia_pack", "configs/packs/vendors/tias/texas_instruments_OPA857EVM_typ.yaml"))
+            tia_pack_path = prepare_merged_pack("tia_pack", "tia_overlay", tia_pack_base, "tia")
+
+            # Append pack flags if not already provided in cmd
+            if not has_flag("--optics-pack"):
+                argv += ["--optics-pack", optics_pack_path]
+            if not has_flag("--comparator-pack"):
+                argv += ["--comparator-pack", comparator_pack_path]
+            if not has_flag("--tia-pack"):
+                argv += ["--tia-pack", tia_pack_path]
+            if not has_flag("--emitter-pack"):
+                argv += ["--emitter-pack", str(job.get("emitter_pack", "configs/packs/vendors/emitters/coherent_OBIS-850-nm_typ.yaml"))]
+            if not has_flag("--sensor-pack"):
+                argv += ["--sensor-pack", str(job.get("sensor_pack", "configs/packs/vendors/sensors/vishay_BPW34_typ.yaml"))]
+            if not has_flag("--clock-pack"):
+                argv += ["--clock-pack", str(job.get("clock_pack", "configs/packs/clock_typ.yaml"))]
+            if not has_flag("--thermal-pack"):
+                argv += ["--thermal-pack", str(job.get("thermal_pack", "configs/packs/thermal_typ.yaml"))]
+            # Support use_avg_frames_for_path_a via job key if requested
+            if bool(job.get("use_avg_frames_for_path_a", False)) and not has_flag("--use-avg-frames-for-path-a"):
+                argv += ["--use-avg-frames-for-path-a"]
+        except Exception as _e_overlay:
+            # Non-fatal: continue without overlays if something goes wrong
+            pass
     elif isinstance(job.get("raw"), str):
         import shlex
         argv = ["examples/test.py", *shlex.split(job["raw"]) ]
@@ -316,6 +385,8 @@ def main():
                 idle_msg = "IDLE: sleeping 2s"
             if idle_msg != last_idle:
                 print(idle_msg)
+                # Visual separator after the first fresh IDLE line
+                print("==================")
                 last_idle = idle_msg
             time.sleep(2.0)
 

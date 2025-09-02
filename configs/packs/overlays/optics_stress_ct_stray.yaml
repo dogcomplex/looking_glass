@@ -1,0 +1,11 @@
+ct_model: neighbor
+ct_neighbor_db: -38.0
+ct_diag_db: -42.0
+transmittance: 0.85
+psf_kernel: "lorentzian:w=3.0"
+signal_scale: 1.0
+w_plus_contrast: 0.85
+w_minus_contrast: 0.85
+stray_floor_db: -36.0
+
+

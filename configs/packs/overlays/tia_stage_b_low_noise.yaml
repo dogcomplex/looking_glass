@@ -1,0 +1,12 @@
+# Stage B: lower input-referred noise and appropriate bandwidth/gain
+tia_transimpedance_kohm: 12.0
+bw_mhz: 60.0
+in_noise_pA_rthz: 4.5
+peaking_q: 0.65
+slew_v_per_us: 600.0
+adc_bits: 12
+adc_fullscale_v: 1.0
+adc_read_noise_mV_rms: 0.0
+gain_sigma_pct: 1.0
+
+

@@ -1,0 +1,12 @@
+ct_model: neighbor
+ct_neighbor_db: -52.0
+ct_diag_db: -55.0
+transmittance: 0.9
+psf_kernel: "lorentzian:w=1.6"
+# Effective knobs used by the simulator
+signal_scale: 1.30
+w_plus_contrast: 0.90
+w_minus_contrast: 0.90
+stray_floor_db: -42.0
+
+

@@ -1,0 +1,9 @@
+# Stage C: comparator trims and hysteresis tuning
+vth_mV: 5.0
+hysteresis_mV: 0.6
+input_noise_mV_rms: 0.30
+vth_sigma_mV: 0.15
+prop_delay_ns: 1.1
+saturate_levels: true
+
+

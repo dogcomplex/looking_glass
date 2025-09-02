@@ -1,0 +1,9 @@
+ct_model: neighbor
+ct_neighbor_db: -50.0
+ct_diag_db: -53.0
+# Slightly improved enclosure/baffles/diffuser hygiene: modest transmission loss but better PSF
+transmittance: 0.85
+# Narrower effective PSF via improved baffling and engineered diffuser choice
+psf_kernel: "lorentzian:w=1.7"
+
+
