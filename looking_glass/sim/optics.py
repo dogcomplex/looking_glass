@@ -19,6 +19,10 @@ class OpticsParams:
     sat_abs_on: bool = False
     sat_I_sat: float = 1.0
     sat_alpha: float = 0.6
+    # Speckle/fringe multiplicative spatial noise (sim-only stress hook)
+    speckle_on: bool = False
+    speckle_sigma: float = 0.0  # multiplicative std of speckle field
+    speckle_corr_px: int = 7    # correlation length in pixels (odd recommended)
 
 def _lorentz_kernel(size=51, w=2.5):
     x = np.linspace(-size//2, size//2, size)
@@ -82,6 +86,19 @@ class Optics:
         k = self.k1d
         img = np.apply_along_axis(lambda m: np.convolve(m, k, mode="same"), axis=1, arr=img)
         img = np.apply_along_axis(lambda m: np.convolve(m, k, mode="same"), axis=0, arr=img)
+
+        # Optional speckle/fringe multiplicative spatial noise (zero-mean, correlated)
+        if bool(self.p.speckle_on) and float(self.p.speckle_sigma) > 0.0:
+            corr = max(1, int(self.p.speckle_corr_px))
+            # Build a simple separable smoothing kernel for correlation
+            kk = _lorentz_kernel(max(3, 2*(corr//2)+1), max(1.0, corr/2.0))
+            noise = self.rng.normal(0.0, 1.0, size=img.shape)
+            noise = np.apply_along_axis(lambda m: np.convolve(m, kk, mode="same"), axis=1, arr=noise)
+            noise = np.apply_along_axis(lambda m: np.convolve(m, kk, mode="same"), axis=0, arr=noise)
+            std = noise.std() + 1e-12
+            noise = noise / std
+            img = img * (1.0 + float(self.p.speckle_sigma) * noise)
+            img = np.clip(img, 0.0, None)
 
         # Stray pedestal
         stray_lin = 10**(self.p.stray_floor_db/10.0)

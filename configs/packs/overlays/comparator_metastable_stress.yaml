@@ -1,0 +1,5 @@
+metastable_on: true
+metastable_width_mV: 0.3
+metastable_flip_prob: 0.08
+
+

@@ -924,6 +924,10 @@ def main():
 
     # Per-component BER attribution (toggle one component to an idealized variant)
     components = None
+    # Initialize optional calibration outputs in case calibration block fails
+    cal_summary_alt_soft = None
+    cal_summary_alt_bin = None
+    per_tile_after = None
     try:
         import numpy as _np
         fixed_inputs = _build_fixed_inputs(args.seed, sys_p.channels, min(args.trials, 200))
