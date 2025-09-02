@@ -25,3 +25,46 @@ UPDATE: we now use a queue design to set probes to run, which is run by an exter
 
 APPEND ONLY to queue/probes.jsonl
 NEVER modify queue/completed.jsonl
+
+## Current progress and added capabilities (update)
+
+- Best reproducible Path A combo in sim: E2+C2+B2 overlays at 19.0 ns (optics power/contrast, low‑noise TIA, tuned comparator). Achieved 0.0625 on one seed with avg2 + lite gating (0.6 mV, +1); most seeds plateau at 0.125 → margin limited.
+- Implemented and queued:
+  - Lite confidence gating and small averaging (avg2/avg3); per‑channel vth/linear optimizers; mask mode (error/dvspan); decoders (linear/MLP) and ECC; decoder fusion; deblur; MAP.
+  - Queue runner improvements (overlay pack merge for cmd jobs; skip policy for error signatures); multiple appender scripts for targeted suites.
+  - Stress tests: comparator overrides; optics CT/stray; TIA gain variation; speckle/fringe multiplicative noise (new); comparator metastability near zero (new); drift stress and drift schedules with periodic re-trim.
+
+Observed outcomes (sim):
+- Primary Path A BER is stable at 0.125 across seeds/settings unless extra margin is emulated; advanced post‑processing (replicate/vote/decoder/ECC) does not improve without SNR.
+- Stress/invalidations did not catastrophically break the robust preset (avg3 + lite gating); they mostly inflate baseline, not primary. Drift schedules with periodic re‑trim held at 0.125.
+
+## Bench plan and acceptance gates (actionable)
+
+- Build a 16–32 ch micro‑rig (laser + engineered diffuser + baffles; low‑noise TIA; fast comparator with per‑channel DAC vth trims; TEC on emitter/sensor; clean clock). Optionally AOM for modulation depth.
+- Acceptance gates:
+  - Robust: avg3 @ 19.0 ns, mask ~0.09375, ≤0.09375 BER across ≥3 seeds, window ±0.05 ns, stable 30 min.
+  - Fast: avg2 + lite gate (0.6 mV, +1) ≤0.065 on ≥2 seeds.
+- If pass, scale channels / add modulation depth (AOM/BOA/EDFA). If fail, stop or re‑scope.
+
+## MoE compensation and utility (sim result)
+
+- Replication/vote classifiers did not reduce BER (errors are not independent). Linear decoder + ECC showed no consistent lift at current margin.
+- Practical recipe remains: masking + small averaging + lite gating. This remains useful for an optical feature extractor feeding a digital head trained to tolerate structured noise.
+
+## Invalidation stress (sim-only)
+
+- Optics CT/stray, TIA gain variance, comparator noise/sigma, speckle/fringes, comparator metastability, and drift schedules (with periodic re‑trim) did not collapse primary BER; robust preset remained at 0.125 across seeds/jitter. Conclusion: the simulator is margin‑limited, not brittle; real SNR lifts are required.
+
+## Path B and cold analog input status
+
+- Path B (optical ternary loop) hooks exist (amp/SA and `--path-b-depth`), but queued runs used `--no-path-b`; we have not executed full recursion suites yet.
+- Cold analog input is supported (cold reader), but queued runs used `--no-cold-input`; we have not executed cold‑input suites yet.
+- Next (sim-only):
+  - Append a compact Path B suite (depth 1–3) with SA+amp enabled; measure BER vs depth and gain/saturation; compare to Path A.
+  - Append a cold‑input suite to characterize baseline vs digital emission under identical optics/TIA/comparator settings.
+  - Elevate any promising Path B/cold recipes into bench acceptance presets.
+
+## Two bench‑ready presets to carry forward
+
+- Fast: 19.0 ns; avg2; mask ~0.09375; lite gating (0.6 mV, +1); tuned comparator/TIA; power/contrast optics.
+- Robust: same, avg3 with lite gating; periodic re‑trim cadence validated by drift schedules.
