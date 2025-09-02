@@ -158,7 +158,7 @@ def build_argv_from_job(job: dict, out_path: str) -> list[str]:
         *flag(bool(job.get("normalize_dv", False)), "--normalize-dv"),
         # Masking controls
         "--mask-bad-frac", str(job.get("mask_bad_frac", 0.0)),
-        "--mask-bad-channels", str(int(job.get("mask_bad_channels", 0)))),
+        "--mask-bad-channels", str(int(job.get("mask_bad_channels", 0))),
         "--calib-mask-trials", str(int(job.get("calib_mask_trials", 200))),
         *(["--mask-mode", str(job.get("mask_mode"))] if job.get("mask_mode") else []),
         # Comparator overrides
@@ -232,6 +232,8 @@ def main():
     ensure_paths()
     print(f"probe_queue_runner: watching queue={QUEUE_PATH}")
     print(f"probe_queue_runner: writing completed to {COMPLETED_PATH}")
+    last_status = None
+    last_idle = None
     while True:
         # Always reload completed_ok from disk; if file doesn't exist or is empty, treat as empty set
         try:
@@ -245,7 +247,10 @@ def main():
         except Exception as e:
             print(f"WARN: failed to read queue file: {e}")
             lines = []
-        print(f"STATUS: queue_lines={len(lines)} completed_ok={len(sig_done)}")
+        status_msg = f"STATUS: queue_lines={len(lines)} completed_ok={len(sig_done)}"
+        if status_msg != last_status:
+            print(status_msg)
+            last_status = status_msg
         ran_one = False
         quiet_skips = str(os.environ.get("QUIET_SKIPS", "1")).lower() in ("1","true","yes")
         skip_count = 0
@@ -306,9 +311,12 @@ def main():
         # Sleep briefly; if we ran one job, loop immediately to check for more
         if not ran_one:
             if quiet_skips and skip_count:
-                print(f"IDLE: sleeping 2s (quiet; {skip_count} skips)")
+                idle_msg = f"IDLE: sleeping 2s (quiet; {skip_count} skips)"
             else:
-                print("IDLE: sleeping 2s")
+                idle_msg = "IDLE: sleeping 2s"
+            if idle_msg != last_idle:
+                print(idle_msg)
+                last_idle = idle_msg
             time.sleep(2.0)
 
 

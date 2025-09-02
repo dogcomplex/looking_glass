@@ -301,6 +301,15 @@ def main():
     ap.add_argument("--vth-scale", type=float, default=1.0, help="Scale factor applied to per-channel vth vector before use")
     ap.add_argument("--vth-bias-mV", type=float, default=0.0, help="Bias (mV) added to per-channel vth vector before use")
     ap.add_argument("--use-linear-calibration", action="store_true", help="Apply per-channel linear dv correction learned during calibration to classifiers")
+    ap.add_argument("--force-cal-in-primary", action="store_true", help="Use calibrated dv_lin and vth in primary classifier decisions when available")
+    ap.add_argument("--smooth-calibration", action="store_true", help="Spatially smooth per-channel vth/offset/scale with neighbor averaging")
+    ap.add_argument("--calib-samples", type=int, default=0, help="Override number of calibration samples (0 = heuristic)")
+    # Legacy calibration compatibility toggles
+    ap.add_argument("--legacy-baseline-cal", action="store_true", help="Use legacy-style baseline calibration (no smoothing/deblur; comparator hyst=1.0, vth_sigma=0; no normalize in cal)")
+    ap.add_argument("--legacy-cal-no-normalize", action="store_true", help="Disable dv normalization during baseline calibration only")
+    ap.add_argument("--use-map-thresh", action="store_true", help="Use Gaussian MAP decision with comparator sigma on dv_lin vs vth")
+    ap.add_argument("--fuse-decoder", action="store_true", help="Fuse calibrated score with decoder score for final decision")
+    ap.add_argument("--fuse-alpha", type=float, default=0.8, help="Fusion weight alpha for calibrated score (0..1)")
     # Per-channel linear optimizer (adjusts lin_offset per channel)
     ap.add_argument("--optimize-linear", action="store_true", help="Greedy coordinate updates to per-channel dv linear offset to reduce BER on a small fixed set")
     ap.add_argument("--opt-lin-iters", type=int, default=6, help="Linear optimizer iterations")
@@ -338,6 +347,8 @@ def main():
     ap.add_argument("--opt-vth-step-mV", type=float, default=0.2, help="Per-iteration vth step size (mV)")
     ap.add_argument("--opt-vth-margin-mV", type=float, default=0.0, help="Optional margin when deciding errors for optimizer")
     ap.add_argument("--opt-vth-use-mask", action="store_true", help="Restrict vth optimization to unmasked channels (ignore masked)")
+    ap.add_argument("--legacy-cal-estimator-soft", action="store_true", help="Compute baseline_calibrated via dv sign vs vth (no comparator deadband)")
+    ap.add_argument("--baseline-cal-binary", action="store_true", help="Evaluate calibrated baseline with ±1 truths only (no zeros)")
     args = ap.parse_args()
     # Defaults to run full non-destructive suite
     run_path_b_sweep = (not getattr(args, 'no_path_b_sweep', False)) or getattr(args, 'path_b_sweep', False)
@@ -452,6 +463,63 @@ def main():
     # Helper: accumulate dv across frames using selected kernel
     deblur_params = {"aL": None, "aR": None}
 
+    # Helper: approximate Gaussian MAP probability using logistic approximation
+    def _map_prob_from_dv(dv_lin_vec, vth_vec, sigma_mV):
+        import numpy as _np
+        s = float(max(1e-6, sigma_mV))
+        z = (dv_lin_vec - (vth_vec if vth_vec is not None else 0.0)) / s
+        k = 1.8137993642342178  # pi/sqrt(3)
+        return 1.0 / (1.0 + _np.exp(-k * z))
+
+    # Helper: compute decoder probability P(+1) given features
+    def _decoder_prob_from_feats(feats, dec):
+        import numpy as _np
+        if dec is None:
+            return None
+        if bool(dec.get("mlp")):
+            Z1 = feats @ dec["W1"] + dec["b1"]
+            A1 = _np.tanh(Z1)
+            Z2 = A1 @ dec["W2"] + dec["b2"]
+            return 1.0 / (1.0 + _np.exp(-Z2.reshape(-1)))
+        w = dec.get("w")
+        if w is None:
+            return None
+        score = feats @ w
+        return 1.0 / (1.0 + _np.exp(-score))
+
+    # Helper: fuse two probabilities
+    def _fuse_probs(p_cal, p_dec, alpha):
+        import numpy as _np
+        if p_cal is None:
+            return p_dec
+        if p_dec is None:
+            return p_cal
+        a = float(_np.clip(alpha, 0.0, 1.0))
+        return a * p_cal + (1.0 - a) * p_dec
+
+    # Helper: single-parity correction within blocks; assumes last bit in block is parity
+    def _apply_spc(pred_pm1, prob_pos, block_size):
+        import numpy as _np
+        B = int(max(2, block_size))
+        pred_bin = (_np.asarray(pred_pm1, dtype=int) > 0).astype(int)
+        out = pred_bin.copy()
+        probs = _np.asarray(prob_pos, dtype=float)
+        M = pred_bin.shape[0]
+        for i in range(0, M, B):
+            j = min(M, i + B)
+            if (j - i) < B:
+                continue
+            blk = pred_bin[i:j]
+            # expected parity: XOR of first B-1 equals last bit
+            exp_par = 0
+            if B > 1:
+                exp_par = int(_np.bitwise_xor.reduce(blk[:-1]))
+            if exp_par != blk[-1]:
+                conf = _np.abs(probs[i:j] - 0.5)
+                k = int(_np.argmin(conf))
+                out[i + k] = 1 - out[i + k]
+        return _np.where(out > 0, 1, -1).astype(int)
+
     def _accumulate_dv_over_frames(_orch, _tern, _N: int, _kernel: str, _alpha: float):
         import numpy as _np
         acc = None
@@ -498,6 +566,8 @@ def main():
     base_comp = ComparatorParams(input_noise_mV_rms=comp_noise, vth_mV=5.0, hysteresis_mV=1.8, vth_sigma_mV=0.2)
     base_clk = ClockParams(window_ns=float(args.base_window_ns), jitter_ps_rms=10.0)
     base_orch = Orchestrator(sys_p, base_emit, base_optx, base_pd, base_tia, base_comp, base_clk)
+    # Hoist placeholder for per-channel threshold vector used in primary classifiers
+    vth_vec_pa = None
     # Optional: import per-channel vth (mV) and apply to primary and baseline comparators
     try:
         imp_path = getattr(args, 'import_vth', None)
@@ -742,14 +812,30 @@ def main():
             cal_pd = PDParams(**pd.__dict__)
             cal_tia = TIAParams(**tia.__dict__)
             cal_comp = ComparatorParams(**comp.__dict__)
+            # Legacy calibration overrides
+            if getattr(args, 'legacy_baseline_cal', False):
+                try:
+                    cal_comp.hysteresis_mV = 1.0
+                    cal_comp.vth_sigma_mV = 0.0
+                except Exception:
+                    pass
             cal_clk = ClockParams(**clk.__dict__)
-            orch_cal = Orchestrator(sys_p, cal_emit, cal_optx, cal_pd, cal_tia, cal_comp, cal_clk)
+            # Build calibration orchestrator; optionally disable normalization only for calibration
+            cal_sys = SystemParams(**sys_p.__dict__)
+            if getattr(args, 'legacy_baseline_cal', False) or getattr(args, 'legacy_cal_no_normalize', False):
+                try:
+                    cal_sys.normalize_dv = False
+                except Exception:
+                    pass
+            orch_cal = Orchestrator(cal_sys, cal_emit, cal_optx, cal_pd, cal_tia, cal_comp, cal_clk)
             # Gather dv per channel given known ternary patterns
             pos_sum = _np.zeros(sys_p.channels, dtype=float)
             pos_cnt = _np.zeros(sys_p.channels, dtype=float)
             neg_sum = _np.zeros(sys_p.channels, dtype=float)
             neg_cnt = _np.zeros(sys_p.channels, dtype=float)
             total_cal = int(min(args.trials*2, 400 if not getattr(args, 'fast', False) else 120))
+            if int(getattr(args, 'calib_samples', 0)) > 0:
+                total_cal = int(getattr(args, 'calib_samples'))
             for idx in range(total_cal):
                 tern = orch_cal.rng.integers(-1, 2, size=sys_p.channels)
                 r = orch_cal.step(force_ternary=tern)
@@ -769,6 +855,17 @@ def main():
             eps = 1e-6
             lin_scale = 2.0/_np.clip((pos_mean - neg_mean), eps, None)
             lin_offset = -0.5*(pos_mean + neg_mean)
+            # Optional smoothing (skip if legacy baseline cal)
+            try:
+                if getattr(args, 'smooth_calibration', False) and not getattr(args, 'legacy_baseline_cal', False):
+                    def _smooth(vec):
+                        L = _np.roll(vec, 1); R = _np.roll(vec, -1)
+                        return 0.25*L + 0.5*vec + 0.25*R
+                    vth_vec = _smooth(vth_vec)
+                    lin_scale = _smooth(lin_scale)
+                    lin_offset = _smooth(lin_offset)
+            except Exception:
+                pass
             # Apply per-channel trims
             orch_cal.comp.set_vth_per_channel(vth_vec)
             # Evaluate post-calibration BER and per-tile BER
@@ -791,7 +888,30 @@ def main():
             with _np.errstate(divide='ignore', invalid='ignore'):
                 per_tile_after = (tile_err2 / _np.clip(tile_cnt2, 1.0, None)).tolist()
             # Full-run BER after applying trims
+            # Always compute canonical baseline via comparator pipeline
             cal_summary = orch_cal.run(trials=args.trials)
+            # Optionally compute alternate estimators without overriding canonical baseline
+            if getattr(args, 'legacy_cal_estimator_soft', False):
+                errs_soft = []
+                for _ in range(min(args.trials, 400)):
+                    tern = orch_cal.rng.integers(-1, 2, size=orch_cal.sys.channels)
+                    r = orch_cal.step(force_ternary=tern)
+                    dv = _np.array(r.get("dv_mV", [0]*orch_cal.sys.channels), dtype=float)
+                    pred = _np.where((dv - vth_vec) >= 0.0, 1, -1)
+                    errs_soft.append(float(_np.mean(pred != tern)))
+                cal_summary_alt_soft = {"p50_ber": float(_np.median(errs_soft)) if errs_soft else None, "window_ns": float(orch_cal.clk.p.window_ns)}
+            else:
+                cal_summary_alt_soft = None
+            if getattr(args, 'baseline_cal_binary', False):
+                errs_bin = []
+                for _ in range(min(args.trials, 400)):
+                    tern = orch_cal.rng.choice([-1, 1], size=orch_cal.sys.channels)
+                    r = orch_cal.step(force_ternary=tern)
+                    tout = _np.array(r.get("t_out", [0]*orch_cal.sys.channels), dtype=int)
+                    errs_bin.append(float(_np.mean(tout != tern)))
+                cal_summary_alt_bin = {"p50_ber": float(_np.median(errs_bin)) if errs_bin else None, "window_ns": float(orch_cal.clk.p.window_ns)}
+            else:
+                cal_summary_alt_bin = None
             ber_after = float(cal_summary.get("p50_ber", None))
             if not getattr(args, 'light_output', False):
                 try:
@@ -966,7 +1086,27 @@ def main():
             dv_sig = _np.array(r_sig.get("dv_mV", [0]*base_orch.sys.channels))
             dv_dark = _np.array(r_dark.get("dv_mV", [0]*base_orch.sys.channels))
             dv_diff = dv_sig - dv_dark
-            pred = _np.sign(dv_diff)
+            if bool(getattr(args, 'force_cal_in_primary', False)) and (lin_scale is not None) and (lin_offset is not None):
+                dv_lin = lin_scale*(dv_diff + lin_offset)
+                if vth_vec_pa is not None:
+                    pred = _np.sign(dv_lin - vth_vec_pa)
+                else:
+                    pred = _np.sign(dv_lin)
+            else:
+                # Optional confidence gating even without calibration
+                g_th = float(getattr(args, 'gate_thresh_mV', 0.0)); g_ex = int(getattr(args, 'gate_extra_frames', 0))
+                if g_ex > 0 and g_th > 0.0:
+                    import numpy as _np
+                    ref = (vth_vec_pa if vth_vec_pa is not None else 0.0)
+                    low = _np.abs(dv_diff - ref) < g_th
+                    if low.any():
+                        r_sig2 = base_orch.step(force_ternary=tern)
+                        r_dark2 = base_orch.step(force_ternary=_np.zeros_like(tern))
+                        dv_sig2 = _np.array(r_sig2.get("dv_mV", [0]*base_orch.sys.channels))
+                        dv_dark2 = _np.array(r_dark2.get("dv_mV", [0]*base_orch.sys.channels))
+                        dv_diff2 = dv_sig2 - dv_dark2
+                        dv_diff[low] = dv_diff[low] + dv_diff2[low]
+                pred = _np.sign(dv_diff)
             errs.append(float(_np.mean(pred != tern)))
         lockin_ber = float(_np.median(errs)) if errs else None
 
@@ -982,7 +1122,36 @@ def main():
             dv_pos = _np.array(r_pos.get("dv_mV", [0]*base_orch.sys.channels))
             dv_neg = _np.array(r_neg.get("dv_mV", [0]*base_orch.sys.channels))
             dv_diff = dv_pos - dv_neg
-            pred = _np.sign(dv_diff)
+            if bool(getattr(args, 'force_cal_in_primary', False)) and (lin_scale is not None) and (lin_offset is not None):
+                dv_lin = lin_scale*(dv_diff + lin_offset)
+                # confidence gate: one extra frame for small margins
+                g_th = float(getattr(args, 'gate_thresh_mV', 0.0)); g_ex = int(getattr(args, 'gate_extra_frames', 0))
+                if g_ex > 0 and g_th > 0.0:
+                    low = _np.abs(dv_lin - (vth_vec_pa if vth_vec_pa is not None else 0.0)) < g_th
+                    if low.any():
+                        r_pos2 = base_orch.step(force_ternary=tern)
+                        r_neg2 = base_orch.step(force_ternary=-tern)
+                        dv_pos2 = _np.array(r_pos2.get("dv_mV", [0]*base_orch.sys.channels)); dv_neg2 = _np.array(r_neg2.get("dv_mV", [0]*base_orch.sys.channels))
+                        dv_lin2 = lin_scale*((dv_pos2 - dv_neg2) + lin_offset)
+                        dv_lin[low] = dv_lin[low] + dv_lin2[low]
+                if vth_vec_pa is not None:
+                    pred = _np.sign(dv_lin - vth_vec_pa)
+                else:
+                    pred = _np.sign(dv_lin)
+            else:
+                # Optional confidence gating even without calibration
+                g_th = float(getattr(args, 'gate_thresh_mV', 0.0)); g_ex = int(getattr(args, 'gate_extra_frames', 0))
+                if g_ex > 0 and g_th > 0.0:
+                    import numpy as _np
+                    ref = (vth_vec_pa if vth_vec_pa is not None else 0.0)
+                    low = _np.abs(dv_diff - ref) < g_th
+                    if low.any():
+                        r_pos2 = base_orch.step(force_ternary=tern)
+                        r_neg2 = base_orch.step(force_ternary=-tern)
+                        dv_pos2 = _np.array(r_pos2.get("dv_mV", [0]*base_orch.sys.channels)); dv_neg2 = _np.array(r_neg2.get("dv_mV", [0]*base_orch.sys.channels))
+                        dv_diff2 = dv_pos2 - dv_neg2
+                        dv_diff[low] = dv_diff[low] + dv_diff2[low]
+                pred = _np.sign(dv_diff)
             errs.append(float(_np.mean(pred != tern)))
         chop_ber = float(_np.median(errs)) if errs else None
 
@@ -1065,7 +1234,6 @@ def main():
     # Optional quick per-channel calibration to set vth for path_a/baseline even when --no-cal
     # Initialize masking and calibration vectors
     active_mask = None
-    vth_vec_pa = None
     try:
         if getattr(args, 'apply_calibration', False):
             import numpy as _np
@@ -1087,9 +1255,9 @@ def main():
             pos_mean = _np.divide(pos_sum, _np.clip(pos_cnt, 1.0, None))
             neg_mean = _np.divide(neg_sum, _np.clip(neg_cnt, 1.0, None))
             vth_vec_pa = 0.5*(pos_mean + neg_mean)
-            # Learn deblur taps per channel if requested: minimize ||dv - aL*left - aR*right|| over calibration set
+            # Learn deblur taps per channel if requested (skip if legacy baseline cal)
             try:
-                if getattr(args, 'learn_deblur', False):
+                if getattr(args, 'learn_deblur', False) and not getattr(args, 'legacy_baseline_cal', False):
                     import numpy as _np
                     M = sys_p.channels
                     S = int(max(120, getattr(args, 'deblur_samples', 240)))
@@ -1545,10 +1713,24 @@ def main():
         for _ in range(min(args.trials, 200)):
             tern = orch.rng.integers(-1, 2, size=orch.sys.channels)
             acc = _accumulate_dv_over_frames(orch, tern, N, str(getattr(args, 'avg_kernel', 'sum')), float(getattr(args, 'avg_ema_alpha', 0.6)))
-            if vth_vec_pa is not None:
-                pred = _np.sign(acc - vth_vec_pa)
+            if bool(getattr(args, 'force_cal_in_primary', False)) and (lin_scale is not None) and (lin_offset is not None):
+                dv_lin = lin_scale*(acc + lin_offset)
+                # confidence gate
+                g_th = float(getattr(args, 'gate_thresh_mV', 0.0)); g_ex = int(getattr(args, 'gate_extra_frames', 0))
+                if g_ex > 0 and g_th > 0.0:
+                    low = _np.abs(dv_lin - (vth_vec_pa if vth_vec_pa is not None else 0.0)) < g_th
+                    if low.any():
+                        add = _accumulate_dv_over_frames(orch, tern, g_ex, str(getattr(args, 'avg_kernel', 'sum')), float(getattr(args, 'avg_ema_alpha', 0.6)))
+                        dv_lin[low] = dv_lin[low] + (lin_scale[low] * add[low])
+                if vth_vec_pa is not None:
+                    pred = _np.sign(dv_lin - vth_vec_pa)
+                else:
+                    pred = _np.sign(dv_lin)
             else:
-                pred = _np.sign(acc)
+                if vth_vec_pa is not None:
+                    pred = _np.sign(acc - vth_vec_pa)
+                else:
+                    pred = _np.sign(acc)
             errs.append(float(_np.mean(pred != tern)))
         path_a_summary = {
             "p50_ber": float(_np.median(errs)) if errs else None,
@@ -1592,23 +1774,33 @@ def main():
     elif getattr(args, 'use_decoder_for_path_a', False) and decoder is not None:
         import numpy as _np
         errs = []
-        w = decoder.get("w")
-        is_mlp = bool(decoder.get("mlp"))
+        fuse = bool(getattr(args, 'fuse_decoder', False))
+        alpha = float(getattr(args, 'fuse_alpha', 0.8))
+        _sigma_arg = getattr(args, 'comp_input_noise_mV', None)
+        sigma = float(orch.comp.p.input_noise_mV_rms if _sigma_arg is None else _sigma_arg)
+        blk = int(getattr(args, 'ecc_spc_block', 4))
+        use_ecc = bool(getattr(args, 'use_ecc', False))
+        N = int(max(1, getattr(args, 'avg_frames', 1)))
         for _ in range(min(args.trials, 200)):
             tern = orch.rng.integers(-1, 2, size=orch.sys.channels)
-            r = orch.step(force_ternary=tern)
-            dv = _np.array(r.get("dv_mV", [0]*orch.sys.channels), dtype=float)
+            if N > 1:
+                acc = _accumulate_dv_over_frames(orch, tern, N, str(getattr(args, 'avg_kernel', 'sum')), float(getattr(args, 'avg_ema_alpha', 0.6)))
+                dv = _np.array(acc, dtype=float)
+            else:
+                r = orch.step(force_ternary=tern)
+                dv = _np.array(r.get("dv_mV", [0]*orch.sys.channels), dtype=float)
             l = _np.roll(dv, 1); rr = _np.roll(dv, -1)
             feats = _np.stack([dv, l, rr, _np.abs(dv), dv*dv], axis=1)
-            if is_mlp:
-                Z1 = feats @ decoder["W1"] + decoder["b1"]
-                A1 = _np.tanh(Z1)
-                Z2 = A1 @ decoder["W2"] + decoder["b2"]
-                P = 1.0/(1.0+_np.exp(-Z2.reshape(-1)))
-                pred = _np.where(P >= 0.5, 1, -1)
-            else:
-                score = feats @ w
-                pred = _np.where(score >= 0.0, 1, -1)
+            p_dec = _decoder_prob_from_feats(feats, decoder)
+            # Optional calibrated probability using dv_lin and vth
+            p_cal = None
+            if bool(getattr(args, 'force_cal_in_primary', False)) and (lin_scale is not None) and (lin_offset is not None):
+                dv_lin = lin_scale*(dv + (lin_offset if lin_offset is not None else 0.0))
+                p_cal = _map_prob_from_dv(dv_lin, vth_vec_pa, sigma)
+            p_fused = p_dec if not fuse else _fuse_probs(p_cal, p_dec, alpha)
+            pred = _np.where(p_fused >= 0.5, 1, -1)
+            if use_ecc:
+                pred = _apply_spc(pred, p_fused, blk)
             if active_mask is not None:
                 M = min(len(active_mask), pred.shape[0])
                 am = _np.array(active_mask[:M], dtype=bool)
@@ -1669,6 +1861,10 @@ def main():
         "ber_per_tile": per_tile,
         "ber_per_tile_after": per_tile_after,
         "baseline_calibrated": (cal_summary or {}),
+        "baseline_calibrated_alt": {
+            "soft": (cal_summary_alt_soft or {}),
+            "binary": (cal_summary_alt_bin or {}),
+        },
         "vote3_p50_ber": vote3_ber,
         "spatial_oversample_p50_ber": spatial_ber,
         "lockin_p50_ber": lockin_ber,
@@ -1870,8 +2066,9 @@ def main():
         pass
 
     # Autotuner (optional)
+    _auto_tune_func = None
     if args.autotune:
-        from looking_glass.tuner import auto_tune
+        from looking_glass.tuner import auto_tune as _auto_tune_func
         if args.progress:
             print("PROGRESS: autotune start")
         # Build tuning constraints from packs if provided
@@ -1907,7 +2104,7 @@ def main():
     try:
         if getattr(args, 'local_autotune', False):
             import numpy as _np
-            la_w = [float(w) for w in str(getattr(args, 'la_windows', '18,19,20')).split(',') if w.strip()]
+            la_w = [float(w) for w in str(getattr(args, 'la_windows', '18,19,20,21')).split(',') if w.strip()]
             la_m = [float(m) for m in str(getattr(args, 'la_mask_fracs', '0.0625,0.09375,0.125')).split(',') if m.strip()]
             la_a = [int(a) for a in str(getattr(args, 'la_avg_frames', '2,3')).split(',') if a.strip()]
             best = {"ber": 1.0, "window_ns": None, "mask_frac": None, "avg_frames": None}
@@ -1958,7 +2155,7 @@ def main():
     except Exception:
         pass
 
-        tune_res = auto_tune(
+        tune_res = _auto_tune_func(
             sys_p,
             EmitterParams(**emit.__dict__),
             OpticsParams(**optx.__dict__),
