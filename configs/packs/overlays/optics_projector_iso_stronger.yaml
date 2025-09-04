@@ -1,0 +1,13 @@
+ct_model: neighbor
+ct_neighbor_db: -66.0
+ct_diag_db: -70.0
+psf_kernel: "lorentzian:w=1.8"
+stray_floor_db: -50.0
+transmittance: 0.92
+tile_border_px: 8
+tile_gain_sigma_pct: 0.5
+tile_isolation: true
+grid_px: 256
+speckle_on: false
+
+

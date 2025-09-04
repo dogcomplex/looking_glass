@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import numpy as np
+import math
 
 @dataclass
 class OpticsParams:
@@ -23,6 +24,11 @@ class OpticsParams:
     speckle_on: bool = False
     speckle_sigma: float = 0.0  # multiplicative std of speckle field
     speckle_corr_px: int = 7    # correlation length in pixels (odd recommended)
+    # Projector tiling helpers
+    tile_border_px: int = 0           # empty border inside each tile to reduce inter-tile bleed
+    tile_gain_sigma_pct: float = 0.0  # per-tile multiplicative gain sigma (PRNU/illumination)
+    tile_isolation: bool = False      # if true, blur is applied per-tile (no cross-tile mixing)
+    grid_px: int = 64                 # base grid resolution (square)
 
 def _lorentz_kernel(size=51, w=2.5):
     x = np.linspace(-size//2, size//2, size)
@@ -48,7 +54,8 @@ class Optics:
     def __init__(self, params: OpticsParams, rng=None):
         self.p = params
         self.rng = np.random.default_rng() if rng is None else rng
-        self.grid = (64, 64)
+        gp = max(16, int(getattr(self.p, 'grid_px', 64)))
+        self.grid = (gp, gp)
         self._build_psf()
         self._last_blocks = None
 
@@ -62,7 +69,8 @@ class Optics:
     def simulate(self, power_vec_plus, power_vec_minus):
         H, W = self.grid
         chans = len(power_vec_plus)
-        blocks = int(np.sqrt(chans))
+        # Use ceil so we allocate enough tiles to cover all channels
+        blocks = int(math.ceil(chans ** 0.5))
         blocks = max(1, blocks)
         by = max(1, H // blocks)
         bx = max(1, W // blocks)
@@ -77,15 +85,36 @@ class Optics:
                 y1, x1 = min(H, y0+by), min(W, x0+bx)
                 if y1<=y0 or x1<=x0:
                     continue
-                midx = (x0+x1)//2
-                img[y0:y1, x0:midx] += power_vec_plus[idx]*self.p.w_plus_contrast
-                img[y0:y1, midx:x1] += power_vec_minus[idx]*self.p.w_minus_contrast
+                # Apply optional inner border to leave empty margins per tile
+                b = max(0, int(self.p.tile_border_px))
+                y0b, x0b = y0 + b, x0 + b
+                y1b, x1b = max(y0b, y1 - b), max(x0b, x1 - b)
+                if y1b<=y0b or x1b<=x0b:
+                    idx += 1
+                    continue
+                midx = (x0b+x1b)//2
+                img[y0b:y1b, x0b:midx] += power_vec_plus[idx]*self.p.w_plus_contrast
+                img[y0b:y1b, midx:x1b] += power_vec_minus[idx]*self.p.w_minus_contrast
                 idx += 1
 
-        # PSF blur separable
+        # PSF blur separable (globally or per-tile isolated)
         k = self.k1d
-        img = np.apply_along_axis(lambda m: np.convolve(m, k, mode="same"), axis=1, arr=img)
-        img = np.apply_along_axis(lambda m: np.convolve(m, k, mode="same"), axis=0, arr=img)
+        if bool(self.p.tile_isolation) and blocks > 0:
+            out_img = np.zeros_like(img)
+            for by_i in range(blocks):
+                for bx_i in range(blocks):
+                    y0, x0 = by_i*by, bx_i*bx
+                    y1, x1 = min(H, y0+by), min(W, x0+bx)
+                    if y1<=y0 or x1<=x0:
+                        continue
+                    sub = img[y0:y1, x0:x1]
+                    sub = np.apply_along_axis(lambda m: np.convolve(m, k, mode="same"), axis=1, arr=sub)
+                    sub = np.apply_along_axis(lambda m: np.convolve(m, k, mode="same"), axis=0, arr=sub)
+                    out_img[y0:y1, x0:x1] = sub
+            img = out_img
+        else:
+            img = np.apply_along_axis(lambda m: np.convolve(m, k, mode="same"), axis=1, arr=img)
+            img = np.apply_along_axis(lambda m: np.convolve(m, k, mode="same"), axis=0, arr=img)
 
         # Optional speckle/fringe multiplicative spatial noise (zero-mean, correlated)
         if bool(self.p.speckle_on) and float(self.p.speckle_sigma) > 0.0:
@@ -131,9 +160,15 @@ class Optics:
                 y1, x1 = min(H, y0+by), min(W, x0+bx)
                 if y1<=y0 or x1<=x0:
                     continue
-                midx = (x0+x1)//2
-                roi_plus = img[y0:y1, x0:midx]
-                roi_minus = img[y0:y1, midx:x1]
+                b = max(0, int(self.p.tile_border_px))
+                y0b, x0b = y0 + b, x0 + b
+                y1b, x1b = max(y0b, y1 - b), max(x0b, x1 - b)
+                if y1b<=y0b or x1b<=x0b:
+                    idx += 1
+                    continue
+                midx = (x0b+x1b)//2
+                roi_plus = img[y0b:y1b, x0b:midx]
+                roi_minus = img[y0b:y1b, midx:x1b]
                 out_plus.append(roi_plus.mean()*self.p.transmittance*self.p.signal_scale)
                 out_minus.append(roi_minus.mean()*self.p.transmittance*self.p.signal_scale)
                 idx += 1
@@ -148,6 +183,13 @@ class Optics:
             self._last_blocks = blocks
         else:
             self._last_blocks = None
+        # Apply per-tile gain variation (PRNU/illumination non-uniformity)
+        if float(self.p.tile_gain_sigma_pct) > 0.0 and len(out_plus) > 0:
+            sigma = float(self.p.tile_gain_sigma_pct) / 100.0
+            gain = self.rng.normal(1.0, sigma, size=len(out_plus))
+            out_plus = out_plus * gain
+            out_minus = out_minus * gain
+
         # Crosstalk
         if self.p.ct_model == "neighbor" and blocks > 1:
             # build grid arrays with zeros for unused cells

@@ -1,0 +1,8 @@
+qe: 0.25
+wavelength_nm: 550.0
+read_noise_e_rms: 2.5
+prnu_pct: 1.0
+adc_bits: 10
+adc_fullscale_e: 16000.0
+
+

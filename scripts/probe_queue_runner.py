@@ -295,6 +295,26 @@ def summarize(data: dict) -> dict:
         "baseline_calibrated_p50_ber": base_cal.get("p50_ber"),
         "path_a_p50_ber": path_a.get("p50_ber"),
     }
+def _play_idle_chime_once() -> None:
+    """Play a small, mild chime when entering idle. Best-effort, Windows-first.
+
+    Controlled by env IDLE_CHIME (default: on). Set IDLE_CHIME=0 to disable.
+    """
+    if str(os.environ.get("IDLE_CHIME", "1")).lower() in ("0", "false", "no"):
+        return
+    try:
+        import winsound  # type: ignore
+        # Mild asterisk chime; avoids harsh Beep frequency
+        winsound.MessageBeep(getattr(winsound, "MB_ICONASTERISK", 0))
+        return
+    except Exception:
+        pass
+    # Fallback: ASCII bell (may be ignored on some terminals)
+    try:
+        print("\a", end="", flush=True)
+    except Exception:
+        pass
+
 
 
 def main():
@@ -385,8 +405,12 @@ def main():
                 idle_msg = "IDLE: sleeping 2s"
             if idle_msg != last_idle:
                 print(idle_msg)
-                # Visual separator after the first fresh IDLE line
-                print("==================")
+                # Play a small chime once and log it before the separator
+                _play_idle_chime_once()
+                try:
+                    print("[idle chime]\n==================")
+                except Exception:
+                    print("==================")
                 last_idle = idle_msg
             time.sleep(2.0)
 
