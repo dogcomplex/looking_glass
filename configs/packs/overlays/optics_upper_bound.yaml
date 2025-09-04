@@ -1,0 +1,10 @@
+crosstalk_db: -70.0
+stray_floor_db: -70.0
+psf_kernel: "lorentzian:w=1.0"
+signal_scale: 1.60
+tile_border_px: 4
+tile_isolation: true
+tile_gain_sigma_pct: 0.0
+grid_px: 256
+
+

@@ -1,0 +1,8 @@
+psf_kernel: "lorentzian:w=1.5"
+signal_scale: 1.20
+tile_border_px: 3
+tile_isolation: true
+tile_gain_sigma_pct: 0.0
+grid_px: 256
+
+

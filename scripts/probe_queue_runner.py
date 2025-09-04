@@ -304,8 +304,18 @@ def _play_idle_chime_once() -> None:
         return
     try:
         import winsound  # type: ignore
-        # Mild asterisk chime; avoids harsh Beep frequency
-        winsound.MessageBeep(getattr(winsound, "MB_ICONASTERISK", 0))
+        mode = str(os.environ.get("IDLE_BEEP", "")).lower()
+        if mode in ("1", "true", "yes", "beep"):
+            # Explicit simple beep (audible on most Windows systems)
+            winsound.Beep(800, 120)  # 800 Hz, 120 ms
+        else:
+            # Mild system chime; if silent on this host, optionally follow with a short beep
+            winsound.MessageBeep(getattr(winsound, "MB_ICONASTERISK", 0))
+            if str(os.environ.get("IDLE_FALLBACK_BEEP", "1")).lower() in ("1","true","yes"):
+                try:
+                    winsound.Beep(800, 80)
+                except Exception:
+                    pass
         return
     except Exception:
         pass
