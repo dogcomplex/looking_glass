@@ -1,0 +1,4 @@
+# DWDM impairments approximated via crosstalk/stray and transmittance ripple proxy
+crosstalk_db: -45.0
+stray_floor_db: -55.0
+transmittance: 0.80

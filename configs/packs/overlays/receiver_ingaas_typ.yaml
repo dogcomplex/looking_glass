@@ -1,0 +1,6 @@
+# InGaAs photodiode + TIA characteristics (typical 1550 nm)
+responsivity_a_per_w: 0.9
+junction_cap_pF: 0.5
+dark_current_nA: 5.0
+bw_hz: 1.0e9
+input_referred_noise_nV_rtHz: 4.0

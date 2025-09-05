@@ -1,0 +1,10 @@
+# SOA-based loop gain stage, softer gain and saturation-like behavior
+amp_on: true
+amp_gain_db: 4.0
+amp_ase_sigma: 0.008
+sat_abs_on: true
+sat_I_sat: 2.5
+sat_alpha: 0.5
+transmittance: 0.85
+crosstalk_db: -70.0
+stray_floor_db: -65.0

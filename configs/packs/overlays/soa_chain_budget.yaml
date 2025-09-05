@@ -1,0 +1,9 @@
+amp_on: true
+amp_gain_db: 2.5
+amp_ase_sigma: 0.02
+sat_abs_on: true
+sat_I_sat: 1.2
+sat_alpha: 0.8
+transmittance: 0.78
+crosstalk_db: -55.0
+stray_floor_db: -55.0

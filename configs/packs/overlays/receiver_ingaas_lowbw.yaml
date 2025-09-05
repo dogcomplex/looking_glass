@@ -1,0 +1,5 @@
+responsivity_a_per_w: 0.85
+junction_cap_pF: 0.8
+dark_current_nA: 8.0
+bw_hz: 1.5e8
+input_referred_noise_nV_rtHz: 6.0

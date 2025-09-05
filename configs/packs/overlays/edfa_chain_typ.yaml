@@ -1,0 +1,9 @@
+# EDFA-based loop gain stage with ASE and band-pass filter cleanup
+amp_on: true
+amp_gain_db: 10.0
+amp_ase_sigma: 0.02
+# OBPF + VOA effective transmittance
+transmittance: 0.75
+# Keep crosstalk/stray low in fiber
+crosstalk_db: -70.0
+stray_floor_db: -65.0

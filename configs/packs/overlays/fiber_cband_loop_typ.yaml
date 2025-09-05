@@ -1,0 +1,10 @@
+# C-band fiber loop path: losses, low speckle, insertion components
+ct_model: none
+crosstalk_db: -70.0
+stray_floor_db: -70.0
+psf_kernel: "none"
+transmittance: 0.85
+# Aggregate insertion loss for isolator/mux/demux/couplers per pass (dB)
+ins_loss_db: 3.0
+# Use grid-less (no projector tiling) semantics
+grid_px: 0
