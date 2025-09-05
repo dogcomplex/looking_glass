@@ -196,6 +196,17 @@ def run_job(job: dict) -> dict:
     # RAW passthrough modes: job["raw"] string or job["cmd"] array
     if isinstance(job.get("cmd"), list):
         argv = ["examples/test.py", *[str(x) for x in job["cmd"]]]
+        # Back-compat/arg hygiene: fix known flag typos and remove deprecated ones
+        try:
+            # Replace legacy '--gate-thresh-mv' with correct '--gate-thresh-mV'
+            argv = ["--gate-thresh-mV" if x == "--gate-thresh-mv" else x for x in argv]
+            # Remove '--gate-mode' and its value if present
+            if "--gate-mode" in argv:
+                gm_idx = argv.index("--gate-mode")
+                # Drop flag and following value if any
+                del argv[gm_idx: min(gm_idx+2, len(argv))]
+        except Exception:
+            pass
         # If overlays are provided on the job, append merged packs unless already present
         try:
             def has_flag(flag: str) -> bool:

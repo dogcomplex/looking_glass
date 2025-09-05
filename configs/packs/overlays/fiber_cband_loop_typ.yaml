@@ -6,5 +6,16 @@ psf_kernel: "none"
 transmittance: 0.85
 # Aggregate insertion loss for isolator/mux/demux/couplers per pass (dB)
 ins_loss_db: 3.0
+ins_loss_db_mean: 0.5
+ins_loss_db_sigma: 0.3
+# Polarization-dependent loss (slow random walk)
+pdl_db: 0.2
+pdl_step_rad: 0.02
+# DWDM passband slope (dB/nm) and group delay ripple (ps pk-pk)
+dwdm_slope_db_per_nm: 2.0
+gdr_ps_pkpk: 15.0
+# Back-reflection spike stress
+reflection_event_db: 35.0
+reflection_prob: 0.02
 # Use grid-less (no projector tiling) semantics
 grid_px: 0

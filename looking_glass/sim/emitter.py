@@ -8,6 +8,8 @@ class EmitterParams:
     power_mw_per_ch: float = 1.0
     extinction_db: float = 20.0
     rin_dbhz: float = -150.0
+    linewidth_hz: float = 1.0e6
+    wav_drift_nm_per_C: float = 0.1
     rise_fall_ns_10_90: float = 1.0
     temp_coeff_pct_per_C: float = 0.2
     power_sigma_pct: float = 0.0
@@ -65,4 +67,8 @@ class EmitterArray:
             Pm = Pm + self.rng.normal(0.0, resid * np.maximum(Pm, 0.0))
         Pp = np.clip(Pp, 0.0, None)
         Pm = np.clip(Pm, 0.0, None)
+        # Coherence/linewidth hook: expose phase diffusion scale (used by optics for partial coherence)
+        self._coherence_time_s = 1.0 / max(1.0, float(self.p.linewidth_hz))
+        # Wavelength drift vs temperature (used by DWDM overlays); store effective drift
+        self._delta_lambda_nm = (temp_C - 25.0) * float(self.p.wav_drift_nm_per_C)
         return Pp, Pm

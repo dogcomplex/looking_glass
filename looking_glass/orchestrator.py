@@ -18,6 +18,8 @@ class SystemParams:
     reset_analog_state_each_frame: bool = True
     normalize_dv: bool = False
     normalize_eps_v: float = 1e-6
+    lane_skew_ps_rms: float = 0.0
+    pmd_ps_rms: float = 0.0
 
 class Orchestrator:
     def __init__(self,
@@ -64,7 +66,19 @@ class Orchestrator:
             tern = np.asarray(force_ternary, dtype=int)
             assert tern.shape[0] == N
         Pp, Pm = self.emit.simulate(tern, dt, self.sys.temp_C)
+        # DWDM passband walk-off due to wavelength drift: adjust optics transmittance temporarily
+        trans_save = self.optx.p.transmittance
+        try:
+            slope = float(getattr(self.optx.p, 'dwdm_slope_db_per_nm', 0.0))
+            dlam = float(getattr(self.emit, '_delta_lambda_nm', 0.0))
+            if slope != 0.0 and dlam != 0.0:
+                loss_db = abs(dlam) * slope
+                self.optx.p.transmittance = trans_save * 10**(-loss_db/10.0)
+        except Exception:
+            pass
         Pp2, Pm2, per_tile_p, per_tile_m = self.optx.simulate(Pp, Pm)
+        # restore transmittance
+        self.optx.p.transmittance = trans_save
         if self.cam is not None:
             # Camera converts optical power to equivalent current with shot/read noise and quantization
             Ip = self.cam.simulate(Pp2, dt)
@@ -75,6 +89,20 @@ class Orchestrator:
             Im = self.pd.simulate(Pm2, dt)
         Vp = self.tia.simulate(Ip, dt)
         Vm = self.tia.simulate(Im, dt)
+        # Lane skew: small per-channel timing mismatch -> dv perturbation proxy
+        if float(getattr(self.sys, 'lane_skew_ps_rms', 0.0)) > 0.0:
+            sk = float(self.sys.lane_skew_ps_rms) * 1e-3  # ps->ns scaling proxy
+            dv_noise = self.rng.normal(0.0, sk, size=N)
+            Vp = Vp + dv_noise
+            Vm = Vm - dv_noise
+        # PMD and AWG group-delay ripple: additional timing-induced dv noise
+        gdr = float(getattr(self.optx.p, 'gdr_ps_pkpk', 0.0))
+        pmd = float(getattr(self.sys, 'pmd_ps_rms', 0.0))
+        sigma_ns = (gdr * 0.29e-3) + (pmd * 1e-3)  # coarse proxy to voltage jitter scale
+        if sigma_ns > 0.0:
+            jit = self.rng.normal(0.0, sigma_ns, size=N)
+            Vp = Vp + jit
+            Vm = Vm - jit
         if getattr(self.sys, "normalize_dv", False):
             # Per-channel normalization to suppress multiplicative noise (AGC-like)
             denom = np.clip(np.abs(Vp) + np.abs(Vm), self.sys.normalize_eps_v, None)

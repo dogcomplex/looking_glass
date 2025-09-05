@@ -1,0 +1,6 @@
+amp_on: true
+amp_gain_db: 1.5
+amp_ase_sigma: 0.04
+sat_abs_on: true
+sat_I_sat: 0.8
+sat_alpha: 0.9

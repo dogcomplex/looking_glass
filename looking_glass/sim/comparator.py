@@ -8,6 +8,7 @@ class ComparatorParams:
     input_noise_mV_rms: float = 0.8
     drift_mV_per_C: float = 0.05
     prop_delay_ns: float = 2.0
+    prop_jitter_ps_rms: float = 0.0
     saturate_levels: bool = True
     vth_sigma_mV: float = 0.0
     # Metastability near zero dv (sim-only stress hook)
@@ -53,6 +54,16 @@ class Comparator:
         up_th = vth_vec + 0.5*hyst
         # Symmetric ternary thresholding; prefer zero near the origin
         out = np.where(eff > up_th, 1, np.where(eff < -up_th, -1, 0))
+        # Propagation delay jitter: introduce small random decision errors near threshold due to timing uncertainty
+        jit_ps = float(self.p.prop_jitter_ps_rms)
+        if jit_ps > 0.0:
+            # Model as additional chance to misclassify samples with small |eff - threshold|
+            # Scale probability with proximity to threshold (within 2*hyst)
+            prox = np.minimum(np.abs(eff - up_th), np.abs(eff + up_th))
+            span = np.maximum(1e-6, 2.0 * (self.p.hysteresis_mV if self.p.hysteresis_mV > 0.0 else 1.0))
+            p_err = np.clip((span - prox) / span, 0.0, 1.0) * min(0.25, jit_ps * 1e-3)
+            flips = self.rng.random(size=out.shape) < p_err
+            out = np.where(flips, -out, out)
         if self.p.saturate_levels:
             out = np.clip(out, -1, 1)
         # Optional metastability: within a narrow band around zero dv, randomly flip with small prob

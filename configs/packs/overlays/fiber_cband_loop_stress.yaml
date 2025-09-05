@@ -1,0 +1,19 @@
+# Stress C-band fiber loop overlay: stronger impairments for must-fail checks
+transmittance: 0.85
+crosstalk_db: -40.0
+stray_floor_db: -60.0
+psf_kernel: "gaussian:w=0.5"
+signal_scale: 1.0
+# Per-pass IL variation (sigma in dB)
+per_pass_il_sigma_db: 0.3
+# Polarization dependent loss (slow drift)
+pdl_db_sigma: 0.2
+pdl_corr_frames: 10
+# DWDM impairments
+dwdm_passband_il_db: 2.0
+dwdm_passband_ripple_db: 0.5
+# Group delay ripple (ps pk-pk) if supported
+dwdm_group_delay_ripple_ps: 20.0
+# Back-reflection spike stress (supported by optics model)
+reflection_event_db: 30.0
+reflection_prob: 0.05

@@ -29,6 +29,14 @@ class OpticsParams:
     tile_gain_sigma_pct: float = 0.0  # per-tile multiplicative gain sigma (PRNU/illumination)
     tile_isolation: bool = False      # if true, blur is applied per-tile (no cross-tile mixing)
     grid_px: int = 64                 # base grid resolution (square)
+    # Fiber/loop realism hooks
+    ins_loss_db_mean: float = 0.0     # extra insertion loss mean per pass (dB)
+    ins_loss_db_sigma: float = 0.0    # extra insertion loss sigma per pass (dB)
+    pdl_db: float = 0.0               # polarization-dependent loss magnitude (dB)
+    pdl_step_rad: float = 0.0         # random-walk step per frame (radians)
+    memory_tau_frames: float = 0.0    # simple SOA-like memory (frames), 0 disables
+    reflection_event_db: float = 0.0  # back-reflection event strength (dB), 0 disables
+    reflection_prob: float = 0.0      # probability per frame of a reflection spike
 
 def _lorentz_kernel(size=51, w=2.5):
     x = np.linspace(-size//2, size//2, size)
@@ -58,6 +66,8 @@ class Optics:
         self.grid = (gp, gp)
         self._build_psf()
         self._last_blocks = None
+        self._pdl_phase = 0.0
+        self._mem_state = None
 
     def _build_psf(self):
         kind, w = _parse_psf(self.p.psf_kernel)
@@ -147,6 +157,42 @@ class Optics:
             I_sat = self.p.sat_I_sat
             alpha = self.p.sat_alpha
             img = I / (1.0 + alpha*(I/(I_sat+1e-12)))
+
+        # Simple SOA-like memory: reduce gain if last intensity was high (pattern dependence)
+        tau = float(self.p.memory_tau_frames)
+        if tau and tau > 0.0:
+            avg = img.mean()
+            if self._mem_state is None:
+                self._mem_state = avg
+            else:
+                beta = 1.0 / max(1.0, tau)
+                self._mem_state = (1.0 - beta) * self._mem_state + beta * avg
+            # Apply a mild compression proportional to stored state
+            comp = 1.0 / (1.0 + 0.5 * self._mem_state / (img.mean() + 1e-12))
+            img = img * np.clip(comp, 0.7, 1.0)
+
+        # Extra insertion loss variation per pass (in dB)
+        if (self.p.ins_loss_db_mean or self.p.ins_loss_db_sigma):
+            mu = float(self.p.ins_loss_db_mean)
+            sg = float(self.p.ins_loss_db_sigma)
+            loss_db = self.rng.normal(mu, sg)
+            img = img * 10**(-loss_db/10.0)
+
+        # Polarization-dependent loss with slow random walk
+        if float(self.p.pdl_db) > 0.0 and float(self.p.pdl_step_rad) >= 0.0:
+            self._pdl_phase += self.rng.normal(0.0, float(self.p.pdl_step_rad))
+            pdl_lin = 10**(-float(self.p.pdl_db)/10.0)
+            # Effective scale between [pdl_lin, 1] depending on projection
+            scale = pdl_lin + (1.0 - pdl_lin) * (0.5 + 0.5 * np.cos(self._pdl_phase))
+            img = img * scale
+
+        # Reflection spike event: add a scaled self-interference term with small random phase proxy
+        if float(self.p.reflection_event_db) > 0.0 and float(self.p.reflection_prob) > 0.0:
+            if self.rng.random() < float(self.p.reflection_prob):
+                refl = 10**(-float(self.p.reflection_event_db)/10.0)
+                # approximate interference as additive scaled copy plus small random fluctuation
+                jitter = self.rng.normal(0.0, 0.05, size=img.shape)
+                img = img + refl * img * (1.0 + jitter)
 
         # Project back to per-channel averages
         out_plus = []
