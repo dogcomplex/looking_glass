@@ -58,6 +58,10 @@ def append_completed(record: dict) -> None:
         "out": record.get("out"),
         "summary": record.get("summary"),
         "finished_at": record.get("finished_at"),
+        # Include helpful debugging fields when present
+        "error": record.get("error"),
+        "label": (record.get("job") or {}).get("label") if isinstance(record.get("job"), dict) else None,
+        "traceback": record.get("traceback"),
     }
     # Append one JSON line per run and force it to disk immediately
     line = json.dumps(rec_min, ensure_ascii=True) + "\n"
@@ -285,15 +289,71 @@ def run_job(job: dict) -> dict:
     # Ensure JSON path present in argv
     if "--json" not in argv:
         argv += ["--quiet", "--json", out_path]
+    # If job requests verbose, strip any --quiet flags so test.py prints
+    try:
+        if bool(job.get("verbose", False)):
+            argv = [a for a in argv if a != "--quiet"]
+    except Exception:
+        pass
 
     # Execute examples/test.py by path to avoid package import issues
     prev_argv = sys.argv[:]
+    _se_code = 0
+    _se_error = None
     try:
         sys.argv = argv
-        runpy.run_path("examples/test.py", run_name="__main__")
+        # Optionally suppress stdout from test.py to avoid huge prints
+        import os as _os
+        job_verbose = bool(job.get("verbose", False)) if isinstance(job, dict) else False
+        suppress = False if job_verbose else (str(_os.environ.get("SUPPRESS_TEST_STDOUT", "1")).lower() in ("1","true","yes"))
+        import traceback as _tb
+        import sys as _sys
+        import io as _io
+        import contextlib as _ctx
+        # Prepare stdout capture; if verbose, tee to console
+        buf = _io.StringIO()
+        class _Tee:
+            def __init__(self, a, b):
+                self.a = a; self.b = b
+            def write(self, s):
+                try:
+                    self.a.write(s)
+                except Exception:
+                    pass
+                return self.b.write(s)
+            def flush(self):
+                try:
+                    self.a.flush()
+                except Exception:
+                    pass
+                return self.b.flush()
+        buf_err = _io.StringIO()
+        try:
+            if suppress:
+                with _ctx.redirect_stdout(buf), _ctx.redirect_stderr(buf_err):
+                    runpy.run_path("examples/test.py", run_name="__main__")
+            else:
+                tee_out = _Tee(_sys.__stdout__, buf)
+                tee_err = _Tee(_sys.__stderr__, buf_err)
+                with _ctx.redirect_stdout(tee_out), _ctx.redirect_stderr(tee_err):
+                    runpy.run_path("examples/test.py", run_name="__main__")
+        except SystemExit as _se:
+            # Convert nonzero sys.exit from test.py into a regular error so main() can record and continue
+            code = getattr(_se, 'code', 0)
+            if code not in (None, 0):
+                _se_code = int(code) if isinstance(code, int) else 1
+                _se_error = f"test.py exited with code {code}\nSTDOUT:\n{buf.getvalue()}\nSTDERR:\n{buf_err.getvalue()}"
+        except Exception as _e:
+            # Attach traceback string to propagate to main()
+            tb = _tb.format_exc()
+            raise RuntimeError(f"test.py exception: {_e}\n{tb}\nSTDOUT:\n{buf.getvalue()}\nSTDERR:\n{buf_err.getvalue()}")
     finally:
         sys.argv = prev_argv
-    data = json.loads(Path(out_path).read_text(encoding="utf-8"))
+    # If test.py exited non-zero but produced JSON, accept it; otherwise raise
+    out_file = Path(out_path)
+    if _se_code not in (0, None) and not out_file.exists():
+        raise RuntimeError(_se_error or f"test.py exited with code {_se_code}")
+    data = json.loads(out_file.read_text(encoding="utf-8"))
     return {"out": out_path, "data": data}
 
 
@@ -403,6 +463,7 @@ def main():
                     "started_at": started_at,
                     "finished_at": datetime.utcnow().isoformat() + "Z",
                     "error": str(e),
+                    "traceback": getattr(e, 'args', [None])[-1] if e.args else None,
                     "job": job,
                     "status": "error",
                 })
@@ -436,7 +497,23 @@ def main():
             time.sleep(2.0)
 
 
+def _run_forever():
+    import time as _t
+    while True:
+        try:
+            main()
+        except SystemExit as _se:
+            code = getattr(_se, 'code', 0)
+            if code not in (None, 0):
+                print(f"WARN: main exited with code {code}, restarting in 1s")
+            _t.sleep(1.0)
+            continue
+        except Exception as _e:
+            print(f"WARN: main crashed: {_e}; restarting in 1s")
+            _t.sleep(1.0)
+            continue
+
 if __name__ == "__main__":
-    main()
+    _run_forever()
 
 

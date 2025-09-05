@@ -1,0 +1,10 @@
+# Harsher nonlinear optics overlay for multi-λ stress
+speckle_time_on: true
+speckle_time_sigma: 0.08
+speckle_time_tau_frames: 50
+xgm_on: true
+xgm_coeff: 0.08
+xpm_on: true
+xpm_coeff: 0.05
+fwm_on: true
+fwm_coeff: 0.03

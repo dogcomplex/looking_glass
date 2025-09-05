@@ -1,0 +1,28 @@
+# Extreme nonlinear optics overlay (keys aligned to optics.py)
+transmittance: 0.65
+ins_loss_db_sigma: 0.5
+pdl_db: 0.5
+pdl_step_rad: 0.05
+# DWDM poor adjacent isolation and ripple
+crosstalk_db: -25.0
+ct_model: neighbor
+ct_neighbor_db: -25.0
+ct_diag_db: -28.0
+dwdm_passband_ripple_db: 1.2
+# Slow temporal speckle fading
+speckle_time_on: true
+speckle_time_sigma: 0.15
+speckle_time_tau_frames: 30
+# Nonlinear multi-λ proxies
+xgm_on: true
+xgm_coeff: 0.2
+xpm_on: true
+xpm_coeff: 0.12
+fwm_on: true
+fwm_coeff: 0.08
+# Back-reflection spikes
+reflection_event_db: 28.0
+reflection_prob: 0.08
+# Polarization scrambler
+pol_scrambler_on: true
+pol_scramble_every_frames: 20

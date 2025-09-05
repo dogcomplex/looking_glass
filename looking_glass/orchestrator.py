@@ -14,12 +14,14 @@ class SystemParams:
     channels: int = 16
     window_ns: float = 10.0
     temp_C: float = 25.0
+    temp_ramp_C_per_hr: float = 0.0
     seed: int = 42
     reset_analog_state_each_frame: bool = True
     normalize_dv: bool = False
     normalize_eps_v: float = 1e-6
     lane_skew_ps_rms: float = 0.0
     pmd_ps_rms: float = 0.0
+    correlated_jitter_ps_rms: float = 0.0
 
 class Orchestrator:
     def __init__(self,
@@ -49,6 +51,9 @@ class Orchestrator:
         dt_raw = self.clk.sample_window()
         # Apply comparator propagation delay as lost effective integration time
         dt = max(0.1, float(dt_raw) - float(self.comp.p.prop_delay_ns))
+        # Apply temperature ramp to system temperature (affects emitter wavelength drift via simulate)
+        if float(getattr(self.sys, 'temp_ramp_C_per_hr', 0.0)) != 0.0:
+            self.sys.temp_C = float(self.sys.temp_C) + (dt * 1e-9) * (float(self.sys.temp_ramp_C_per_hr) / 3600.0)
         if self.sys.reset_analog_state_each_frame:
             # Reset analog state to avoid inter-frame memory when desired
             self.tia.reset()
@@ -103,6 +108,12 @@ class Orchestrator:
             jit = self.rng.normal(0.0, sigma_ns, size=N)
             Vp = Vp + jit
             Vm = Vm - jit
+        # Correlated jitter across lanes (common-mode sampling error)
+        cj_ps = float(getattr(self.sys, 'correlated_jitter_ps_rms', 0.0))
+        if cj_ps > 0.0:
+            cj_ns = self.rng.normal(0.0, cj_ps * 1e-3)
+            Vp = Vp + cj_ns
+            Vm = Vm - cj_ns
         if getattr(self.sys, "normalize_dv", False):
             # Per-channel normalization to suppress multiplicative noise (AGC-like)
             denom = np.clip(np.abs(Vp) + np.abs(Vm), self.sys.normalize_eps_v, None)
@@ -155,10 +166,12 @@ class Orchestrator:
         snr_emit = np.median([o["snr_emit"] for o in outs])
         snr_pd = np.median([o["snr_pd"] for o in outs])
         snr_tia = np.median([o["snr_tia"] for o in outs])
+        tokens_per_s = float(self.sys.channels) / max(1e-12, (dt * 1e-9))
         return {
             "p50_ber": float(ber),
             "p50_energy_pj": float(en),
             "window_ns": float(dt),
+            "p50_tokens_per_s": float(tokens_per_s),
             "p50_snr_emit": float(snr_emit),
             "p50_snr_pd": float(snr_pd),
             "p50_snr_tia": float(snr_tia),

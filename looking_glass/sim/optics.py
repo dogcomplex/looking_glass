@@ -37,6 +37,20 @@ class OpticsParams:
     memory_tau_frames: float = 0.0    # simple SOA-like memory (frames), 0 disables
     reflection_event_db: float = 0.0  # back-reflection event strength (dB), 0 disables
     reflection_prob: float = 0.0      # probability per frame of a reflection spike
+    # Slow temporal speckle fading (multiplicative, low-frequency)
+    speckle_time_on: bool = False
+    speckle_time_sigma: float = 0.0
+    speckle_time_tau_frames: int = 0
+    # Nonlinear multi-λ proxies (stress only)
+    xgm_on: bool = False
+    xgm_coeff: float = 0.0           # compresses intensity vs total power (0..1 small)
+    xpm_on: bool = False
+    xpm_coeff: float = 0.0           # adds intensity-coupled neighbor mixing
+    fwm_on: bool = False
+    fwm_coeff: float = 0.0           # adds ghost terms from quadratic mixing
+    # Polarization scrambler (seconds-scale): randomize PDL projection periodically
+    pol_scrambler_on: bool = False
+    pol_scramble_every_frames: int = 0
 
 def _lorentz_kernel(size=51, w=2.5):
     x = np.linspace(-size//2, size//2, size)
@@ -68,6 +82,8 @@ class Optics:
         self._last_blocks = None
         self._pdl_phase = 0.0
         self._mem_state = None
+        self._speckle_time = None
+        self._frame_idx = 0
 
     def _build_psf(self):
         kind, w = _parse_psf(self.p.psf_kernel)
@@ -139,6 +155,23 @@ class Optics:
             img = img * (1.0 + float(self.p.speckle_sigma) * noise)
             img = np.clip(img, 0.0, None)
 
+        # Slow temporal speckle fading (multiplicative field with long correlation)
+        if bool(getattr(self.p, 'speckle_time_on', False)) and float(getattr(self.p, 'speckle_time_sigma', 0.0)) > 0.0:
+            tau = max(1, int(getattr(self.p, 'speckle_time_tau_frames', 0) or 0))
+            beta = 1.0 / float(tau)
+            # drive noise ~ N(0,1) filtered spatially a bit to avoid pixel snow
+            drive = self.rng.normal(0.0, 1.0, size=img.shape)
+            kk = _lorentz_kernel(9, 2.0)
+            drive = np.apply_along_axis(lambda m: np.convolve(m, kk, mode="same"), axis=1, arr=drive)
+            drive = np.apply_along_axis(lambda m: np.convolve(m, kk, mode="same"), axis=0, arr=drive)
+            drive /= (drive.std() + 1e-12)
+            if self._speckle_time is None:
+                self._speckle_time = drive
+            else:
+                self._speckle_time = (1.0 - beta) * self._speckle_time + beta * drive
+            img = img * (1.0 + float(self.p.speckle_time_sigma) * self._speckle_time)
+            img = np.clip(img, 0.0, None)
+
         # Stray pedestal
         stray_lin = 10**(self.p.stray_floor_db/10.0)
         ped = stray_lin * (img.max() + 1e-12)
@@ -157,6 +190,30 @@ class Optics:
             I_sat = self.p.sat_I_sat
             alpha = self.p.sat_alpha
             img = I / (1.0 + alpha*(I/(I_sat+1e-12)))
+
+        # XGM proxy: compress intensity as total power rises (deterministic crosstalk via shared gain)
+        if bool(getattr(self.p, 'xgm_on', False)) and float(getattr(self.p, 'xgm_coeff', 0.0)) > 0.0:
+            total = img.mean() + 1e-12
+            k = np.clip(float(self.p.xgm_coeff) * total / (total + 1.0), 0.0, 0.5)
+            img = img * (1.0 - k)
+            img = np.clip(img, 0.0, None)
+
+        # XPM proxy: add small neighbor-mixed copy scaled by local intensity
+        if bool(getattr(self.p, 'xpm_on', False)) and float(getattr(self.p, 'xpm_coeff', 0.0)) > 0.0:
+            kx = _lorentz_kernel(7, 1.5)
+            blurred = np.apply_along_axis(lambda m: np.convolve(m, kx, mode="same"), axis=1, arr=img)
+            blurred = np.apply_along_axis(lambda m: np.convolve(m, kx, mode="same"), axis=0, arr=blurred)
+            img = img + float(self.p.xpm_coeff) * (blurred - img) * (img / (img.mean() + 1e-12))
+            img = np.clip(img, 0.0, None)
+
+        # FWM proxy: quadratic ghost leaked back after slight blur
+        if bool(getattr(self.p, 'fwm_on', False)) and float(getattr(self.p, 'fwm_coeff', 0.0)) > 0.0:
+            quad = img * img
+            kq = _lorentz_kernel(5, 1.0)
+            quad = np.apply_along_axis(lambda m: np.convolve(m, kq, mode="same"), axis=1, arr=quad)
+            quad = np.apply_along_axis(lambda m: np.convolve(m, kq, mode="same"), axis=0, arr=quad)
+            img = img + float(self.p.fwm_coeff) * quad / (quad.mean() + 1e-12)
+            img = np.clip(img, 0.0, None)
 
         # Simple SOA-like memory: reduce gain if last intensity was high (pattern dependence)
         tau = float(self.p.memory_tau_frames)
@@ -185,6 +242,11 @@ class Optics:
             # Effective scale between [pdl_lin, 1] depending on projection
             scale = pdl_lin + (1.0 - pdl_lin) * (0.5 + 0.5 * np.cos(self._pdl_phase))
             img = img * scale
+            # Optional polarization scrambler: periodic re-randomization of projection
+            if bool(getattr(self.p, 'pol_scrambler_on', False)):
+                every = max(0, int(getattr(self.p, 'pol_scramble_every_frames', 0) or 0))
+                if every > 0 and (self._frame_idx % every) == 0:
+                    self._pdl_phase = float(self.rng.uniform(0.0, 2.0 * math.pi))
 
         # Reflection spike event: add a scaled self-interference term with small random phase proxy
         if float(self.p.reflection_event_db) > 0.0 and float(self.p.reflection_prob) > 0.0:
