@@ -1,0 +1,12 @@
+# Budget TIA: lower bandwidth, higher noise
+mia_type: discrete
+tia_transimpedance_kohm: 8.0
+bw_mhz: 40.0
+in_noise_pA_rthz: 8.0
+peaking_q: 0.5
+slew_v_per_us: 300.0
+adc_bits: 10
+adc_fullscale_v: 1.0
+adc_read_noise_mV_rms: 0.5
+gain_sigma_pct: 2.0
+notes: Represents low-cost transimpedance stage built from commodity op-amp

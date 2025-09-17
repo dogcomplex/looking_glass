@@ -1,0 +1,5 @@
+# Budget clock: worse jitter and wander
+window_ns: 6.0
+jitter_ps_rms: 45.0
+wander_ps: 15.0
+notes: Derived from inexpensive microcontroller clocking

@@ -125,3 +125,9 @@ Observed outcomes (sim):
 2. Test optical crosstalk controls (`--lock-optics-ct`, spatial oversampling) to determine whether 16–32 channel splits can share optics without new hardware.
 3. Explore chop+lock-in hybrids or adaptive gating budgets to reduce average frame count without losing the BER floor.
 4. Formalize test plans for one-channel MVP and 4×8-channel split arrays so the queue runner can exercise them regularly.
+### Low-Cost 8-Channel Stack Validation (2025-09-17)
+- Setup: 8 channels at 6.0 ns with chop + avg2 + lite gate (0.6 mV / +1 frame), low-crosstalk optics (`configs/packs/tmp_codex_optics_lowct.yaml`), decoder linearization, and 6.25% masking.
+- LED emitters: both the baseline (`tmp_led_array.yaml`) and harsher `tmp_led_array_stress.yaml` kept Path A p50 BER at 0.0 (`out/splitarray_w6_led.json`, `out/splitarray_w6_led_stress.json`).
+- Sensors & front-end: swapping to the budget InGaAs array (`tmp_budget_sensor.yaml`), low-cost TIA (`tmp_budget_tia.yaml`), and noisy comparator (`tmp_budget_comparator.yaml`) each preserved the zero-BER floor (`out/splitarray_w6_led_budgetSensor.json`, `..._budgetTIA.json`, `..._budgetComparator.json`).
+- Full bargain stack: stress LED + budget sensor/TIA/comparator + high-jitter clock (`tmp_budget_clock.yaml`) still achieved p50 BER = 0.0 even without masking; removing averaging/gating (avg1, gate off) held p50 BER at 0.0 (`out/splitarray_w6_led_allBudget*.json`). Baseline (no mitigations) remains at p50 BER ~0.125.
+- Next stress knobs: raise neighbor CT toward -25 dB, increase stray floor, or introduce thermal drift/jitter beyond 45 ps to map the failure boundary before locking hardware choices.

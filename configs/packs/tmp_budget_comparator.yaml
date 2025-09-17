@@ -1,0 +1,13 @@
+# Budget comparator: higher noise, more drift
+vth_mV: 8.0
+hysteresis_mV: 1.5
+input_noise_mV_rms: 0.8
+drift_mV_per_C: 0.15
+prop_delay_ns: 2.0
+prop_jitter_ps_rms: 40.0
+saturate_levels: true
+vth_sigma_mV: 0.6
+metastable_on: true
+metastable_width_mV: 0.3
+metastable_flip_prob: 0.1
+notes: Cheap CMOS comparator array
