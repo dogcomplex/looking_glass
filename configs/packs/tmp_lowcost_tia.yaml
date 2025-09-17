@@ -1,0 +1,6 @@
+tia_transimpedance_kohm: 4.0
+bw_mhz: 80.0
+in_noise_pA_rthz: 4.8
+slew_v_per_us: 250.0
+adc_bits: 9
+adc_fullscale_v: 0.8

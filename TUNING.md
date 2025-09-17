@@ -103,3 +103,25 @@ Observed outcomes (sim):
 ### Acceptance gates (harsh Câ€‘band)
 - 6 ns, EDFAâ€‘8 tile, weakâ€‘cal: â‰¤0.065 BER across â‰¥3 seeds with scrambler/ripple on; stable for 30 min equivalent drift.
 - 1.0â€“1.5 ns exploratory: show monotonic BER trend and identify first failing component; document power/SNR margins and required reâ€‘trim cadence.
+## Pragmatic Build Strategy Update (2025-09-17)
+
+### Split-Array Direction
+- For configurations beyond 8 logical channels we will deploy **multiple independent 4–8 channel optical arrays** instead of a single large tile. This keeps per-array analog margin high while allowing channel scaling through duplication.
+- Each array should remain as cost-efficient as possible: mid-power C-band DFB (˜12 mW/channel), medium-loss fiber loop optics (0.72 transmittance, -30 dB neighbor crosstalk), low-noise but off-the-shelf TIA (˜15 kO / 55 MHz / 3.6 pA/vHz), and the tuned comparator overlay.
+- Control software should treat arrays as parallel workers with shared digital aggregation; no additional physical coupling is assumed in the near term.
+
+### MVP Single-Channel Validation
+- Before investing in multi-channel array builds, run the same hardware pack with **only one active channel** enabled. This is the bare-minimum MVP to validate optics/TIA/comparator alignment and mitigation code paths.
+- Use chop + avg2 + lite gating (0.6 mV threshold, +1 frame), light masking (=6%) and per-channel calibration. The one-channel run should hit **p50 BER = 0** at 6–8 ns (see `out/boost_medium_w6.json`).
+
+### Current Best Recipes
+- **Prosumer 8-channel @ 6–8 ns (p50 BER = 0.0):** boosted emitter, medium optics, low-noise TIA, tuned comparator, chop + avg2, lite gating, mask˜6%, DV normalization.
+- **16-channel @ 10 ns (p50 BER ˜ 0.13 ? 0.08 with heavier gating/mask):** same stack; requires additional analog margin (higher power or tighter crosstalk) before it reaches zero BER.
+- **Cost-reduced 8-channel @ 10 ns (p50 BER = 0.0 with mitigations):** medium optics + boosted emitter + low-cost TIA/comparator; chop + gating are mandatory. Removing either swings BER back above 0.12.
+- **Harsh 6 ns stress (metastability + nonlinear overlays):** zero BER only with the full mitigation bundle (chop, avg2, gate, mask, calibration, normalization). Any knob removal produces =0.1 BER.
+
+### Action Items
+1. Map analog SNR requirements for the 16-channel 6 ns target by sweeping emitter power (12 ? 15 mW) and TIA noise while keeping mitigation constant.
+2. Test optical crosstalk controls (`--lock-optics-ct`, spatial oversampling) to determine whether 16–32 channel splits can share optics without new hardware.
+3. Explore chop+lock-in hybrids or adaptive gating budgets to reduce average frame count without losing the BER floor.
+4. Formalize test plans for one-channel MVP and 4×8-channel split arrays so the queue runner can exercise them regularly.

@@ -1078,6 +1078,76 @@ def main():
             errs.append(float(_np.mean(vote != t)))
         spatial_ber = float(_np.median(errs)) if errs else None
 
+    # Build bad-channel mask BEFORE classifier evaluation so it is applied
+    active_mask = None
+    masked_count = 0
+    try:
+        Nmask = int(max(int(getattr(args, 'mask_bad_channels', 0)), float(getattr(args, 'mask_bad_frac', 0.0)) * float(sys_p.channels)))
+        if Nmask > 0:
+            import numpy as _np
+            trials_mask = int(max(50, min(getattr(args, 'calib_mask_trials', 200), 500)))
+            ch = sys_p.channels
+            err_counts = None
+            pos_sum = _np.zeros(ch, dtype=float)
+            pos_cnt = _np.zeros(ch, dtype=float)
+            neg_sum = _np.zeros(ch, dtype=float)
+            neg_cnt = _np.zeros(ch, dtype=float)
+            for _ in range(trials_mask):
+                tern = orch.rng.integers(-1, 2, size=ch)
+                r = orch.step(force_ternary=tern)
+                # Prefer comparator outputs for mask (matches classifier); fallback to dv sign
+                tout = _np.array(r.get("t_out", []), dtype=int)
+                if tout.size == 0:
+                    dv = _np.array(r.get("dv_mV", []), dtype=float)
+                    tout = _np.sign(dv).astype(int)
+                if err_counts is None:
+                    err_counts = _np.zeros_like(tout, dtype=float)
+                if tout.shape[0] != ch:
+                    tern = tern[:tout.shape[0]]
+                err_counts += (tout != tern)
+                dv_cur = _np.array(r.get("dv_mV", [0]*tout.shape[0]), dtype=float)
+                pos = tern > 0; neg = tern < 0
+                pos_sum[:dv_cur.shape[0]][pos[:dv_cur.shape[0]]] += dv_cur[pos[:dv_cur.shape[0]]]
+                pos_cnt[:dv_cur.shape[0]][pos[:dv_cur.shape[0]]] += 1.0
+                neg_sum[:dv_cur.shape[0]][neg[:dv_cur.shape[0]]] += dv_cur[neg[:dv_cur.shape[0]]]
+                neg_cnt[:dv_cur.shape[0]][neg[:dv_cur.shape[0]]] += 1.0
+            mode = (getattr(args, 'mask_mode', 'error') or 'error')
+            if mode == 'dvspan':
+                with _np.errstate(divide='ignore', invalid='ignore'):
+                    pos_mean = _np.divide(pos_sum, _np.clip(pos_cnt, 1.0, None))
+                    neg_mean = _np.divide(neg_sum, _np.clip(neg_cnt, 1.0, None))
+                    span = _np.abs(pos_mean - neg_mean)
+                idx = _np.argsort(span)[:min(Nmask, span.shape[0])]
+            else:
+                rates = err_counts / float(max(1, trials_mask))
+                idx = _np.argsort(rates)[::-1][:min(Nmask, rates.shape[0])]
+            active_mask = _np.ones_like(rates, dtype=bool)
+            active_mask[idx] = False
+            try:
+                masked_count = int((_np.asarray(active_mask) == False).sum())
+            except Exception:
+                masked_count = int(Nmask)
+    except Exception:
+        active_mask = None
+
+    def _mask_and_trim(pred_vec, truth_vec):
+        import numpy as _np
+        M = min(len(pred_vec), len(truth_vec))
+        pred = _np.asarray(pred_vec[:M], dtype=int)
+        truth = _np.asarray(truth_vec[:M], dtype=int)
+        if active_mask is not None:
+            mask = _np.asarray(active_mask[:M], dtype=bool)
+            pred = pred[mask]
+            truth = truth[mask]
+        return pred, truth
+
+    def _masked_error(pred_vec, truth_vec):
+        import numpy as _np
+        pred, truth = _mask_and_trim(pred_vec, truth_vec)
+        if truth.size == 0:
+            return 0.0
+        return float(_np.mean(pred != truth))
+
     # Lock-in estimate: subtract a dark dv per trial and threshold on sign
     lockin_ber = None
     if args.lockin or (getattr(args, 'classifier', None) == 'lockin'):
@@ -1111,7 +1181,7 @@ def main():
                         dv_diff2 = dv_sig2 - dv_dark2
                         dv_diff[low] = dv_diff[low] + dv_diff2[low]
                 pred = _np.sign(dv_diff)
-            errs.append(float(_np.mean(pred != tern)))
+            errs.append(_masked_error(pred, tern))
         lockin_ber = float(_np.median(errs)) if errs else None
 
     # Chopper stabilization: use +x and -x frames, subtract, then threshold
@@ -1156,7 +1226,7 @@ def main():
                         dv_diff2 = dv_pos2 - dv_neg2
                         dv_diff[low] = dv_diff[low] + dv_diff2[low]
                 pred = _np.sign(dv_diff)
-            errs.append(float(_np.mean(pred != tern)))
+            errs.append(_masked_error(pred, tern))
         chop_ber = float(_np.median(errs)) if errs else None
 
     # Frame averaging on dv: average N frames per input, then threshold
@@ -1176,7 +1246,7 @@ def main():
                     add = _accumulate_dv_over_frames(base_orch, tern, g_ex, str(getattr(args, 'avg_kernel', 'sum')), float(getattr(args, 'avg_ema_alpha', 0.6)))
                     acc[low] = acc[low] + add[low]
             pred = _np.sign(acc)
-            errs.append(float(_np.mean(pred != tern)))
+            errs.append(_masked_error(pred, tern))
         avg_frames_ber = float(_np.median(errs)) if errs else None
 
     # Software threshold (upper bound Path A): learn per-channel vth, then classify dv
@@ -1205,7 +1275,7 @@ def main():
             r = base_orch.step(force_ternary=tern)
             dv = _np.array(r.get("dv_mV", [0]*sys_p.channels), dtype=float)
             pred = _np.sign(dv - vth_vec)
-            errs.append(float(_np.mean(pred != tern)))
+            errs.append(_masked_error(pred, tern))
         soft_thresh_ber = float(_np.median(errs)) if errs else None
 
     # Mitigated pipeline: chopper + frame averaging + linear per-channel calibration, then sign
@@ -1232,7 +1302,7 @@ def main():
             dv_avg = acc/float(N)
             dv_lin = lin_scale*(dv_avg + lin_offset)
             pred = _np.sign(dv_lin)
-            errs.append(float(_np.mean(pred != tern)))
+            errs.append(_masked_error(pred, tern))
         mitigated_ber = float(_np.median(errs)) if errs else None
 
     # Optional quick per-channel calibration to set vth for path_a/baseline even when --no-cal
@@ -1301,60 +1371,6 @@ def main():
                 pass
     except Exception:
         vth_vec_pa = None
-
-    # Build bad-channel mask BEFORE classifier evaluation so it is applied
-    masked_count = 0
-    try:
-        Nmask = int(max(int(getattr(args, 'mask_bad_channels', 0)), float(getattr(args, 'mask_bad_frac', 0.0)) * float(sys_p.channels)))
-        if Nmask > 0:
-            import numpy as _np
-            trials_mask = int(max(50, min(getattr(args, 'calib_mask_trials', 200), 500)))
-            ch = sys_p.channels
-            err_counts = None
-            pos_sum = _np.zeros(ch, dtype=float)
-            pos_cnt = _np.zeros(ch, dtype=float)
-            neg_sum = _np.zeros(ch, dtype=float)
-            neg_cnt = _np.zeros(ch, dtype=float)
-            for _ in range(trials_mask):
-                tern = orch.rng.integers(-1, 2, size=ch)
-                r = orch.step(force_ternary=tern)
-                # Prefer comparator outputs for mask (matches classifier); fallback to dv sign
-                tout = _np.array(r.get("t_out", []), dtype=int)
-                if tout.size == 0:
-                    dv = _np.array(r.get("dv_mV", []), dtype=float)
-                    tout = _np.sign(dv).astype(int)
-                if err_counts is None:
-                    err_counts = _np.zeros_like(tout, dtype=float)
-                if tout.shape[0] != ch:
-                    tern = tern[:tout.shape[0]]
-                err_counts += (tout != tern)
-                # dv stats for dvspan mode
-                dv_cur = _np.array(r.get("dv_mV", [0]*tout.shape[0]), dtype=float)
-                pos = tern > 0; neg = tern < 0
-                pos_sum[:dv_cur.shape[0]][pos[:dv_cur.shape[0]]] += dv_cur[pos[:dv_cur.shape[0]]]
-                pos_cnt[:dv_cur.shape[0]][pos[:dv_cur.shape[0]]] += 1.0
-                neg_sum[:dv_cur.shape[0]][neg[:dv_cur.shape[0]]] += dv_cur[neg[:dv_cur.shape[0]]]
-                neg_cnt[:dv_cur.shape[0]][neg[:dv_cur.shape[0]]] += 1.0
-            mode = (getattr(args, 'mask_mode', 'error') or 'error')
-            if mode == 'dvspan':
-                with _np.errstate(divide='ignore', invalid='ignore'):
-                    pos_mean = _np.divide(pos_sum, _np.clip(pos_cnt, 1.0, None))
-                    neg_mean = _np.divide(neg_sum, _np.clip(neg_cnt, 1.0, None))
-                    span = _np.abs(pos_mean - neg_mean)
-                # Mask smallest span channels first
-                idx = _np.argsort(span)[:min(Nmask, span.shape[0])]
-            else:
-                rates = err_counts / float(max(1, trials_mask))
-                idx = _np.argsort(rates)[::-1][:min(Nmask, rates.shape[0])]
-            active_mask = _np.ones_like(rates, dtype=bool)
-            active_mask[idx] = False
-            try:
-                import numpy as _np
-                masked_count = int((_np.asarray(active_mask) == False).sum())
-            except Exception:
-                masked_count = int(Nmask)
-    except Exception:
-        active_mask = None
 
     # Optional per-channel vth optimizer (small fixed set, greedy updates)
     try:
@@ -1673,7 +1689,7 @@ def main():
                 pred = _np.sign(dv_sum - 2.0*vth_vec_pa)
             else:
                 pred = _np.sign(dv_sum)
-            errs.append(float(_np.mean(pred != tern)))
+            errs.append(_masked_error(pred, tern))
         path_a_summary = {
             "p50_ber": float(_np.median(errs)) if errs else None,
             "p50_energy_pj": None,
@@ -1735,7 +1751,7 @@ def main():
                     pred = _np.sign(acc - vth_vec_pa)
                 else:
                     pred = _np.sign(acc)
-            errs.append(float(_np.mean(pred != tern)))
+            errs.append(_masked_error(pred, tern))
         path_a_summary = {
             "p50_ber": float(_np.median(errs)) if errs else None,
             "p50_energy_pj": None,
@@ -1769,7 +1785,7 @@ def main():
                 pred = _np.sign(acc - vth_vec_pa)
             else:
                 pred = _np.sign(acc)
-            errs.append(float(_np.mean(pred != tern)))
+            errs.append(_masked_error(pred, tern))
         path_a_summary = {
             "p50_ber": float(_np.median(errs)) if errs else None,
             "p50_energy_pj": None,
@@ -2212,7 +2228,7 @@ def main():
                             if _np.all(_np.abs(acc) >= (up_th + margin)):
                                 break
                         pred = _np.sign(acc)
-                        errs.append(float(_np.mean(pred != tern)))
+                        errs.append(_masked_error(pred, tern))
                     path_a_auto = {
                         "p50_ber": float(_np.median(errs)) if errs else None,
                         "p50_energy_pj": None,
