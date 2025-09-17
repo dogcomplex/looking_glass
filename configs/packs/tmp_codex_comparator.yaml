@@ -1,0 +1,29 @@
+vendor: Analog Devices
+model: LTC6752
+category: comparator
+price_usd_est: 4.0
+sources:
+- https://www.analog.com/en/products/ltc6752.html
+notes: 1.25 ns high-speed comparator; LVDS/CMOS family variants.
+min_overdrive_mV: 5.0
+input_offset_mV: 1.0
+input_common_mode_range_V:
+- 0
+- 5
+prop_delay_ns: 1.25
+prop_delay_vs_overdrive_ns:
+  5mV: 1.7
+  20mV: 1.3
+hysteresis_mV: 0.75
+output_type: LVDS
+supply_range_V:
+- 2.4
+- 5.25
+max_toggle_rate_MHz: 200
+guessed_fields:
+- max_toggle_rate_MHz
+vth_mV: 5.0
+input_noise_mV_rms: 0.4
+drift_mV_per_C: 0.05
+saturate_levels: true
+vth_sigma_mV: 0.2

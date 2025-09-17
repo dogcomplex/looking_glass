@@ -68,3 +68,38 @@ Observed outcomes (sim):
 
 - Fast: 19.0 ns; avg2; mask ~0.09375; lite gating (0.6 mV, +1); tuned comparator/TIA; power/contrast optics.
 - Robust: same, avg3 with lite gating; periodic re‑trim cadence validated by drift schedules.
+
+---
+
+## Update — C‑band harsh realism progress & goals (2025‑09‑05)
+
+### Scope covered (sim realism now on by default in harsh suites)
+- 1550 nm C‑band: DFB linewidth/coherence, RIN propagation, wavelength drift labels (Δλ variants).
+- Passive plant: per‑pass IL jitter, PDL random walk + scrambler, DWDM ripple/poor isolation, back‑reflections (APC/PC), PM vs SMF proxies.
+- Nonlinear blocks: EDFA ASE with OBPF, SOA saturation + simple memory, XGM/XPM/FWM proxies.
+- Electronics: PD shot/thermal, TIA poles + slew (100–300 MHz; variants to 3 GHz for sub‑ns studies), comparator noise/jitter/metastability.
+- Timing: clock jitter 20–30 ps, PMD/GDR proxies, lane‑skew proxy. Calibration: normalize + lite gating + small averaging (weak‑cal) with bounded strength.
+
+### Key results (EDFA‑8 tile unless noted)
+- Must‑fail then pass demonstrated:
+  - No‑cal / no‑gate: BER 0.625–0.75 at 6/8/10 ns under harsh/ultra conditions; weak‑cal rescues to 0.0.
+  - Ultra marginality (metastability + 30 ps jitter): EDFA‑8 0.75 at 6 ns; SOA‑1 remains 0.0.
+- λ drift: step tests at +0.2 nm passed with weak‑cal at 6 ns (need continuous ramps next).
+- Connectors/fiber: APC+PM, APC+SMF, PC+PM all passed at 6 ns with weak‑cal (penalties visible without cal).
+- Power sweeps (base/40/60 mW): all passed at 6 ns with weak‑cal; XGM floor shows only when calibration is disabled or isolation worsens.
+- SOA burst memory (depth 12/16/24/32): no‑cal at 6 ns remained 0.0 (need explicit burst pattern driver for stronger effect).
+
+### Bottlenecks and speed outlook
+- With current packs (100–300 MHz TIA, ~1.25 ns comparator delay, 20–30 ps jitter), practical UI: 5–10 ns.
+- For ≤1 ns UI: need ≥1–3 GHz TIA, fast SA (≤100 ps) + fast SOA (τc ≲100 ps), EOM gating, very short per‑hop path (≤5 cm), jitter ≲10 ps, PM fiber + APC connectors, tight OBPF. Expected achievable UI: 0.8–1.5 ns with careful tuning.
+
+### Next goals (queued/queued‑next)
+- Bulk critique sweeps (power, jitter, λ drift, connectors/fiber, SOA bursts) — appended and running; aggregate BER/tokens/s/energy and pick cheapest configs that pass at 6–10 ns.
+- Continuous λ ramp (+0.4 → +1.0 nm day‑scale proxy) with bounded calibration; report BER vs Δλ and re‑trims/hour.
+- Control‑loop realism: quantized VOAs (e.g., 0.25 dB steps), DAC Vth quantization/INL, limited bandwidth; measure calibration duty cycle to hold ≤0.125 at 6 ns.
+- Dual‑threshold ternary (dead‑zone variability) and class‑conditional noise metrics; add confusion matrices and dead‑zone occupancy to outputs.
+- Sub‑ns feasibility: GHz‑grade stack sweep (TIA ≥3 GHz, fast SOA/SA proxies) at 1.5/1.2/1.0/0.8 ns to map BER degradation.
+
+### Acceptance gates (harsh C‑band)
+- 6 ns, EDFA‑8 tile, weak‑cal: ≤0.065 BER across ≥3 seeds with scrambler/ripple on; stable for 30 min equivalent drift.
+- 1.0–1.5 ns exploratory: show monotonic BER trend and identify first failing component; document power/SNR margins and required re‑trim cadence.

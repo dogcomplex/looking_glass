@@ -1,0 +1,9 @@
+amp_on: true
+amp_gain_db: 8.0
+amp_ase_sigma: 0.05
+memory_tau_frames: 0.2
+
+
+
+
+
