@@ -15,6 +15,8 @@ class EmitterParams:
     power_sigma_pct: float = 0.0
     modulation_mode: str = "extinction"  # "extinction" or "pushpull"
     pushpull_alpha: float = 0.8  # 0..1, fraction of differential modulation depth
+    wavelengths_nm: tuple[float, ...] | None = None
+    channels_per_lambda: int | None = None
 
 class EmitterArray:
     def __init__(self, params: EmitterParams, rng=None):
@@ -26,6 +28,13 @@ class EmitterArray:
             self._ch_scale = self.rng.normal(1.0, sigma, size=self.p.channels)
         else:
             self._ch_scale = None
+
+        if self.p.wavelengths_nm:
+            base_wls = np.array(self.p.wavelengths_nm, dtype=float)
+            repeats = int(np.ceil(max(1, self.p.channels) / len(base_wls)))
+            self._channel_wavelengths = np.tile(base_wls, repeats)[:self.p.channels]
+        else:
+            self._channel_wavelengths = np.full(self.p.channels, self.p.wavelength_nm) if self.p.channels > 0 else np.array([], dtype=float)
 
     def simulate(self, ternary: np.ndarray, dt_ns: float, temp_C: float) -> tuple[np.ndarray, np.ndarray]:
         ternary = np.asarray(ternary)
@@ -71,4 +80,6 @@ class EmitterArray:
         self._coherence_time_s = 1.0 / max(1.0, float(self.p.linewidth_hz))
         # Wavelength drift vs temperature (used by DWDM overlays); store effective drift
         self._delta_lambda_nm = (temp_C - 25.0) * float(self.p.wav_drift_nm_per_C)
+        if self._channel_wavelengths.size:
+            self._channel_wavelengths = self._channel_wavelengths + self._delta_lambda_nm
         return Pp, Pm

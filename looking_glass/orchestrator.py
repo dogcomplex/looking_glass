@@ -81,7 +81,7 @@ class Orchestrator:
                 self.optx.p.transmittance = trans_save * 10**(-loss_db/10.0)
         except Exception:
             pass
-        Pp2, Pm2, per_tile_p, per_tile_m = self.optx.simulate(Pp, Pm)
+        Pp2, Pm2, per_tile_p, per_tile_m = self.optx.simulate(Pp, Pm, dt)
         # restore transmittance
         self.optx.p.transmittance = trans_save
         if self.cam is not None:
@@ -150,8 +150,8 @@ class Orchestrator:
             "truth": np.asarray(truth).tolist(),
             "blocks": int(np.sqrt(N)) if int(np.sqrt(N))**2 == N else None,
             "per_tile": {
-                "plus": per_tile_p.tolist() if per_tile_p is not None else None,
-                "minus": per_tile_m.tolist() if per_tile_m is not None else None,
+                "plus": per_tile_p.tolist() if hasattr(per_tile_p, "tolist") else per_tile_p,
+                "minus": per_tile_m.tolist() if hasattr(per_tile_m, "tolist") else per_tile_m,
             },
             "dv_mV": (np.asarray(Vp) - np.asarray(Vm)).tolist(),
             "vsum_mV": (np.abs(np.asarray(Vp)) + np.abs(np.asarray(Vm))).tolist(),

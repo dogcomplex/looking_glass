@@ -1,0 +1,4 @@
+window_ns: 6.0
+jitter_ps_rms: 75.0
+wander_ps: 30.0
+notes: High-jitter reference for stress sweeps

@@ -1,0 +1,43 @@
+channels: 8
+transmittance: 0.92
+ct_model: neighbor
+ct_neighbor_db: -62.0
+ct_diag_db: -65.0
+psf_kernel: "lorentzian:w=0.8"
+signal_scale: 2.0
+w_plus_contrast: 0.97
+w_minus_contrast: 0.97
+stray_floor_db: -72.0
+amp_on: false
+sat_abs_on: false
+soa_on: true
+soa_small_signal_gain_db: 18.0
+soa_psat_mw: 6.0
+soa_noise_figure_db: 5.0
+soa_tau_ns: 0.8
+soa_alpha: 4.0
+soa_pattern_alpha: 0.2
+mzi_on: true
+mzi_gain: 2.6
+mzi_sat_mw: 2.2
+mzi_hysteresis_mw: 0.05
+mzi_bias_step: 0.05
+mzi_bias_leak: 0.001
+mzi_bias_target_mw: 0.0
+voa_bits: 8
+mode_mix_matrix:
+  - [0.96, 0.015, 0.01, 0.01, 0.0, 0.0, 0.0, 0.0]
+  - [0.015, 0.96, 0.015, 0.01, 0.0, 0.0, 0.0, 0.0]
+  - [0.01, 0.015, 0.96, 0.015, 0.0, 0.0, 0.0, 0.0]
+  - [0.01, 0.01, 0.015, 0.96, 0.0, 0.0, 0.0, 0.0]
+  - [0.0, 0.0, 0.0, 0.0, 0.96, 0.015, 0.01, 0.01]
+  - [0.0, 0.0, 0.0, 0.0, 0.015, 0.96, 0.015, 0.01]
+  - [0.0, 0.0, 0.0, 0.0, 0.01, 0.015, 0.96, 0.015]
+  - [0.0, 0.0, 0.0, 0.0, 0.01, 0.01, 0.015, 0.96]
+
+servo_on: true
+servo_kp: 0.03
+servo_ki: 0.0015
+servo_ref_mw: 0.0
+servo_leak: 0.01
+servo_max_bias_mw: 4.0

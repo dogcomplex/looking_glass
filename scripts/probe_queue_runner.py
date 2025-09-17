@@ -1,4 +1,4 @@
-import sys
+﻿import sys
 import time
 import json
 import hashlib
@@ -364,7 +364,12 @@ def summarize(data: dict) -> dict:
     return {
         "base_window_ns": cfg.get("base_window_ns"),
         "baseline_calibrated_p50_ber": base_cal.get("p50_ber"),
+        "baseline_calibrated_p50_tokens_per_s": base_cal.get("p50_tokens_per_s"),
+        "baseline_calibrated_p50_energy_pj": base_cal.get("p50_energy_pj"),
         "path_a_p50_ber": path_a.get("p50_ber"),
+        "path_a_p50_energy_pj": path_a.get("p50_energy_pj"),
+        "path_a_mean_ber": path_a.get("mean_ber"),
+        "path_a_window_ns": path_a.get("window_ns"),
     }
 def _play_idle_chime_once() -> None:
     """Play a small, mild chime when entering idle. Best-effort, Windows-first.
@@ -515,5 +520,6 @@ def _run_forever():
 
 if __name__ == "__main__":
     _run_forever()
+
 
 

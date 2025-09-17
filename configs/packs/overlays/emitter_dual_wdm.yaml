@@ -1,0 +1,13 @@
+# Dual-wavelength emitter overlay for 1550 nm WDM sweep
+channels: 16
+wavelength_nm: 1550.0
+wavelengths_nm:
+  - 1549.2
+  - 1550.8
+power_mw_per_ch: 6.5
+extinction_db: 10.0
+rin_dbhz: -120.0
+modulation_mode: intensity
+pushpull_alpha: 0.0
+rise_fall_ns_10_90: 12.0
+temp_coeff_pct_per_C: 0.35

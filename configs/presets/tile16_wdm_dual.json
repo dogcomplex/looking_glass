@@ -1,0 +1,35 @@
+{
+  "runs": [
+    {
+      "label": "tile16_wdm_dual",
+      "cmd": [
+        "--trials", "400",
+        "--light-output",
+        "--channels", "16",
+        "--base-window-ns", "6.0",
+        "--seed", "7201",
+        "--classifier", "chop",
+        "--chop",
+        "--avg-frames", "2",
+        "--gate-thresh-mV", "0.6",
+        "--gate-extra-frames", "1",
+        "--apply-calibration",
+        "--mask-bad-frac", "0.0625",
+        "--no-adaptive-input",
+        "--decoder-linear",
+        "--decoder-samples", "200",
+        "--use-decoder-for-path-a",
+        "--normalize-dv"
+      ],
+      "packs": {
+        "emitter_pack": "configs/packs/overlays/emitter_dual_wdm.yaml",
+        "optics_pack": "configs/packs/overlays/optics_mode_mix_dual.yaml",
+        "sensor_pack": "configs/packs/tmp_budget_sensor.yaml",
+        "tia_pack": "configs/packs/tmp_budget_tia.yaml",
+        "comparator_pack": "configs/packs/tmp_budget_comparator.yaml",
+        "clock_pack": "configs/packs/tmp_budget_clock.yaml",
+        "thermal_pack": "configs/packs/thermal_typ.yaml"
+      }
+    }
+  ]
+}

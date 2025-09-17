@@ -1,0 +1,17 @@
+# High-saturation SA + amplifier for Path B
+ct_model: neighbor
+ct_neighbor_db: -60.0
+ct_diag_db: -63.0
+transmittance: 0.95
+psf_kernel: "lorentzian:w=1.2"
+signal_scale: 1.5
+w_plus_contrast: 0.95
+w_minus_contrast: 0.95
+stray_floor_db: -60.0
+amp_on: true
+amp_gain_db: 10.0
+amp_ase_sigma: 0.003
+sat_abs_on: true
+sat_I_sat: 0.4
+sat_alpha: 0.9
+memory_tau_frames: 2.0

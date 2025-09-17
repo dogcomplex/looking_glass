@@ -1,0 +1,16 @@
+ct_model: neighbor
+ct_neighbor_db: -65.0
+ct_diag_db: -68.0
+transmittance: 0.98
+psf_kernel: "lorentzian:w=1.0"
+signal_scale: 1.6
+w_plus_contrast: 0.96
+w_minus_contrast: 0.96
+stray_floor_db: -70.0
+amp_on: true
+amp_gain_db: 12.0
+amp_ase_sigma: 0.002
+sat_abs_on: true
+sat_I_sat: 0.3
+sat_alpha: 0.95
+memory_tau_frames: 1.0

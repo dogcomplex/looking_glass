@@ -1,0 +1,6 @@
+vth_mV: 0.0
+hysteresis_mV: 0.2
+input_noise_mV_rms: 0.05
+vth_sigma_mV: 0.02
+prop_delay_ns: 0.8
+saturate_levels: true

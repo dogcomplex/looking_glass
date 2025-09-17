@@ -1,0 +1,3 @@
+drift_scale: 6.0
+corner_hz: 0.02
+notes: Aggressive thermal drift stress for calibration tests

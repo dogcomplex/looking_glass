@@ -1,0 +1,36 @@
+{
+  "runs": [
+    {
+      "label": "mvp_single_pass_led",
+      "cmd": [
+        "--trials", "400",
+        "--light-output",
+        "--channels", "1",
+        "--base-window-ns", "6.0",
+        "--seed", "7001",
+        "--classifier", "chop",
+        "--chop",
+        "--avg-frames", "2",
+        "--gate-thresh-mV", "0.6",
+        "--gate-extra-frames", "1",
+        "--apply-calibration",
+        "--mask-bad-frac", "0.0",
+        "--no-adaptive-input",
+        "--no-path-b",
+        "--decoder-linear",
+        "--decoder-samples", "200",
+        "--use-decoder-for-path-a",
+        "--normalize-dv"
+      ],
+      "packs": {
+        "emitter_pack": "configs/packs/tmp_led_array.yaml",
+        "optics_pack": "configs/packs/tmp_codex_optics_medium.yaml",
+        "sensor_pack": "configs/packs/tmp_budget_sensor.yaml",
+        "tia_pack": "configs/packs/tmp_budget_tia.yaml",
+        "comparator_pack": "configs/packs/tmp_budget_comparator.yaml",
+        "clock_pack": "configs/packs/tmp_budget_clock.yaml",
+        "thermal_pack": "configs/packs/thermal_typ.yaml"
+      }
+    }
+  ]
+}

@@ -251,7 +251,7 @@ def main():
     ap.add_argument("--gate-extra-frames", type=int, default=0, help="Number of extra frames to integrate for gated channels")
     ap.add_argument("--avg-ema-alpha", type=float, default=0.6, help="EWMA alpha (0..1], only used when --avg-kernel=ewma")
     ap.add_argument("--use-avg-frames-for-path-a", action="store_true", help="If set and avg_frames>1, use averaged-dv classifier as primary path_a summary")
-    ap.add_argument("--permute-repeats", action="store_true", help="Permute logical↔physical channel mapping on each repeat and de-permute for voting")
+    ap.add_argument("--permute-repeats", action="store_true", help="Permute logical???physical channel mapping on each repeat and de-permute for voting")
     ap.add_argument("--permute-scheme", type=str, choices=["random","cyclic"], default="random", help="Permutation scheme across repeats")
     ap.add_argument("--soft-thresh", action="store_true", help="Bypass comparator: software threshold dv using per-channel vth (upper bound for Path A)")
     # Option to choose which computed classifier feeds the primary path_a summary
@@ -263,6 +263,8 @@ def main():
     ap.add_argument("--path-b-depth", type=int, default=5, help="If >0, run Path B cascaded for N stages and report per-stage BER (default 5)")
     ap.add_argument("--path-b-sweep", action="store_true", help="Run Path B sweeps (amp_gain_db, sat_I_sat) and report BER curves")
     ap.add_argument("--no-path-b-sweep", action="store_true", help="Disable Path B sweeps (default is ON)")
+    ap.add_argument("--path-b-servo-eta", type=float, default=0.05, help="Per-iteration comparator bias adjustment for analog Path B servo (mV per unit error)")
+    ap.add_argument("--path-b-guard-deadzone-mV", type=float, default=0.0, help="Dead-zone (mV) for hybrid guard; if >0, enforces sign based on dv with zeros inside dead-zone")
     ap.add_argument("--path-b-analog-depth", type=int, default=-1, help="If -1, use --path-b-depth; if >0, run analog cascade (optics SA+amp per hop, single final threshold)")
     ap.add_argument("--adaptive-input", action="store_true", help="Integrate multiple frames until dv margin met or max frames (default ON)")
     ap.add_argument("--no-adaptive-input", action="store_true", help="Disable adaptive input integration")
@@ -348,7 +350,7 @@ def main():
     ap.add_argument("--opt-vth-margin-mV", type=float, default=0.0, help="Optional margin when deciding errors for optimizer")
     ap.add_argument("--opt-vth-use-mask", action="store_true", help="Restrict vth optimization to unmasked channels (ignore masked)")
     ap.add_argument("--legacy-cal-estimator-soft", action="store_true", help="Compute baseline_calibrated via dv sign vs vth (no comparator deadband)")
-    ap.add_argument("--baseline-cal-binary", action="store_true", help="Evaluate calibrated baseline with ±1 truths only (no zeros)")
+    ap.add_argument("--baseline-cal-binary", action="store_true", help="Evaluate calibrated baseline with ??1 truths only (no zeros)")
     args = ap.parse_args()
     # Defaults to run full non-destructive suite
     run_path_b_sweep = (not getattr(args, 'no_path_b_sweep', False)) or getattr(args, 'path_b_sweep', False)
@@ -381,7 +383,7 @@ def main():
     optx_override = _load_yaml(getattr(args, 'optics_pack', None))
     for k, v in (optx_override or {}).items():
         if hasattr(optx, k): setattr(optx, k, v)
-    # Map common vendor-pack fields → sim params
+    # Map common vendor-pack fields ??? sim params
     try:
         if isinstance(optx_override, dict):
             if 'transmittance_percent' in optx_override:
@@ -389,8 +391,8 @@ def main():
                 optx.transmittance = max(0.0, min(1.0, tp/100.0))
             if 'scatter_angle_deg_FWHM' in optx_override:
                 ang = float(optx_override['scatter_angle_deg_FWHM'])
-                # Heuristic: wider scatter → higher neighbor leakage (less negative dB)
-                neigh = -40.0 + (ang - 5.0) * (10.0 / 15.0)  # 5°→-40dB, 20°→-30dB
+                # Heuristic: wider scatter ??? higher neighbor leakage (less negative dB)
+                neigh = -40.0 + (ang - 5.0) * (10.0 / 15.0)  # 5?????-40dB, 20?????-30dB
                 neigh = max(-45.0, min(-28.0, neigh))
                 diag = neigh - 3.0
                 optx.ct_model = 'neighbor'
@@ -662,13 +664,21 @@ def main():
     try:
         b_emit = EmitterParams(**emit.__dict__)
         b_optx = OpticsParams(**optx.__dict__)
-        b_optx.sat_abs_on = True
-        b_optx.amp_on = True
+        b_optx.channels = int(args.channels)
+        b_optx.sat_abs_on = False
+        b_optx.amp_on = False
+        b_optx.soa_on = True
+        b_optx.mzi_on = True
         b_pd = PDParams(**pd.__dict__)
         b_tia = TIAParams(**tia.__dict__)
         b_comp = ComparatorParams(**comp.__dict__)
         b_clk = ClockParams(**clk.__dict__)
         b_orch = Orchestrator(sys_p, b_emit, b_optx, b_pd, b_tia, b_comp, b_clk)
+        if int(getattr(args, 'path_b_analog_depth', 0)) > 0 or int(getattr(args, 'path_b_depth', 0)) > 0:
+            try:
+                b_orch.sys.reset_analog_state_each_frame = False
+            except AttributeError:
+                pass
         if not getattr(args, 'no_path_b', False):
             path_b_summary = b_orch.run(trials=args.trials)
 
@@ -728,18 +738,27 @@ def main():
             import numpy as _np
             T = min(args.trials, 200)
             errs = []
+            vth_vec = _np.zeros(b_orch.sys.channels, dtype=float)
+            eta = float(getattr(args, 'path_b_servo_eta', 0.05))
             for _ in range(T):
                 tern0 = b_orch.rng.integers(-1, 2, size=b_orch.sys.channels)
-                Pp, Pm = b_orch.emit.simulate(tern0, b_orch.clk.sample_window(), b_orch.sys.temp_C)
+                dt = float(b_orch.clk.sample_window())
+                if b_orch.sys.reset_analog_state_each_frame:
+                    b_orch.tia.reset()
+                    b_orch.comp.reset()
+                Pp, Pm = b_orch.emit.simulate(tern0, dt, b_orch.sys.temp_C)
                 for _k in range(analog_depth):
-                    op, om, _, _ = b_orch.optx.simulate(Pp, Pm)
-                    Pp, Pm = op, om
-                Ip = b_orch.pd.simulate(Pp, b_orch.clk.sample_window())
-                Im = b_orch.pd.simulate(Pm, b_orch.clk.sample_window())
-                Vp = b_orch.tia.simulate(Ip, b_orch.clk.sample_window())
-                Vm = b_orch.tia.simulate(Im, b_orch.clk.sample_window())
+                    Pp, Pm, _, _ = b_orch.optx.simulate(Pp, Pm, dt)
+                Ip = b_orch.pd.simulate(Pp, dt)
+                Im = b_orch.pd.simulate(Pm, dt)
+                Vp = b_orch.tia.simulate(Ip, dt)
+                Vm = b_orch.tia.simulate(Im, dt)
                 out = b_orch.comp.simulate(Vp, Vm, b_orch.sys.temp_C)
                 errs.append(float(_np.mean(out != tern0)))
+                error = _np.asarray(out, dtype=float) - _np.asarray(tern0, dtype=float)
+                if eta > 0.0:
+                    vth_vec = _np.clip(vth_vec + eta * error, -15.0, 15.0)
+                    b_orch.comp.set_vth_per_channel(vth_vec)
             path_b_summary = dict(path_b_summary or {})
             path_b_summary["analog_depth"] = analog_depth
             path_b_summary["analog_p50_ber"] = float(_np.median(errs)) if errs else None
@@ -775,7 +794,7 @@ def main():
             rows = [base_orch.step() for _ in range(int(cap_rows))]
             # Map channel -> tile index
             # Tiles are filled row-major in optics.simulate(); two rails per tile (plus/minus)
-            # Here we approximate channel→tile as index // 1 (one channel per tile in current mapping)
+            # Here we approximate channel???tile as index // 1 (one channel per tile in current mapping)
             import numpy as _np
             tile_err = _np.zeros((blocks, blocks), dtype=float)
             tile_cnt = _np.zeros((blocks, blocks), dtype=float)
@@ -851,7 +870,7 @@ def main():
             pos_mean = _np.divide(pos_sum, _np.clip(pos_cnt, 1.0, None))
             neg_mean = _np.divide(neg_sum, _np.clip(neg_cnt, 1.0, None))
             vth_vec = 0.5*(pos_mean + neg_mean)
-            # Linear per-channel calibration: scale/offset dv so classes map to ±1
+            # Linear per-channel calibration: scale/offset dv so classes map to ??1
             eps = 1e-6
             lin_scale = 2.0/_np.clip((pos_mean - neg_mean), eps, None)
             lin_offset = -0.5*(pos_mean + neg_mean)
@@ -1013,19 +1032,19 @@ def main():
     except Exception:
         components = None
 
-    # Realism heuristic scoring (0.0–1.0)
+    # Realism heuristic scoring (0.0???1.0)
     def realism_scores():
         scores = {}
         # Emitter: extinction, RIN in plausible range
         rin = float(emit.rin_dbhz if hasattr(emit, 'rin_dbhz') else -150.0)
         ext = float(emit.extinction_db if hasattr(emit, 'extinction_db') else 20.0)
-        s_rin = min(1.0, max(0.0, (rin + 180.0) / 30.0))  # -180..-150 → 0..1, flatter above
-        s_ext = min(1.0, max(0.0, (ext - 10.0) / 20.0))   # 10..30 dB → 0..1
+        s_rin = min(1.0, max(0.0, (rin + 180.0) / 30.0))  # -180..-150 ??? 0..1, flatter above
+        s_ext = min(1.0, max(0.0, (ext - 10.0) / 20.0))   # 10..30 dB ??? 0..1
         scores["emitter"] = {"score": round(0.6*s_rin + 0.4*s_ext, 3), "rin_dbhz": rin, "extinction_db": ext}
         # Optics: crosstalk and stray floor
         ct = float(optx.crosstalk_db if hasattr(optx, 'crosstalk_db') else -28.0)
         stray = float(optx.stray_floor_db if hasattr(optx, 'stray_floor_db') else -38.0)
-        s_ct = min(1.0, max(0.0, (-ct - 18.0) / 20.0))    # -38..-18 → 1..0
+        s_ct = min(1.0, max(0.0, (-ct - 18.0) / 20.0))    # -38..-18 ??? 1..0
         s_stray = min(1.0, max(0.0, (-stray - 28.0) / 20.0))
         scores["optics"] = {"score": round(0.7*s_ct + 0.3*s_stray, 3), "crosstalk_db": ct, "stray_floor_db": stray}
         # Camera: read noise and full well
@@ -1507,7 +1526,7 @@ def main():
                 Xs.append(feats)
                 Ys.append(tern)
             X = _np.vstack(Xs)  # [S*ch, F]
-            y = _np.where(_np.concatenate(Ys) > 0, 1.0, 0.0)  # map {-1,+1}→{0,1}
+            y = _np.where(_np.concatenate(Ys) > 0, 1.0, 0.0)  # map {-1,+1}???{0,1}
             F = X.shape[1]
             rng = _np.random.default_rng(int(args.seed))
             W1 = rng.normal(0, 0.1, size=(F, H)); b1 = _np.zeros(H)
@@ -2263,4 +2282,10 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
+
 

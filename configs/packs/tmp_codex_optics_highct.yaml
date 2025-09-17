@@ -1,0 +1,7 @@
+ct_model: neighbor
+ct_neighbor_db: -25.0
+ct_diag_db: -28.0
+transmittance: 0.72
+stray_floor_db: -55.0
+psf_kernel: "lorentzian:w=2.5"
+notes: High-crosstalk variant for stress sweeps
