@@ -46,10 +46,13 @@ class EmitterArray:
         else:
             base_vec = np.full_like(ternary, base, dtype=float)
         temp_scale = 1.0 + (temp_C-25.0)*self.p.temp_coeff_pct_per_C/100.0
+        # Regression: temperature scaling must be applied exactly once per rail (see
+        # tests/test_emitter.py).
+        base_vec_temp = base_vec * temp_scale
         if self.p.modulation_mode == "pushpull":
             # Constant total per channel; differential encodes sign
             alpha = float(np.clip(self.p.pushpull_alpha, 0.0, 1.0))
-            total = base_vec * temp_scale
+            total = base_vec_temp
             half = 0.5 * total
             add = 0.5 * alpha * total
             Pp = np.where(ternary>0, half+add, np.where(ternary<0, half-add, half))
@@ -57,10 +60,8 @@ class EmitterArray:
         else:
             # Extinction-based on/off per rail
             ext = 10**(-self.p.extinction_db/10.0)
-            Pp = np.where(ternary>0, base_vec, base_vec*ext) * temp_scale
-            Pm = np.where(ternary<0, base_vec, base_vec*ext) * temp_scale
-        Pp = Pp * temp_scale
-        Pm = Pm * temp_scale
+            Pp = np.where(ternary>0, base_vec_temp, base_vec_temp*ext)
+            Pm = np.where(ternary<0, base_vec_temp, base_vec_temp*ext)
         # Add RIN with a common-mode component per channel (correlated across rails)
         bw_hz = 1.0/(dt_ns*1e-9 + 1e-18)
         rin_lin = max(0.0, 10**(self.p.rin_dbhz/10.0))
