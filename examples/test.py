@@ -272,6 +272,22 @@ def _compute_pathb_return_map(sys_p: SystemParams, emit_p: EmitterParams, optx_p
     return results
 
 
+
+
+def _parse_csv_floats(text: str | None):
+    if not text:
+        return []
+    parts = [p.strip() for p in str(text).split(",")]
+    out = []
+    for p in parts:
+        if not p:
+            continue
+        try:
+            out.append(float(p))
+        except ValueError:
+            continue
+    return out
+
 def _build_fixed_inputs(seed: int, channels: int, count: int):
     import numpy as _np
     rng = _np.random.default_rng(int(seed))
@@ -348,6 +364,8 @@ def main():
     ap.add_argument("--path-b-digital-guard-passes", type=int, default=3, help="Number of analog replays to average before applying the digital guard")
     ap.add_argument("--path-b-return-map", action="store_true", help="Record Path B return map (dv in/out, slopes, histograms)")
     ap.add_argument("--path-b-amp-type", type=str, choices=['soa', 'edfa'], default=None, help="Override Path B amplifier type (soa|edfa)")
+    ap.add_argument("--path-b-vth-schedule", type=str, default=None, help="Comma-separated comparator vth (mV) per Path B stage during analog cascade")
+    ap.add_argument("--path-b-stage-gains-db", type=str, default=None, help="Comma-separated post-stage attenuation (dB, positive=loss, negative=gain) applied after each Path B optical stage")
     ap.add_argument("--path-b-enable-amp", action="store_true", help="Force Path B amplifier on after pack overrides")
     ap.add_argument("--path-b-disable-soa", action="store_true", help="Disable SOA dynamics in Path B baseline")
     ap.add_argument("--return-map-passes", type=int, default=36, help="Passes used when computing the Path B return map")
@@ -787,56 +805,6 @@ def main():
             import numpy as _np
             depth = int(args.path_b_depth)
             T = min(args.trials, 200)
-            stage_errs = [[0.0]*T for _ in range(depth)]
-            stage_cum_errs = [[0.0]*T for _ in range(depth)]
-            for t_idx in range(T):
-                in_vec = b_orch.rng.integers(-1, 2, size=b_orch.sys.channels)
-                ref = in_vec.copy()
-                for k in range(depth):
-                    r = b_orch.step(force_ternary=in_vec)
-                    out = _np.array(r.get("t_out", in_vec), dtype=int)
-                    stage_errs[k][t_idx] = float(_np.mean(out != in_vec))
-                    stage_cum_errs[k][t_idx] = float(_np.mean(out != ref))
-                    in_vec = out
-            per_stage_med_ber = [float(_np.median(stage_errs[k])) for k in range(depth)]
-            per_stage_med_cum = [float(_np.median(stage_cum_errs[k])) for k in range(depth)]
-            path_b_chain = {
-                "depth": depth,
-                "per_stage_p50_ber_vs_prev": per_stage_med_ber,
-                "per_stage_p50_ber_vs_initial": per_stage_med_cum,
-            }
-        # Optional Path B sweeps for realism: amplifier gain and SA I_sat
-        if (not getattr(args, 'light_output', False)) and bool(getattr(args, "path_b_sweep", False)) and (not getattr(args, 'no_path_b', False)):
-            import numpy as _np
-            # Sweep amplifier gain in dB
-            gain_vals = [0, 5, 10, 15, 20]
-            ber_vs_gain = []
-            for g in gain_vals:
-                b_optx.amp_on = True
-                b_optx.amp_gain_db = float(g)
-                b_orch2 = Orchestrator(sys_p, b_emit, b_optx, b_pd, b_tia, b_comp, b_clk)
-                ber_vs_gain.append(float(b_orch2.run(trials=min(args.trials, 200)).get("p50_ber", None)))
-            # Sweep SA I_sat (lower I_sat = stronger nonlinearity at lower current)
-            isat_vals = [0.5, 1.0, 1.5, 2.0, 3.0]
-            ber_vs_isat = []
-            for s in isat_vals:
-                b_optx.sat_abs_on = True
-                b_optx.sat_I_sat = float(s)
-                b_orch3 = Orchestrator(sys_p, b_emit, b_optx, b_pd, b_tia, b_comp, b_clk)
-                ber_vs_isat.append(float(b_orch3.run(trials=min(args.trials, 200)).get("p50_ber", None)))
-            path_b_sweeps = {
-                "amp_gain_db": gain_vals,
-                "p50_ber_vs_gain": ber_vs_gain,
-                "sat_I_sat": isat_vals,
-                "p50_ber_vs_isat": ber_vs_isat,
-            }
-        # Analog cascade (realistic accumulation): propagate analog intensities SA+amp per hop, O/E at end
-        analog_depth = int(getattr(args, "path_b_analog_depth", -1))
-        if analog_depth == -1:
-            analog_depth = int(getattr(args, "path_b_depth", 0))
-        if analog_depth > 0 and (not getattr(args, 'no_path_b_analog', False)):
-            import numpy as _np
-            T = min(args.trials, 200)
             errs = []
             vth_vec = _np.zeros(b_orch.sys.channels, dtype=float)
             eta = float(getattr(args, 'path_b_servo_eta', 0.05))
@@ -897,6 +865,11 @@ def main():
                     out_arr = _np.asarray(out_samples[-1], dtype=int)
                 errs.append(float(_np.mean(out_arr != tern0)))
             path_b_summary = dict(path_b_summary or {})
+            path_b_summary['analog_depth'] = analog_depth
+            path_b_summary['analog_p50_ber'] = float(_np.median(errs)) if errs else None
+
+            path_b_summary["analog_depth"] = analog_depth
+            path_b_summary["analog_p50_ber"] = float(_np.median(errs)) if errs else None
             path_b_summary["analog_depth"] = analog_depth
             path_b_summary["analog_p50_ber"] = float(_np.median(errs)) if errs else None
         if getattr(args, 'path_b_return_map', False) and (not getattr(args, 'no_path_b', False)):
@@ -2442,7 +2415,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
 
 

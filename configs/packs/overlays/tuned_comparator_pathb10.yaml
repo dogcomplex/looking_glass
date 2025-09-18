@@ -1,0 +1,16 @@
+# Tuned comparator overlay for ~0.065 BER Path A recipe
+vth_mV: 5.0
+hysteresis_mV: 0.75
+input_noise_mV_rms: 0.40
+drift_mV_per_C: 0.05
+prop_delay_ns: 1.25
+saturate_levels: true
+vth_sigma_mV: 0.2
+
+vth_mV: 80.0
+hysteresis_mV: 5.0
+input_noise_mV_rms: 0.3
+vth_mV: 20.0
+hysteresis_mV: 3.0
+vth_mV: 10.0
+hysteresis_mV: 2.0
