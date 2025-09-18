@@ -2275,12 +2275,12 @@ def main():
 
     # Autotuner (optional)
     _auto_tune_func = None
+    constraints: dict[tuple[str, str], dict] = {}
     if args.autotune:
         from looking_glass.tuner import auto_tune as _auto_tune_func
         if args.progress:
             print("PROGRESS: autotune start")
         # Build tuning constraints from packs if provided
-        constraints = {}
         def _merge_constraints(prefix: str, pack: dict | None):
             if not pack: return
             t = pack.get('tuning') or {}
@@ -2363,6 +2363,7 @@ def main():
     except Exception:
         pass
 
+    if args.autotune and _auto_tune_func is not None:
         tune_res = _auto_tune_func(
             sys_p,
             EmitterParams(**emit.__dict__),
