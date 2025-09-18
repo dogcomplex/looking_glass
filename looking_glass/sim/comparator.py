@@ -23,6 +23,7 @@ class Comparator:
         self._last_out = None
         self._vth_offset = None
         self._vth_per_ch = None
+        self._offset_per_ch = None
 
     def reset(self) -> None:
         self._last_out = None
@@ -34,8 +35,16 @@ class Comparator:
         arr = np.asarray(vth_mV_vec, dtype=float)
         self._vth_per_ch = arr
 
+    def set_offset_per_channel(self, offset_mV_vec):
+        if offset_mV_vec is None:
+            self._offset_per_ch = None
+        else:
+            self._offset_per_ch = np.asarray(offset_mV_vec, dtype=float)
+
     def simulate(self, Vp: np.ndarray, Vm: np.ndarray, temp_C: float):
         dv = (np.array(Vp) - np.array(Vm))*1e3  # mV
+        if self._offset_per_ch is not None and self._offset_per_ch.shape == dv.shape:
+            dv = dv - self._offset_per_ch
         if self._vth_offset is None and self.p.vth_sigma_mV > 0.0:
             self._vth_offset = float(self.rng.normal(0.0, self.p.vth_sigma_mV))
         else:
@@ -77,3 +86,4 @@ class Comparator:
                 out = np.where(flip_mask, -np.sign(out), out)
         self._last_out = out
         return out.astype(int)
+

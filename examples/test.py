@@ -35,6 +35,14 @@ from looking_glass.sim.comparator import ComparatorParams
 from looking_glass.sim.clock import ClockParams
 
 
+def _parse_csv_floats(csv: str | None):
+    if not csv:
+        return []
+    if isinstance(csv, (list, tuple)):
+        return [float(x) for x in csv]
+    return [float(x) for x in str(csv).replace(';', ',').split(',') if str(x).strip()]
+
+
 def run_trials(orch: Orchestrator, trials: int):
     # Minimal per-trial retention to avoid large in-memory logs
     out = []
@@ -294,6 +302,42 @@ def _compute_pathb_return_map(sys_p: SystemParams, emit_p: EmitterParams, optx_p
 
 
 
+def _run_pathb_stage_pass(orch: Orchestrator,
+                          ternary,
+                          analog_depth: int,
+                          stage_gains_db: list[float] | None,
+                          vth_schedule_mV: list[float] | None):
+    import numpy as _np
+    dt = float(orch.clk.sample_window())
+    if orch.sys.reset_analog_state_each_frame:
+        orch.tia.reset()
+        orch.comp.reset()
+    Pp, Pm = orch.emit.simulate(ternary, dt, orch.sys.temp_C)
+    stage_gains = list(stage_gains_db or [])
+    stage_outputs = []
+    for stage_idx in range(max(0, analog_depth)):
+        diff_in = Pp - Pm
+        Pp, Pm, _, _ = orch.optx.simulate(Pp, Pm, dt)
+        if stage_gains:
+            gain_idx = stage_idx if stage_idx < len(stage_gains) else len(stage_gains) - 1
+            gain_db = float(stage_gains[gain_idx])
+            scale = 10 ** (-gain_db / 10.0)
+            Pp = Pp * scale
+            Pm = Pm * scale
+        stage_outputs.append((Pp.copy(), Pm.copy(), diff_in.copy(), (Pp - Pm).copy()))
+    base_vth_vec = None
+    if vth_schedule_mV:
+        existing = getattr(orch.comp, '_vth_per_ch', None)
+        if existing is not None:
+            base_vth_vec = _np.array(existing, dtype=float)
+        else:
+            base_vth_vec = _np.full(orch.sys.channels, float(orch.comp.p.vth_mV), dtype=float)
+    return dt, stage_outputs, base_vth_vec
+
+
+
+
+
 def _build_fixed_inputs(seed: int, channels: int, count: int):
     import numpy as _np
     rng = _np.random.default_rng(int(seed))
@@ -368,6 +412,14 @@ def main():
     ap.add_argument("--path-b-digital-guard", action="store_true", help="Apply digital sign guard after the analog cascade")
     ap.add_argument("--path-b-digital-deadzone-mV", type=float, default=0.1, help="Dead-zone (mV) for the digital guard accumulator; values within the band map to 0")
     ap.add_argument("--path-b-digital-guard-passes", type=int, default=3, help="Number of analog replays to average before applying the digital guard")
+    ap.add_argument("--path-b-calibrate-vth", action="store_true", help="Pre-run Path B dv probe to set comparator thresholds per channel")
+    ap.add_argument("--path-b-calibrate-vth-scale", type=float, default=0.25, help="Scale factor applied to median |dv| when auto-calibrating comparator thresholds")
+    ap.add_argument("--path-b-calibrate-vth-passes", type=int, default=64, help="Calibration samples to estimate comparator thresholds")
+    ap.add_argument("--path-b-calibrate-vth-min", type=float, default=1.0, help="Minimum comparator threshold (mV) during auto-calibration")
+    ap.add_argument("--path-b-calibrate-vth-max", type=float, default=40.0, help="Maximum comparator threshold (mV) during auto-calibration")
+    ap.add_argument("--path-b-calibrate-vth-apply-guard", action="store_true", help="Apply optical guard bias during comparator auto-zero calibration")
+    ap.add_argument("--path-b-calibrate-optical", action="store_true", help="Auto-cancel optical bias using calibration data")
+    ap.add_argument("--path-b-optical-trim-final-mW", type=str, default=None, help="Comma-separated per-channel optical trim (mW) applied at final stage")
     ap.add_argument("--path-b-return-map", action="store_true", help="Record Path B return map (dv in/out, slopes, histograms)")
     ap.add_argument("--path-b-amp-type", type=str, choices=['soa', 'edfa'], default=None, help="Override Path B amplifier type (soa|edfa)")
     ap.add_argument("--path-b-vth-schedule", type=str, default=None, help="Comma-separated comparator vth (mV) per Path B stage during analog cascade")
@@ -813,64 +865,161 @@ def main():
         stage_gain_schedule = _parse_csv_floats(getattr(args, 'path_b_stage_gains_db', None))
         vth_schedule = _parse_csv_floats(getattr(args, 'path_b_vth_schedule', None))
 
-        # Optional cascaded Path B chain: feed ternary outputs of stage k as inputs to k+1
-        if int(getattr(args, "path_b_depth", 0)) > 0:
+
+
+        if analog_depth > 0 and (not getattr(args, 'no_path_b_analog', False)):
             import numpy as _np
-            depth = int(args.path_b_depth)
-            T = min(args.trials, 200)
-            errs = []
-            vth_vec = _np.zeros(b_orch.sys.channels, dtype=float)
-            eta = float(getattr(args, 'path_b_servo_eta', 0.05))
             guard_deadzone = float(getattr(args, 'path_b_guard_deadzone_mV', 0.0))
             guard_gain = float(getattr(args, 'path_b_guard_gain_mW', 0.05))
             use_digital_guard = bool(getattr(args, 'path_b_digital_guard', False))
             balanced_pd = bool(getattr(args, 'path_b_balanced', False))
             digital_deadzone = float(getattr(args, 'path_b_digital_deadzone_mV', 0.1))
             guard_passes = max(1, int(getattr(args, 'path_b_digital_guard_passes', 3)) if use_digital_guard else 1)
+            eta = float(getattr(args, 'path_b_servo_eta', 0.05))
             if vth_schedule:
                 eta = 0.0
-            base_vth_vec = None
-            if vth_schedule:
-                existing = getattr(b_orch.comp, '_vth_per_ch', None)
-                if existing is not None:
-                    base_vth_vec = _np.array(existing, dtype=float)
-                else:
-                    base_vth_vec = _np.full(b_orch.sys.channels, float(b_orch.comp.p.vth_mV), dtype=float)
+
+cal_offsets = None
+cal_trim_vec = None
+cal_optical_bias = None
+cal_optical_trim_final = None
+if getattr(args, 'path_b_calibrate_vth', False):
+    cal_passes = max(1, min(int(getattr(args, 'path_b_calibrate_vth_passes', 64)), args.trials))
+    cal_guard_gain = guard_gain if bool(getattr(args, 'path_b_calibrate_vth_apply_guard', False)) else 0.0
+    offset_samples = []
+    trim_samples = []
+    bias_samples = []
+    final_bias_samples = []
+    tern_zero = _np.zeros(b_orch.sys.channels, dtype=int)
+    tern_plus = _np.ones(b_orch.sys.channels, dtype=int)
+    tern_minus = -tern_plus
+    for _cal in range(cal_passes):
+        for mode, tern_cal in (("zero", tern_zero), ("plus", tern_plus), ("minus", tern_minus)):
+            dt_cal, stage_outputs_cal, base_vth_vec_cal = _run_pathb_stage_pass(
+                b_orch, tern_cal, analog_depth, stage_gain_schedule, vth_schedule)
+            stage0 = stage_outputs_cal[0]
+            Pp_cal = stage0[0].copy()
+            Pm_cal = stage0[1].copy()
+            diff_opt = Pp_cal - Pm_cal
+            if mode == "zero":
+                bias_samples.append(diff_opt.copy())
+            if cal_guard_gain > 0.0:
+                adjust = cal_guard_gain * _np.sign(diff_opt)
+                if guard_deadzone > 0.0:
+                    adjust[_np.abs(diff_opt) < guard_deadzone] = 0.0
+                Pp_cal = _np.clip(Pp_cal + 0.5 * adjust, 0.0, None)
+                Pm_cal = _np.clip(Pm_cal - 0.5 * adjust, 0.0, None)
+            Ip_cal = b_orch.pd.simulate(Pp_cal, dt_cal)
+            Im_cal = b_orch.pd.simulate(Pm_cal, dt_cal)
+            if balanced_pd:
+                diff_current = Ip_cal - Im_cal
+                Ip_cal = diff_current
+                Im_cal = -diff_current
+            Vp_cal = b_orch.tia.simulate(Ip_cal, dt_cal)
+            Vm_cal = b_orch.tia.simulate(Im_cal, dt_cal)
+            dv_cal_mV = (Vp_cal - Vm_cal) * 1e3
+            if mode == "zero":
+                offset_samples.append(dv_cal_mV)
+                trim_samples.append(_np.abs(dv_cal_mV))
+            if mode in ("plus", "minus"):
+                final_bias_samples.append(stage_outputs_cal[-1][3].copy())
+            if vth_schedule and base_vth_vec_cal is not None:
+                b_orch.comp.set_vth_per_channel(base_vth_vec_cal)
+    path_b_summary = dict(path_b_summary or {})
+    if bias_samples:
+        bias_stack = _np.stack(bias_samples, axis=0)
+        cal_optical_bias = _np.median(bias_stack, axis=0)
+        path_b_summary['calibrated_optical_bias_mW'] = cal_optical_bias.tolist()
+    if final_bias_samples:
+        final_bias_stack = _np.stack(final_bias_samples, axis=0)
+        cal_optical_trim_final = _np.median(final_bias_stack, axis=0)
+        path_b_summary['calibrated_optical_trim_final_mW'] = cal_optical_trim_final.tolist()
+    if offset_samples:
+        offset_stack = _np.stack(offset_samples, axis=0)
+        cal_offsets = _np.median(offset_stack, axis=0)
+        b_orch.comp.set_offset_per_channel(cal_offsets)
+        path_b_summary['calibrated_offset_mV'] = cal_offsets.tolist()
+    if trim_samples:
+        trim_stack = _np.stack(trim_samples, axis=0)
+        scale = float(getattr(args, 'path_b_calibrate_vth_scale', 1.0))
+        min_v = float(getattr(args, 'path_b_calibrate_vth_min', -200.0))
+        max_v = float(getattr(args, 'path_b_calibrate_vth_max', 200.0))
+        cal_trim_vec = _np.clip(_np.median(trim_stack, axis=0) * scale, min_v, max_v)
+        path_b_summary['calibrated_vth_mV'] = cal_trim_vec.tolist()
+if cal_trim_vec is not None and not vth_schedule:
+    b_orch.comp.set_vth_per_channel(cal_trim_vec)
+            if cal_trim_vec is not None and not vth_schedule:
+                b_orch.comp.set_vth_per_channel(cal_trim_vec)
+            vth_vec = _np.zeros(b_orch.sys.channels, dtype=float)
+            T = min(args.trials, 200)
+            errs = []
+            stage_errs_prev = [[] for _ in range(analog_depth)]
+            stage_errs_initial = [[] for _ in range(analog_depth)]
             for _ in range(T):
                 tern0 = b_orch.rng.integers(-1, 2, size=b_orch.sys.channels)
-                dv_samples = []
-                out_samples = []
-                for rep in range(guard_passes):
-                    dt = float(b_orch.clk.sample_window())
-                    if b_orch.sys.reset_analog_state_each_frame:
-                        b_orch.tia.reset()
-                        b_orch.comp.reset()
-                    Pp, Pm = b_orch.emit.simulate(tern0, dt, b_orch.sys.temp_C)
-                    for stage_idx in range(analog_depth):
-                        Pp, Pm, _, _ = b_orch.optx.simulate(Pp, Pm, dt)
-                        if stage_gain_schedule:
-                            gain_idx = stage_idx if stage_idx < len(stage_gain_schedule) else len(stage_gain_schedule) - 1
-                            gain_db = float(stage_gain_schedule[gain_idx])
-                            scale = 10 ** (-gain_db / 10.0)
-                            Pp = Pp * scale
-                            Pm = Pm * scale
+                dv_pass = []
+                out_pass = []
+                stage_signs_last = None
+                for _rep in range(guard_passes):
+                    dt, stage_outputs, base_vth_vec = _run_pathb_stage_pass(
+                        b_orch, tern0, analog_depth, stage_gain_schedule, vth_schedule)
+                    stage_signs = []
+                    for stage_idx, (Pp_stage, Pm_stage, _diff_in, _diff_out) in enumerate(stage_outputs):
+                        if cal_optical_bias is not None and stage_idx == 0:
+                            bias = cal_optical_bias
+                            if bias.shape[0] != Pp_stage.shape[0]:
+                                bias = _np.full(Pp_stage.shape[0], float(_np.median(bias)))
+                            Pp_stage = _np.clip(Pp_stage - 0.5 * bias, 0.0, None)
+                            Pm_stage = _np.clip(Pm_stage + 0.5 * bias, 0.0, None)
+                        Ip_stage = b_orch.pd.simulate(Pp_stage.copy(), dt)
+                        Im_stage = b_orch.pd.simulate(Pm_stage.copy(), dt)
+                        if balanced_pd:
+                            diff_current = Ip_stage - Im_stage
+                            Ip_stage = diff_current
+                            Im_stage = -diff_current
                         if vth_schedule:
                             vth_idx = stage_idx if stage_idx < len(vth_schedule) else len(vth_schedule) - 1
                             stage_vth = float(vth_schedule[vth_idx])
-                            b_orch.comp.set_vth_per_channel(_np.full(b_orch.sys.channels, stage_vth, dtype=float))
+                            target_vth = _np.full(b_orch.sys.channels, stage_vth, dtype=float)
+                            if cal_trim_vec is not None:
+                                target_vth = target_vth + cal_trim_vec
+                            b_orch.comp.set_vth_per_channel(target_vth)
+                        elif cal_trim_vec is not None:
+                            b_orch.comp.set_vth_per_channel(cal_trim_vec)
+                        Vp_stage = b_orch.tia.simulate(Ip_stage, dt)
+                        Vm_stage = b_orch.tia.simulate(Im_stage, dt)
+                        stage_signs.append(_np.asarray(b_orch.comp.simulate(Vp_stage, Vm_stage, b_orch.sys.temp_C), dtype=int))
+                    stage_signs_last = [arr.copy() for arr in stage_signs]
+                    Pp_final = stage_outputs[-1][0].copy()
+                    Pm_final = stage_outputs[-1][1].copy()
+                    if cal_optical_bias is not None:
+                        bias = cal_optical_bias
+                        if bias.shape[0] != Pp_final.shape[0]:
+                            bias = _np.full(Pp_final.shape[0], float(_np.median(bias)))
+                        Pp_final = _np.clip(Pp_final - 0.5 * bias, 0.0, None)
+                        Pm_final = _np.clip(Pm_final + 0.5 * bias, 0.0, None)
                     if guard_gain > 0.0:
-                        diff_opt = Pp - Pm
+                        diff_opt = Pp_final - Pm_final
                         adjust = guard_gain * _np.sign(diff_opt)
                         if guard_deadzone > 0.0:
                             adjust[_np.abs(diff_opt) < guard_deadzone] = 0.0
-                        Pp = _np.clip(Pp + 0.5 * adjust, 0.0, None)
-                        Pm = _np.clip(Pm - 0.5 * adjust, 0.0, None)
-                    Ip = b_orch.pd.simulate(Pp, dt)
-                    Im = b_orch.pd.simulate(Pm, dt)
+                        Pp_final = _np.clip(Pp_final + 0.5 * adjust, 0.0, None)
+                        Pm_final = _np.clip(Pm_final - 0.5 * adjust, 0.0, None)
+                    Ip = b_orch.pd.simulate(Pp_final, dt)
+                    Im = b_orch.pd.simulate(Pm_final, dt)
                     if balanced_pd:
                         diff_current = Ip - Im
                         Ip = diff_current
                         Im = -diff_current
+                    if vth_schedule:
+                        vth_idx = analog_depth - 1 if analog_depth - 1 < len(vth_schedule) else len(vth_schedule) - 1
+                        stage_vth = float(vth_schedule[vth_idx])
+                        target_vth = _np.full(b_orch.sys.channels, stage_vth, dtype=float)
+                        if cal_trim_vec is not None:
+                            target_vth = target_vth + cal_trim_vec
+                        b_orch.comp.set_vth_per_channel(target_vth)
+                    elif cal_trim_vec is not None:
+                        b_orch.comp.set_vth_per_channel(cal_trim_vec)
                     Vp = b_orch.tia.simulate(Ip, dt)
                     Vm = b_orch.tia.simulate(Im, dt)
                     dv_final = (Vp - Vm) * 1e3
@@ -878,34 +1027,48 @@ def main():
                     error = _np.asarray(out, dtype=float) - _np.asarray(tern0, dtype=float)
                     if eta > 0.0:
                         vth_vec = _np.clip(vth_vec + eta * error, -15.0, 15.0)
-                        b_orch.comp.set_vth_per_channel(vth_vec)
-                    dv_samples.append(dv_final)
-                    out_samples.append(out)
+                        update_vth = vth_vec if cal_trim_vec is None else cal_trim_vec + vth_vec
+                        b_orch.comp.set_vth_per_channel(update_vth)
+                    dv_pass.append(dv_final)
+                    out_pass.append(out)
                     if vth_schedule and base_vth_vec is not None:
-                        b_orch.comp.set_vth_per_channel(base_vth_vec)
+                        base_target = base_vth_vec
+                        if cal_trim_vec is not None:
+                            base_target = cal_trim_vec + base_target
+                        b_orch.comp.set_vth_per_channel(base_target)
+                    elif cal_trim_vec is not None:
+                        b_orch.comp.set_vth_per_channel(cal_trim_vec)
                 if use_digital_guard:
-                    dv_mean = _np.mean(_np.stack(dv_samples), axis=0)
+                    dv_mean = _np.mean(_np.stack(dv_pass), axis=0)
                     guard_out = _np.sign(dv_mean)
                     if digital_deadzone > 0.0:
                         guard_out[_np.abs(dv_mean) < digital_deadzone] = 0.0
                     out_arr = guard_out.astype(int)
                 elif guard_gain > 0.0 or guard_deadzone > 0.0:
-                    dv_last = dv_samples[-1]
+                    dv_last = dv_pass[-1]
                     guard_out = _np.sign(dv_last)
                     if digital_deadzone > 0.0:
                         guard_out[_np.abs(dv_last) < digital_deadzone] = 0.0
                     out_arr = guard_out.astype(int)
                 else:
-                    out_arr = _np.asarray(out_samples[-1], dtype=int)
+                    out_arr = _np.asarray(out_pass[-1], dtype=int)
                 errs.append(float(_np.mean(out_arr != tern0)))
+                if stage_signs_last is not None:
+                    prev_vec = _np.asarray(tern0, dtype=int)
+                    for stage_idx, stage_out_vec in enumerate(stage_signs_last):
+                        stage_out_vec = _np.asarray(stage_out_vec, dtype=int)
+                        prev = prev_vec if stage_idx == 0 else _np.asarray(stage_signs_last[stage_idx - 1], dtype=int)
+                        stage_errs_prev[stage_idx].append(float(_np.mean(stage_out_vec != prev)))
+                        stage_errs_initial[stage_idx].append(float(_np.mean(stage_out_vec != prev_vec)))
             path_b_summary = dict(path_b_summary or {})
             path_b_summary['analog_depth'] = analog_depth
             path_b_summary['analog_p50_ber'] = float(_np.median(errs)) if errs else None
+            path_b_chain = {
+                'depth': analog_depth,
+                'per_stage_p50_ber_vs_prev': [float(_np.median(e)) if e else None for e in stage_errs_prev],
+                'per_stage_p50_ber_vs_initial': [float(_np.median(e)) if e else None for e in stage_errs_initial],
+            }
 
-            path_b_summary["analog_depth"] = analog_depth
-            path_b_summary["analog_p50_ber"] = float(_np.median(errs)) if errs else None
-            path_b_summary["analog_depth"] = analog_depth
-            path_b_summary["analog_p50_ber"] = float(_np.median(errs)) if errs else None
         if getattr(args, 'path_b_return_map', False) and (not getattr(args, 'no_path_b', False)):
             rm_depth = analog_depth if analog_depth > 0 else int(getattr(args, 'path_b_depth', 0))
             if rm_depth > 0:
@@ -930,7 +1093,10 @@ def main():
                 except Exception:
                     path_b_return_map = {"error": "return_map_failed"}
 
-    except Exception:
+    except Exception as exc:
+        import traceback, sys
+        print('Path B exception:', exc, file=sys.stderr)
+        traceback.print_exc()
         path_b_summary = None
 
     # Notable effects across sweeps
