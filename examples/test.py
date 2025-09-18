@@ -195,6 +195,71 @@ def quick_diag_ct_sweep(
     return xs, ys, bool(monotone)
 
 
+def _compute_pathb_return_map(sys_p: SystemParams, emit_p: EmitterParams, optx_p: OpticsParams, pd_p: PDParams, tia_p: TIAParams, comp_p: ComparatorParams, clk_p: ClockParams, depth: int, passes: int, deadzone_mw: float, *, seed_offset: int = 0):
+    import numpy as _np
+    depth = int(depth)
+    passes = max(1, int(passes))
+    if depth <= 0:
+        return {
+            "levels": [],
+            "stage_slopes": [],
+            "deadzone_fraction": [],
+            "rail_positive_fraction": [],
+            "rail_negative_fraction": [],
+        }
+    deadzone_mw = max(1e-9, float(deadzone_mw))
+    results = {
+        "levels": [],
+        "stage_slopes": [],
+        "deadzone_fraction": [],
+        "rail_positive_fraction": [],
+        "rail_negative_fraction": [],
+    }
+    eps = 1e-9
+    levels = [-1, 0, 1]
+    for lvl in levels:
+        level_slopes = [[] for _ in range(depth)]
+        level_dead = [[] for _ in range(depth)]
+        level_pos = [[] for _ in range(depth)]
+        level_neg = [[] for _ in range(depth)]
+        for pidx in range(passes):
+            sys_clone = SystemParams(**sys_p.__dict__)
+            sys_clone.seed = int(sys_clone.seed) + seed_offset + pidx + 1
+            emit_clone = EmitterParams(**emit_p.__dict__)
+            optx_clone = OpticsParams(**optx_p.__dict__)
+            pd_clone = PDParams(**pd_p.__dict__)
+            tia_clone = TIAParams(**tia_p.__dict__)
+            comp_clone = ComparatorParams(**comp_p.__dict__)
+            clk_clone = ClockParams(**clk_p.__dict__)
+            orch = Orchestrator(sys_clone, emit_clone, optx_clone, pd_clone, tia_clone, comp_clone, clk_clone)
+            dt = float(orch.clk.sample_window())
+            tern = _np.full(sys_clone.channels, lvl, dtype=int)
+            plus, minus = orch.emit.simulate(tern, dt, orch.sys.temp_C)
+            for stage in range(depth):
+                diff_in = plus - minus
+                plus, minus, _, _ = orch.optx.simulate(plus, minus, dt)
+                diff_out = plus - minus
+                ratio = _np.abs(diff_out) / _np.clip(_np.abs(diff_in), eps, None)
+                level_slopes[stage].append(float(_np.median(ratio)))
+                level_dead[stage].append(float(_np.mean(_np.abs(diff_out) < deadzone_mw)))
+                level_pos[stage].append(float(_np.mean(diff_out > deadzone_mw)))
+                level_neg[stage].append(float(_np.mean(diff_out < -deadzone_mw)))
+        results["levels"].append(int(lvl))
+        results["stage_slopes"].append([float(_np.median(s)) if s else None for s in level_slopes])
+        results["deadzone_fraction"].append([float(_np.median(d)) if d else None for d in level_dead])
+        results["rail_positive_fraction"].append([float(_np.median(r)) if r else None for r in level_pos])
+        results["rail_negative_fraction"].append([float(_np.median(r)) if r else None for r in level_neg])
+    flat_slopes = [val for sub in results["stage_slopes"] for val in sub if val is not None]
+    if flat_slopes:
+        flat_arr = _np.array(flat_slopes, dtype=float)
+        results["median_stage_slope"] = float(_np.median(flat_arr))
+        results["max_stage_slope"] = float(_np.max(flat_arr))
+    else:
+        results["median_stage_slope"] = None
+        results["max_stage_slope"] = None
+    return results
+
+
 def _build_fixed_inputs(seed: int, channels: int, count: int):
     import numpy as _np
     rng = _np.random.default_rng(int(seed))
@@ -270,6 +335,11 @@ def main():
     ap.add_argument("--path-b-digital-deadzone-mV", type=float, default=0.1, help="Dead-zone (mV) for the digital guard accumulator; values within the band map to 0")
     ap.add_argument("--path-b-digital-guard-passes", type=int, default=3, help="Number of analog replays to average before applying the digital guard")
     ap.add_argument("--path-b-return-map", action="store_true", help="Record Path B return map (dv in/out, slopes, histograms)")
+    ap.add_argument("--path-b-amp-type", type=str, choices=['soa', 'edfa'], default=None, help="Override Path B amplifier type (soa|edfa)")
+    ap.add_argument("--path-b-enable-amp", action="store_true", help="Force Path B amplifier on after pack overrides")
+    ap.add_argument("--path-b-disable-soa", action="store_true", help="Disable SOA dynamics in Path B baseline")
+    ap.add_argument("--return-map-passes", type=int, default=36, help="Passes used when computing the Path B return map")
+    ap.add_argument("--return-map-deadzone-mW", type=float, default=0.02, help="Dead-zone (mW) threshold for occupancy metrics in the Path B return map")
     ap.add_argument("--path-b-balanced", action="store_true", help="Use balanced photodiode/TIA path for Path B calculations")
     ap.add_argument("--path-b-analog-depth", type=int, default=-1, help="If -1, use --path-b-depth; if >0, run analog cascade (optics SA+amp per hop, single final threshold)")
     ap.add_argument("--adaptive-input", action="store_true", help="Integrate multiple frames until dv margin met or max frames (default ON)")
@@ -668,6 +738,7 @@ def main():
     path_b_summary = None
     path_b_chain = None
     path_b_sweeps = None
+    path_b_return_map = None
     try:
         b_emit = EmitterParams(**emit.__dict__)
         b_optx = OpticsParams(**optx.__dict__)
@@ -676,6 +747,16 @@ def main():
         b_optx.amp_on = False
         b_optx.soa_on = True
         b_optx.mzi_on = True
+        if getattr(args, 'path_b_enable_amp', False):
+            b_optx.amp_on = True
+        amp_type = getattr(args, 'path_b_amp_type', None)
+        if amp_type:
+            b_optx.amp_on = True
+            b_optx.amp_type = amp_type.lower()
+            if b_optx.amp_type != 'soa':
+                b_optx.soa_on = False
+        if getattr(args, 'path_b_disable_soa', False):
+            b_optx.soa_on = False
         b_pd = PDParams(**pd.__dict__)
         b_tia = TIAParams(**tia.__dict__)
         b_comp = ComparatorParams(**comp.__dict__)
@@ -806,6 +887,28 @@ def main():
             path_b_summary = dict(path_b_summary or {})
             path_b_summary["analog_depth"] = analog_depth
             path_b_summary["analog_p50_ber"] = float(_np.median(errs)) if errs else None
+        if getattr(args, 'path_b_return_map', False) and (not getattr(args, 'no_path_b', False)):
+            rm_depth = analog_depth if analog_depth > 0 else int(getattr(args, 'path_b_depth', 0))
+            if rm_depth > 0:
+                rm_passes = max(1, int(getattr(args, 'return_map_passes', 36)))
+                deadzone_mw = max(1e-6, float(getattr(args, 'return_map_deadzone_mW', 0.02)))
+                try:
+                    path_b_return_map = _compute_pathb_return_map(
+                        SystemParams(**sys_p.__dict__),
+                        EmitterParams(**b_emit.__dict__),
+                        OpticsParams(**b_optx.__dict__),
+                        PDParams(**b_pd.__dict__),
+                        TIAParams(**b_tia.__dict__),
+                        ComparatorParams(**b_comp.__dict__),
+                        ClockParams(**b_clk.__dict__),
+                        rm_depth,
+                        rm_passes,
+                        deadzone_mw,
+                        seed_offset=int(getattr(args, 'seed', 0)) ^ 0x5A5A
+                    )
+                except Exception:
+                    path_b_return_map = {"error": "return_map_failed"}
+
     except Exception:
         path_b_summary = None
 
@@ -1931,6 +2034,7 @@ def main():
         "path_b": path_b_summary,
         "path_b_chain": path_b_chain,
         "path_b_sweeps": path_b_sweeps,
+        "path_b_return_map": path_b_return_map,
         "cold_input": cold_summary,
         "packs": {
             "emitter": emit.__dict__,

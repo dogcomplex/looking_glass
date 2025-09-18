@@ -20,6 +20,10 @@ class OpticsParams:
     sat_abs_on: bool = False
     sat_I_sat: float = 1.0
     sat_alpha: float = 0.6
+    hard_clip_on: bool = False
+    hard_clip_sat_mw: float = 0.1
+    post_clip_on: bool = False
+    post_clip_sat_mw: float = 0.1
     speckle_on: bool = False
     speckle_sigma: float = 0.0
     speckle_corr_px: int = 7
@@ -71,6 +75,7 @@ class OpticsParams:
     eom_gate_duty: float = 0.3
     eom_gate_jitter_ps: float = 5.0
     eom_gate_hold_noise_mw: float = 0.01
+    eom_gate_hold_leak: float = 0.05
     amp_type: str = "soa"
     obpf_bw_nm: float = 0.5
     voa_post_db: float = 0.0
@@ -87,6 +92,8 @@ class Optics:
         self._servo_integral = None
         self._pattern_prev_plus = None
         self._pattern_prev_minus = None
+        self._eom_hold_plus = None
+        self._eom_hold_minus = None
 
     def _ensure_state(self, size: int):
         if self.p.soa_on:
@@ -104,6 +111,10 @@ class Optics:
             if self._pattern_prev_plus is None or len(self._pattern_prev_plus) != size:
                 self._pattern_prev_plus = np.zeros(size, dtype=float)
                 self._pattern_prev_minus = np.zeros(size, dtype=float)
+        if getattr(self.p, 'eom_gate_on', False):
+            if self._eom_hold_plus is None or len(self._eom_hold_plus) != size:
+                self._eom_hold_plus = np.zeros(size, dtype=float)
+                self._eom_hold_minus = np.zeros(size, dtype=float)
 
     def _apply_soa(self, plus, minus, dt_ns):
         amp_type = getattr(self.p, 'amp_type', 'soa').lower()
@@ -225,13 +236,37 @@ class Optics:
     def _apply_eom_gate(self, plus, minus, dt_ns):
         if not getattr(self.p, 'eom_gate_on', False):
             return plus, minus
+        size = len(plus)
+        if self._eom_hold_plus is None or len(self._eom_hold_plus) != size:
+            self._eom_hold_plus = np.zeros(size, dtype=float)
+            self._eom_hold_minus = np.zeros(size, dtype=float)
         duty = np.clip(getattr(self.p, 'eom_gate_duty', 0.3), 0.01, 1.0)
-        jitter = self.rng.normal(0.0, getattr(self.p, 'eom_gate_jitter_ps', 0.0) * 1e-3)
-        effective = np.clip(duty + jitter, 0.01, 1.0)
-        hold_noise = getattr(self.p, 'eom_gate_hold_noise_mw', 0.0)
-        plus = plus * effective + self.rng.normal(0.0, hold_noise, size=plus.shape)
-        minus = minus * effective + self.rng.normal(0.0, hold_noise, size=minus.shape)
-        return np.clip(plus, 0.0, None), np.clip(minus, 0.0, None)
+        jitter_ps = float(getattr(self.p, 'eom_gate_jitter_ps', 0.0))
+        if jitter_ps > 0.0:
+            jitter = self.rng.normal(0.0, jitter_ps * 1e-3, size)
+            sample_prob = np.clip(duty + jitter, 0.01, 1.0)
+        else:
+            jitter = None
+            sample_prob = np.full(size, duty, dtype=float)
+        sample_mask = self.rng.random(size) < sample_prob
+        hold_leak = np.clip(getattr(self.p, 'eom_gate_hold_leak', 0.05), 0.0, 1.0)
+        hold_noise = float(getattr(self.p, 'eom_gate_hold_noise_mw', 0.0))
+        capture_plus = plus.copy()
+        capture_minus = minus.copy()
+        if isinstance(jitter, np.ndarray):
+            capture_plus = capture_plus * (1.0 + jitter)
+            capture_minus = capture_minus * (1.0 + jitter)
+        if hold_noise > 0.0:
+            capture_plus = capture_plus + self.rng.normal(0.0, hold_noise, size)
+            capture_minus = capture_minus + self.rng.normal(0.0, hold_noise, size)
+        hold_plus = np.where(sample_mask, capture_plus, self._eom_hold_plus * (1.0 - hold_leak))
+        hold_minus = np.where(sample_mask, capture_minus, self._eom_hold_minus * (1.0 - hold_leak))
+        if hold_noise > 0.0:
+            hold_plus = hold_plus + self.rng.normal(0.0, hold_noise, size)
+            hold_minus = hold_minus + self.rng.normal(0.0, hold_noise, size)
+        self._eom_hold_plus = np.clip(hold_plus, 0.0, None)
+        self._eom_hold_minus = np.clip(hold_minus, 0.0, None)
+        return self._eom_hold_plus, self._eom_hold_minus
 
     def _apply_mode_mix(self, arr):
         mat = self.p.mode_mix_matrix
