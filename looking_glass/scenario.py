@@ -69,14 +69,36 @@ def build_orchestrator_from_scenario(scenario_yaml_path: t.Union[str, Path]) -> 
     seed = int(scn.get("seed", 42))
     temp_C = float(scn.get("temp_C", 25.0))
 
-    emit_p = _instantiate(EmitterParams, _load_yaml(scn["emitter_pack"]))
-    optx_p = _instantiate(OpticsParams, _load_yaml(scn["optics_pack"]))
-    pd_p = _instantiate(PDParams, _load_yaml(scn["sensor_pack"]))
-    tia_p = _instantiate(TIAParams, _load_yaml(scn["tia_pack"]))
-    comp_p = _instantiate(ComparatorParams, _load_yaml(scn["comparator_pack"]))
-    clk_p = _instantiate(ClockParams, _load_yaml(scn["clock_pack"]))
-    therm_p = _instantiate(ThermalParams, _load_yaml(scn.get("thermal_pack", {})))
-    cam_p = _instantiate(CameraParams, _load_yaml(scn.get("camera_pack", {})))
+    def _pack_data(key: str, *, required: bool) -> dict | None:
+        if required and key not in scn:
+            raise KeyError(f"Scenario missing required entry '{key}'")
+        if key not in scn:
+            return None
+        raw = scn.get(key)
+        if raw is None:
+            return None
+        if isinstance(raw, str):
+            raw = raw.strip()
+            if not raw:
+                return None
+            return _load_yaml(raw)
+        if isinstance(raw, dict):
+            return raw
+        if isinstance(raw, Path):
+            return _load_yaml(raw)
+        return _load_yaml(str(raw))
+
+    emit_p = _instantiate(EmitterParams, _pack_data("emitter_pack", required=True))
+    optx_p = _instantiate(OpticsParams, _pack_data("optics_pack", required=True))
+    pd_p = _instantiate(PDParams, _pack_data("sensor_pack", required=True))
+    tia_p = _instantiate(TIAParams, _pack_data("tia_pack", required=True))
+    comp_p = _instantiate(ComparatorParams, _pack_data("comparator_pack", required=True))
+    clk_p = _instantiate(ClockParams, _pack_data("clock_pack", required=True))
+
+    therm_data = _pack_data("thermal_pack", required=False)
+    therm_p = _instantiate(ThermalParams, therm_data) if therm_data is not None else None
+    cam_data = _pack_data("camera_pack", required=False)
+    cam_p = _instantiate(CameraParams, cam_data) if cam_data is not None else None
 
     # Enforce channel count from scenario on relevant packs
     emit_p.channels = channels
