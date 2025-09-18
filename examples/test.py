@@ -195,7 +195,7 @@ def quick_diag_ct_sweep(
     return xs, ys, bool(monotone)
 
 
-def _compute_pathb_return_map(sys_p: SystemParams, emit_p: EmitterParams, optx_p: OpticsParams, pd_p: PDParams, tia_p: TIAParams, comp_p: ComparatorParams, clk_p: ClockParams, depth: int, passes: int, deadzone_mw: float, *, seed_offset: int = 0):
+def _compute_pathb_return_map(sys_p: SystemParams, emit_p: EmitterParams, optx_p: OpticsParams, pd_p: PDParams, tia_p: TIAParams, comp_p: ComparatorParams, clk_p: ClockParams, depth: int, passes: int, deadzone_mw: float, *, seed_offset: int = 0, stage_gains_db: list[float] | None = None, vth_schedule_mV: list[float] | None = None):
     import numpy as _np
     depth = int(depth)
     passes = max(1, int(passes))
@@ -208,6 +208,8 @@ def _compute_pathb_return_map(sys_p: SystemParams, emit_p: EmitterParams, optx_p
             "rail_negative_fraction": [],
         }
     deadzone_mw = max(1e-9, float(deadzone_mw))
+    stage_gains_db = list(stage_gains_db or [])
+    vth_schedule_mV = list(vth_schedule_mV or [])
     results = {
         "levels": [],
         "stage_slopes": [],
@@ -239,9 +241,26 @@ def _compute_pathb_return_map(sys_p: SystemParams, emit_p: EmitterParams, optx_p
             dt = float(orch.clk.sample_window())
             tern = _np.full(sys_clone.channels, lvl, dtype=int)
             plus, minus = orch.emit.simulate(tern, dt, orch.sys.temp_C)
+            base_vth_vec = None
+            if vth_schedule_mV:
+                existing = getattr(orch.comp, '_vth_per_ch', None)
+                if existing is not None:
+                    base_vth_vec = _np.array(existing, dtype=float)
+                else:
+                    base_vth_vec = _np.full(orch.sys.channels, float(orch.comp.p.vth_mV), dtype=float)
             for stage in range(depth):
                 diff_in = plus - minus
                 plus, minus, _, _ = orch.optx.simulate(plus, minus, dt)
+                if stage_gains_db:
+                    gain_idx = stage if stage < len(stage_gains_db) else len(stage_gains_db) - 1
+                    gain_db = float(stage_gains_db[gain_idx])
+                    scale = 10 ** (-gain_db / 10.0)
+                    plus = plus * scale
+                    minus = minus * scale
+                if vth_schedule_mV:
+                    vth_idx = stage if stage < len(vth_schedule_mV) else len(vth_schedule_mV) - 1
+                    stage_vth = float(vth_schedule_mV[vth_idx])
+                    orch.comp.set_vth_per_channel(_np.full(orch.sys.channels, stage_vth, dtype=float))
                 diff_out = plus - minus
                 ratio = _np.abs(diff_out) / _np.clip(_np.abs(diff_in), eps, None)
                 level_slopes[stage].append(float(_np.median(ratio)))
@@ -250,6 +269,8 @@ def _compute_pathb_return_map(sys_p: SystemParams, emit_p: EmitterParams, optx_p
                 level_diff_out[stage].append(float(_np.median(_np.abs(diff_out))))
                 level_pos[stage].append(float(_np.mean(diff_out > deadzone_mw)))
                 level_neg[stage].append(float(_np.mean(diff_out < -deadzone_mw)))
+            if vth_schedule_mV:
+                orch.comp.set_vth_per_channel(_np.full(orch.sys.channels, float(orch.comp.p.vth_mV), dtype=float))
         results["levels"].append(int(lvl))
         results["stage_slopes"].append([float(_np.median(s)) if s else None for s in level_slopes])
         results["deadzone_fraction"].append([float(_np.median(d)) if d else None for d in level_dead])
@@ -272,21 +293,6 @@ def _compute_pathb_return_map(sys_p: SystemParams, emit_p: EmitterParams, optx_p
     return results
 
 
-
-
-def _parse_csv_floats(text: str | None):
-    if not text:
-        return []
-    parts = [p.strip() for p in str(text).split(",")]
-    out = []
-    for p in parts:
-        if not p:
-            continue
-        try:
-            out.append(float(p))
-        except ValueError:
-            continue
-    return out
 
 def _build_fixed_inputs(seed: int, channels: int, count: int):
     import numpy as _np
@@ -792,6 +798,10 @@ def main():
         b_comp = ComparatorParams(**comp.__dict__)
         b_clk = ClockParams(**clk.__dict__)
         b_orch = Orchestrator(sys_p, b_emit, b_optx, b_pd, b_tia, b_comp, b_clk)
+        analog_depth = int(getattr(args, 'path_b_analog_depth', -1))
+        if analog_depth == -1:
+            analog_depth = int(getattr(args, 'path_b_depth', 0))
+
         if int(getattr(args, 'path_b_analog_depth', 0)) > 0 or int(getattr(args, 'path_b_depth', 0)) > 0:
             try:
                 b_orch.sys.reset_analog_state_each_frame = False
@@ -799,6 +809,9 @@ def main():
                 pass
         if not getattr(args, 'no_path_b', False):
             path_b_summary = b_orch.run(trials=args.trials)
+
+        stage_gain_schedule = _parse_csv_floats(getattr(args, 'path_b_stage_gains_db', None))
+        vth_schedule = _parse_csv_floats(getattr(args, 'path_b_vth_schedule', None))
 
         # Optional cascaded Path B chain: feed ternary outputs of stage k as inputs to k+1
         if int(getattr(args, "path_b_depth", 0)) > 0:
@@ -814,6 +827,15 @@ def main():
             balanced_pd = bool(getattr(args, 'path_b_balanced', False))
             digital_deadzone = float(getattr(args, 'path_b_digital_deadzone_mV', 0.1))
             guard_passes = max(1, int(getattr(args, 'path_b_digital_guard_passes', 3)) if use_digital_guard else 1)
+            if vth_schedule:
+                eta = 0.0
+            base_vth_vec = None
+            if vth_schedule:
+                existing = getattr(b_orch.comp, '_vth_per_ch', None)
+                if existing is not None:
+                    base_vth_vec = _np.array(existing, dtype=float)
+                else:
+                    base_vth_vec = _np.full(b_orch.sys.channels, float(b_orch.comp.p.vth_mV), dtype=float)
             for _ in range(T):
                 tern0 = b_orch.rng.integers(-1, 2, size=b_orch.sys.channels)
                 dv_samples = []
@@ -824,8 +846,18 @@ def main():
                         b_orch.tia.reset()
                         b_orch.comp.reset()
                     Pp, Pm = b_orch.emit.simulate(tern0, dt, b_orch.sys.temp_C)
-                    for _k in range(analog_depth):
+                    for stage_idx in range(analog_depth):
                         Pp, Pm, _, _ = b_orch.optx.simulate(Pp, Pm, dt)
+                        if stage_gain_schedule:
+                            gain_idx = stage_idx if stage_idx < len(stage_gain_schedule) else len(stage_gain_schedule) - 1
+                            gain_db = float(stage_gain_schedule[gain_idx])
+                            scale = 10 ** (-gain_db / 10.0)
+                            Pp = Pp * scale
+                            Pm = Pm * scale
+                        if vth_schedule:
+                            vth_idx = stage_idx if stage_idx < len(vth_schedule) else len(vth_schedule) - 1
+                            stage_vth = float(vth_schedule[vth_idx])
+                            b_orch.comp.set_vth_per_channel(_np.full(b_orch.sys.channels, stage_vth, dtype=float))
                     if guard_gain > 0.0:
                         diff_opt = Pp - Pm
                         adjust = guard_gain * _np.sign(diff_opt)
@@ -849,6 +881,8 @@ def main():
                         b_orch.comp.set_vth_per_channel(vth_vec)
                     dv_samples.append(dv_final)
                     out_samples.append(out)
+                    if vth_schedule and base_vth_vec is not None:
+                        b_orch.comp.set_vth_per_channel(base_vth_vec)
                 if use_digital_guard:
                     dv_mean = _np.mean(_np.stack(dv_samples), axis=0)
                     guard_out = _np.sign(dv_mean)
@@ -858,8 +892,8 @@ def main():
                 elif guard_gain > 0.0 or guard_deadzone > 0.0:
                     dv_last = dv_samples[-1]
                     guard_out = _np.sign(dv_last)
-                    if guard_deadzone > 0.0:
-                        guard_out[_np.abs(dv_last) < guard_deadzone] = 0.0
+                    if digital_deadzone > 0.0:
+                        guard_out[_np.abs(dv_last) < digital_deadzone] = 0.0
                     out_arr = guard_out.astype(int)
                 else:
                     out_arr = _np.asarray(out_samples[-1], dtype=int)
@@ -889,7 +923,9 @@ def main():
                         rm_depth,
                         rm_passes,
                         deadzone_mw,
-                        seed_offset=int(getattr(args, 'seed', 0)) ^ 0x5A5A
+                        seed_offset=int(getattr(args, 'seed', 0)) ^ 0x5A5A,
+                        stage_gains_db=stage_gain_schedule,
+                        vth_schedule_mV=vth_schedule
                     )
                 except Exception:
                     path_b_return_map = {"error": "return_map_failed"}
