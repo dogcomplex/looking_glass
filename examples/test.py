@@ -214,6 +214,8 @@ def _compute_pathb_return_map(sys_p: SystemParams, emit_p: EmitterParams, optx_p
         "deadzone_fraction": [],
         "rail_positive_fraction": [],
         "rail_negative_fraction": [],
+        "stage_diff_in": [],
+        "stage_diff_out": [],
     }
     eps = 1e-9
     levels = [-1, 0, 1]
@@ -222,6 +224,8 @@ def _compute_pathb_return_map(sys_p: SystemParams, emit_p: EmitterParams, optx_p
         level_dead = [[] for _ in range(depth)]
         level_pos = [[] for _ in range(depth)]
         level_neg = [[] for _ in range(depth)]
+        level_diff_in = [[] for _ in range(depth)]
+        level_diff_out = [[] for _ in range(depth)]
         for pidx in range(passes):
             sys_clone = SystemParams(**sys_p.__dict__)
             sys_clone.seed = int(sys_clone.seed) + seed_offset + pidx + 1
@@ -242,6 +246,8 @@ def _compute_pathb_return_map(sys_p: SystemParams, emit_p: EmitterParams, optx_p
                 ratio = _np.abs(diff_out) / _np.clip(_np.abs(diff_in), eps, None)
                 level_slopes[stage].append(float(_np.median(ratio)))
                 level_dead[stage].append(float(_np.mean(_np.abs(diff_out) < deadzone_mw)))
+                level_diff_in[stage].append(float(_np.median(_np.abs(diff_in))))
+                level_diff_out[stage].append(float(_np.median(_np.abs(diff_out))))
                 level_pos[stage].append(float(_np.mean(diff_out > deadzone_mw)))
                 level_neg[stage].append(float(_np.mean(diff_out < -deadzone_mw)))
         results["levels"].append(int(lvl))
@@ -249,6 +255,8 @@ def _compute_pathb_return_map(sys_p: SystemParams, emit_p: EmitterParams, optx_p
         results["deadzone_fraction"].append([float(_np.median(d)) if d else None for d in level_dead])
         results["rail_positive_fraction"].append([float(_np.median(r)) if r else None for r in level_pos])
         results["rail_negative_fraction"].append([float(_np.median(r)) if r else None for r in level_neg])
+        results["stage_diff_in"].append([float(_np.median(di)) if di else None for di in level_diff_in])
+        results["stage_diff_out"].append([float(_np.median(do)) if do else None for do in level_diff_out])
     flat_slopes = [val for sub in results["stage_slopes"] for val in sub if val is not None]
     if flat_slopes:
         flat_arr = _np.array(flat_slopes, dtype=float)
@@ -257,6 +265,10 @@ def _compute_pathb_return_map(sys_p: SystemParams, emit_p: EmitterParams, optx_p
     else:
         results["median_stage_slope"] = None
         results["max_stage_slope"] = None
+    flat_in = [val for sub in results["stage_diff_in"] for val in sub if val is not None]
+    flat_out = [val for sub in results["stage_diff_out"] for val in sub if val is not None]
+    results["median_diff_in"] = float(_np.median(_np.array(flat_in))) if flat_in else None
+    results["median_diff_out"] = float(_np.median(_np.array(flat_out))) if flat_out else None
     return results
 
 

@@ -29,7 +29,6 @@ Thumbs.db
 *.code-workspace
 
 # Generated outputs and caches
-out/
 logs/
 .cache/
 tmp/

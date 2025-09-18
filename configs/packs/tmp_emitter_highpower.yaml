@@ -1,0 +1,10 @@
+wavelength_nm: 1550.0
+power_mw_per_ch: 12.0
+extinction_db: 18.0
+rin_dbhz: -140.0
+rise_fall_ns_10_90: 8.0
+temp_coeff_pct_per_C: 0.15
+power_sigma_pct: 4.0
+modulation_mode: pushpull
+pushpull_alpha: 0.85
+power_mw_per_ch: 2.0

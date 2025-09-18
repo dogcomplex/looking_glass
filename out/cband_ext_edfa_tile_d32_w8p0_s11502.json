@@ -1,0 +1,226 @@
+{
+  "config": {
+    "trials": 600,
+    "seed": 11502,
+    "sensitivity": false,
+    "vote3": false,
+    "repeat": 1,
+    "neighbor_ct": false,
+    "base_window_ns": 8.0,
+    "applied_calibration": true,
+    "adaptive_input": false,
+    "adaptive_max_frames": 12,
+    "adaptive_margin_mV": 0.8,
+    "avg_frames": 3,
+    "classifier": "chop",
+    "mask_bad_channels_req": 0,
+    "mask_bad_frac_req": 0.05,
+    "mask_applied_count": 0
+  },
+  "baseline": {
+    "p50_ber": 0.125,
+    "p50_energy_pj": 24.60842720140546,
+    "window_ns": 5.998972153520695,
+    "p50_snr_emit": 1.423498751833157,
+    "p50_snr_pd": 2.87307366724205,
+    "p50_snr_tia": 8.99762564280853,
+    "mean_ber": 0.085
+  },
+  "path_a": {
+    "p50_ber": 0.0,
+    "p50_energy_pj": null,
+    "window_ns": 8.0,
+    "mean_ber": 0.671875
+  },
+  "path_b": {
+    "p50_ber": 0.625,
+    "p50_energy_pj": 7.29280673039929,
+    "window_ns": 6.999759360650495,
+    "p50_snr_emit": 1.4273703550852712,
+    "p50_snr_pd": 5.48428668259727,
+    "p50_snr_tia": 6.038132236724721,
+    "analog_depth": 32,
+    "analog_p50_ber": 0.75
+  },
+  "path_b_chain": {
+    "depth": 5,
+    "per_stage_p50_ber_vs_prev": [
+      0.625,
+      0.375,
+      0.375,
+      0.375,
+      0.375
+    ],
+    "per_stage_p50_ber_vs_initial": [
+      0.625,
+      0.625,
+      0.625,
+      0.625,
+      0.625
+    ]
+  },
+  "path_b_sweeps": null,
+  "cold_input": {
+    "p50_ber": 0.375,
+    "p50_energy_pj": 9.644445745011938,
+    "window_ns": 6.000462723504295,
+    "p50_snr_emit": 0.9705941790876298,
+    "p50_snr_pd": 1.8730415731033827,
+    "p50_snr_tia": 2.1066877359393956
+  },
+  "packs": {
+    "emitter": {
+      "wavelength_nm": 1550.0,
+      "channels": 8,
+      "power_mw_per_ch": 20.0,
+      "extinction_db": 25.0,
+      "rin_dbhz": -150.0,
+      "rise_fall_ns_10_90": 5.0,
+      "temp_coeff_pct_per_C": 0.08,
+      "power_sigma_pct": 2.0,
+      "modulation_mode": "pushpull",
+      "pushpull_alpha": 0.9
+    },
+    "optics": {
+      "transmittance": 0.85,
+      "w_plus_contrast": 0.85,
+      "w_minus_contrast": 0.84,
+      "crosstalk_db": -70.0,
+      "ct_model": "none",
+      "ct_neighbor_db": -30.0,
+      "ct_diag_db": -35.0,
+      "stray_floor_db": -70.0,
+      "psf_kernel": "none",
+      "signal_scale": 1.0,
+      "amp_on": true,
+      "amp_gain_db": 6.0,
+      "amp_ase_sigma": 0.08,
+      "sat_abs_on": false,
+      "sat_I_sat": 1.0,
+      "sat_alpha": 0.6,
+      "speckle_on": false,
+      "speckle_sigma": 0.0,
+      "speckle_corr_px": 7,
+      "tile_border_px": 0,
+      "tile_gain_sigma_pct": 0.0,
+      "tile_isolation": false,
+      "grid_px": 0
+    },
+    "tia": {
+      "tia_transimpedance_kohm": 15.0,
+      "bw_mhz": 55.0,
+      "in_noise_pA_rthz": 3.6,
+      "peaking_q": 0.6,
+      "slew_v_per_us": 700.0,
+      "adc_bits": 12,
+      "adc_fullscale_v": 1.0,
+      "adc_read_noise_mV_rms": 0.0,
+      "gain_sigma_pct": 1.0
+    },
+    "comparator": {
+      "vth_mV": 5.0,
+      "hysteresis_mV": 0.5,
+      "input_noise_mV_rms": 0.24,
+      "drift_mV_per_C": 0.05,
+      "prop_delay_ns": 1.0,
+      "saturate_levels": true,
+      "vth_sigma_mV": 0.1,
+      "metastable_on": false,
+      "metastable_width_mV": 0.2,
+      "metastable_flip_prob": 0.05
+    },
+    "clock": {
+      "window_ns": 8.0,
+      "jitter_ps_rms": 10.0
+    }
+  },
+  "realism": {
+    "emitter": {
+      "score": 0.9,
+      "rin_dbhz": -150.0,
+      "extinction_db": 25.0
+    },
+    "optics": {
+      "score": 1.0,
+      "crosstalk_db": -70.0,
+      "stray_floor_db": -70.0
+    },
+    "camera": {
+      "score": 0.7,
+      "read_noise_e_rms": 2.0,
+      "full_well_e": 20000.0
+    },
+    "tia": {
+      "score": 0.775,
+      "bw_mhz": 120.0,
+      "in_noise_pA_rthz": 3.6
+    },
+    "comparator": {
+      "score": 0.8,
+      "input_noise_mV_rms": 0.24
+    }
+  },
+  "components": {
+    "baseline_p50_ber": 0.125,
+    "emitter_ideal_p50_ber": 0.0,
+    "optics_ideal_p50_ber": 0.125,
+    "pd_ideal_p50_ber": 0.0,
+    "tia_ideal_p50_ber": 0.0,
+    "comparator_ideal_p50_ber": 0.0,
+    "mode": "path_a",
+    "delta": {
+      "emitter": 0.125,
+      "optics": 0.0,
+      "pd": 0.125,
+      "tia": 0.125,
+      "comparator": 0.125
+    }
+  },
+  "ber_per_tile": null,
+  "ber_per_tile_after": null,
+  "baseline_calibrated": {},
+  "baseline_calibrated_alt": {
+    "soft": {},
+    "binary": {}
+  },
+  "vote3_p50_ber": null,
+  "spatial_oversample_p50_ber": null,
+  "lockin_p50_ber": null,
+  "chop_p50_ber": 0.0,
+  "avg_frames_p50_ber": 0.375,
+  "soft_thresh_p50_ber": null,
+  "mitigated_p50_ber": null,
+  "sanity": {
+    "window_non_increasing": true,
+    "rin_non_decreasing": true,
+    "crosstalk_non_decreasing": true
+  },
+  "effects": {
+    "window_ber_improvement": 0.0,
+    "rin_ber_degradation": 0.0,
+    "crosstalk_ber_degradation": 0.0
+  },
+  "window_sweep": {
+    "x_window_ns": [
+      8.0
+    ],
+    "p50_ber": [
+      null
+    ]
+  },
+  "rin_sweep": {
+    "x_rin_dbhz": [],
+    "p50_ber": []
+  },
+  "crosstalk_sweep": {
+    "x_crosstalk_db": [],
+    "p50_ber": []
+  },
+  "calibration": {
+    "vth_suggest_mV": null,
+    "ber_before": 0.125,
+    "ber_after": null,
+    "ber_delta": null
+  },
+  "sensitivity": null
+}
