@@ -285,3 +285,134 @@ Add performance counters (throughput, OSNR, energy, latency, accuracy) and scali
 Provide both one-pass MVP and looping modes.
 
 Do this, and the twin will (a) stop giving fairy-tale results, (b) guide parts purchases, and (c) keep paying off as our lab rig grows from 1-λ MVP to an 8-λ tile and beyond.
+
+
+
+-----
+
+
+You’re running into the two classic “why Path B won’t lock” failures:
+
+the loop map isn’t contractive (per-pass small-signal gain ≥ 1 near the decision points), and
+
+you don’t really retime/shape each pass (so phase, ASE/RIN, and SOA memory accumulate and push you into chaos/metastability instead of ternary rails).
+
+Below is a compact diagnosis, what to change in the sim, and—most usefully—an append-only probe bundle you can drop straight into your queue to systematically find a stable operating window.
+
+What’s most likely wrong (and how to fix it in sim first)
+
+Loop contraction, not just clipping. Your SOA+SA+hard-clip can still have |g′(x)|≥1 around the dead-zone, so noise doesn’t shrink pass-to-pass. Make the per-pass transfer contractive (target |g′|≈0.6–0.85) by jointly tuning a post-amp VOA and the limiter set-points. Don’t chase BER before you’ve measured the return map g(x) and its slope at the three operating points (−, 0, +).
+
+True 2R/3R regeneration. Add a retimed optical gate (EOM/AOM sample-and-hold) each pass so you “sample → limit → hold,” breaking analog phase accumulation. In the sim, that’s your eom_gate_on, eom_gate_duty, and timing jitter budget.
+
+EDFA vs SOA trade. SOA gives pattern memory and cross-gain modulation (good for nonlinearity, bad for stability). EDFA + tight OBPF kills memory but injects ASE. Test both in the sim; pick the one that gives you contraction with the least re-trim burden.
+
+Balanced PD only if it helps. Differential can help with common-mode RIN/ASE but also adds comparator offset complexities. Keep it as an A/B experiment, not a default.
+
+Measure the right things. For Path B, BER alone is a late symptom. Instrument:
+
+Return-map g(x) and |g′(x)| near the three rails.
+
+Dead-zone occupancy and rail occupancy histograms pass-by-pass.
+
+Timing margin with gate duty vs jitter.
+
+Re-trim duty cycle under continuous Δλ drift (not just steps).
+
+Minimal code-level nudges (non-destructive)
+
+Return-map instrumentation. Add a mode that injects fixed analog levels [-1…+1], runs one loop pass, logs next-state, and computes local slope (finite difference). Persist per-pass histograms.
+
+Retimer model. Your eom_gate_on should actually sample the analog stream into a short-lived hold (add white + 1/f noise on the hold and a finite aperture). Expose eom_gate_duty and aperture jitter.
+
+Limiter ordering. Keep: SOA → SA (soft) → hard clip → OBPF → VOA. Expose voa_db (post-limit) as the loop-gain knob.
+
+EDFA path. When amplifier="EDFA", enforce OBPF (e.g., 0.4–0.8 nm) every pass and include ASE OSNR into the PD noise budget; make it visible in logs.
+
+(If you want exact pseudocode pointers, I can sketch the functions against your current looking_glass/sim/optics.py layout you described.)
+
+Append-only probe bundle for your queue
+
+I generated a ready-to-append JSONL bundle that walks through 10 phased mini-suites:
+
+P0: return-map & slope (contractivity check)
+
+P1: VOA sweep to find a contractive region
+
+P2: 2-limiter topology sweep (SOA+SA+hard/post clip)
+
+P3: add retiming gate; duty vs jitter matrix
+
+P4: balanced-PD A/B
+
+P5: cold vs hot input with realistic latencies & throughput metrics
+
+P6: SOA vs EDFA (+OBPF)
+
+P7: speed/UI sweep with best limiter settings
+
+P8: cost-down TIA/comp packs that still pass
+
+P9: continuous wavelength drift with periodic re-trim cadence
+
+Each job includes: {suite, id, tags, packs, params, priority, notes} so your runner/appender can route/expand. Nothing touches your repo; it’s a file you can append yourself.
+
+Download the bundle and append its contents to your repo’s queue/probes.jsonl (and per your rule, do not modify queue/completed.jsonl):
+
+Download probes_pathB bundle
+
+If your pack names differ, just search/replace the few pack paths (they’re human-readable) before appending.
+
+Highlights of the bundle:
+
+P0_return_map (2 jobs): single-pass Path B “characterization” at 10 ns and 8 ns, sweeping input levels to compute g(x), |g′|, dead-zone hist, and BER.
+Gate: none. Goal: prove non-contraction is the problem.
+
+P1_contraction_voa (5 jobs): sweep voa_db ∈ {-6,-4,-2,0,+2} with moderate limiter (sat_alpha=0.8, hard_clip_mw=0.08) to locate |g′| < 1.
+Gate: light digital guard. Goal: find a window where BER measurably improves.
+
+P2_limiters (3 jobs): aggressive limiter combos (SOA+SA soft; hard clip; optional post-clip) to force ternary rails.
+Gate: stronger guard. Goal: reduce dead-zone occupancy, shrink |g′|.
+
+P3_retime_gate (4 jobs): EOM sample-and-hold on; two duties × two jitters.
+Goal: demonstrate that retiming + contraction beats your 0.625 plateau.
+
+P4_balanced_pd (2 jobs): toggles balanced_pd and measures CMRR vs BER.
+Goal: keep only if it’s a real gain.
+
+P5_cold_vs_hot (2 jobs): realistic cold-glass seek/read and hot-emitter latencies; logs throughput/latency/energy.
+Goal: quantify how well you can hide cold delays with loop slack.
+
+P6_amp_choice (2 jobs): SOA vs EDFA+OBPF at 8 ns.
+Goal: which amplifier family gives a wider contraction window at equal re-trim duty.
+
+P7_speed (3 jobs): UI = 10, 8, 6 ns with best limiter settings.
+Goal: map first failing component as you push speed.
+
+P8_costdown (3 jobs): budget TIA and/or comparator packs under the limiter recipe.
+Goal: define your minimum-cost FE that still passes.
+
+P9_drift (3 jobs): continuous Δλ ramp (0.2/0.5/1.0 nm) with periodic small re-trim.
+Goal: re-trim duty cycle needed to hold ≤ 0.065 at 8 ns.
+
+What “good” looks like (acceptance gates)
+
+Path B Alive: At 8 ns, P1+P2+P3 hit median BER ≤ 0.065 for depth 2, with measured |g′| ≲ 0.9 across the dead-zone and visible rail occupancy.
+
+Speed map: In P7, monotonic BER vs UI with a clear knee (identify which block fails first).
+
+Cost-down: One P8 variant passes ≤ 0.125 with only light guard; document $ deltas.
+
+Drift: In P9, hold ≤ 0.125 with re-trim ≤ 1% duty at Δλ = 0.5 nm ramp.
+
+Physical takeaways you can mirror on bench later
+
+Place a VOA after the limiter in the real loop. That’s your contraction knob.
+
+Prefer an EOM gate (LiNbO₃ MZM driven from the clock) as your per-pass retimer; tune duty ~ 25–35%.
+
+Try an EDFA + OBPF chain if SOA memory keeps biting, then add a weak SA just before the PD to re-shape without XGM.
+
+Keep all APC, minimize back-reflections, and use PM fiber in the loop; Path B hates etalon wobble.
+
+If you want, I can also hand you a tiny patch sketch for the return-map mode and retimer aperture model against your sim’s file layout—it’s ~50–80 lines each and non-intrusive.

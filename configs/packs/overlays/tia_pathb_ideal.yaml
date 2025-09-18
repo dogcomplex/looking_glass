@@ -1,0 +1,9 @@
+tia_transimpedance_kohm: 40.0
+bw_mhz: 500.0
+in_noise_pA_rthz: 0.0
+peaking_q: 0.7
+slew_v_per_us: 2000.0
+adc_bits: 16
+adc_fullscale_v: 1.0
+adc_read_noise_mV_rms: 0.0
+gain_sigma_pct: 0.0

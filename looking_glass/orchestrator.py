@@ -22,6 +22,7 @@ class SystemParams:
     lane_skew_ps_rms: float = 0.0
     pmd_ps_rms: float = 0.0
     correlated_jitter_ps_rms: float = 0.0
+    balanced_pd: bool = False
 
 class Orchestrator:
     def __init__(self,
@@ -37,6 +38,7 @@ class Orchestrator:
                  emitter_override=None):
         self.rng = np.random.default_rng(sys.seed)
         self.sys = sys
+        self.balanced_pd = bool(getattr(sys, 'balanced_pd', False))
         self.emit = emitter_override if emitter_override is not None else EmitterArray(emitter_p, rng=self.rng)
         self.optx = Optics(optics_p, rng=self.rng)
         self.pd = Photodiode(pd_p, rng=self.rng)

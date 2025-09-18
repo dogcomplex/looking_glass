@@ -67,6 +67,13 @@ class OpticsParams:
     servo_ref_mw: float = 0.0
     servo_leak: float = 0.0
     servo_max_bias_mw: float = 5.0
+    eom_gate_on: bool = False
+    eom_gate_duty: float = 0.3
+    eom_gate_jitter_ps: float = 5.0
+    eom_gate_hold_noise_mw: float = 0.01
+    amp_type: str = "soa"
+    obpf_bw_nm: float = 0.5
+    voa_post_db: float = 0.0
     channels: int = 0
 
 
@@ -99,6 +106,21 @@ class Optics:
                 self._pattern_prev_minus = np.zeros(size, dtype=float)
 
     def _apply_soa(self, plus, minus, dt_ns):
+        amp_type = getattr(self.p, 'amp_type', 'soa').lower()
+        if amp_type == 'edfa':
+            gain_lin = 10 ** (self.p.soa_small_signal_gain_db / 10.0)
+            out_plus = plus * gain_lin
+            out_minus = minus * gain_lin
+            nf_lin = 10 ** (self.p.soa_noise_figure_db / 10.0)
+            ase_sigma = np.sqrt(np.maximum(gain_lin - 1.0, 0.0) * nf_lin) * 1e-3
+            if np.any(ase_sigma > 0):
+                out_plus += self.rng.normal(0.0, ase_sigma) * np.maximum(out_plus, 0.0)
+                out_minus += self.rng.normal(0.0, ase_sigma) * np.maximum(out_minus, 0.0)
+            bw_nm = max(getattr(self.p, 'obpf_bw_nm', 0.5), 0.01)
+            atten = np.exp(-0.2 / bw_nm)
+            out_plus = np.clip(out_plus * atten, 0.0, None)
+            out_minus = np.clip(out_minus * atten, 0.0, None)
+            return out_plus, out_minus
         if not self.p.soa_on:
             return plus, minus
         dt_s = max(dt_ns * 1e-9, 1e-12)
@@ -126,6 +148,44 @@ class Optics:
         out_plus = np.clip(out_plus, 0.0, None)
         out_minus = np.clip(out_minus, 0.0, None)
         return out_plus, out_minus
+
+    def _apply_sat_abs(self, plus, minus):
+        if not self.p.sat_abs_on:
+            return plus, minus
+        total = np.clip(plus + minus, 0.0, None)
+        diff = plus - minus
+        mean = 0.5 * total
+        sat = max(self.p.sat_I_sat, 1e-9)
+        alpha = max(self.p.sat_alpha, 1.0)
+        scale = 1.0 / (1.0 + (np.abs(diff) / sat) ** alpha)
+        diff_clamped = diff * scale
+        plus_out = np.clip(mean + 0.5 * diff_clamped, 0.0, None)
+        minus_out = np.clip(mean - 0.5 * diff_clamped, 0.0, None)
+        return plus_out, minus_out
+
+    def _apply_hard_clip(self, plus, minus):
+        if not self.p.hard_clip_on:
+            return plus, minus
+        total = np.clip(plus + minus, 1e-12, None)
+        diff = plus - minus
+        mean = 0.5 * total
+        sat = max(self.p.hard_clip_sat_mw, 1e-6)
+        diff_clamped = sat * np.tanh(diff / sat)
+        plus_out = np.clip(mean + 0.5 * diff_clamped, 0.0, None)
+        minus_out = np.clip(mean - 0.5 * diff_clamped, 0.0, None)
+        return plus_out, minus_out
+
+    def _apply_post_clip(self, plus, minus):
+        if not getattr(self.p, 'post_clip_on', False):
+            return plus, minus
+        total = np.clip(plus + minus, 1e-12, None)
+        diff = plus - minus
+        mean = 0.5 * total
+        sat = max(getattr(self.p, 'post_clip_sat_mw', 0.1), 1e-6)
+        diff_clamped = sat * np.tanh(diff / sat)
+        plus_out = np.clip(mean + 0.5 * diff_clamped, 0.0, None)
+        minus_out = np.clip(mean - 0.5 * diff_clamped, 0.0, None)
+        return plus_out, minus_out
 
     def _apply_mzi(self, plus, minus, dt_ns):
         if not self.p.mzi_on:
@@ -162,6 +222,16 @@ class Optics:
             bias_update = self.p.servo_kp * error + self.p.servo_ki * self._servo_integral
             self._servo_bias = np.clip(self._servo_bias + bias_update, -self.p.servo_max_bias_mw, self.p.servo_max_bias_mw)
         return plus_out, minus_out
+    def _apply_eom_gate(self, plus, minus, dt_ns):
+        if not getattr(self.p, 'eom_gate_on', False):
+            return plus, minus
+        duty = np.clip(getattr(self.p, 'eom_gate_duty', 0.3), 0.01, 1.0)
+        jitter = self.rng.normal(0.0, getattr(self.p, 'eom_gate_jitter_ps', 0.0) * 1e-3)
+        effective = np.clip(duty + jitter, 0.01, 1.0)
+        hold_noise = getattr(self.p, 'eom_gate_hold_noise_mw', 0.0)
+        plus = plus * effective + self.rng.normal(0.0, hold_noise, size=plus.shape)
+        minus = minus * effective + self.rng.normal(0.0, hold_noise, size=minus.shape)
+        return np.clip(plus, 0.0, None), np.clip(minus, 0.0, None)
 
     def _apply_mode_mix(self, arr):
         mat = self.p.mode_mix_matrix
@@ -212,10 +282,22 @@ class Optics:
             minus = (1 - alpha) * minus + alpha * self._pattern_prev_minus
             self._pattern_prev_plus = plus
             self._pattern_prev_minus = minus
-        if self.p.soa_on:
+        if self.p.soa_on or getattr(self.p, 'amp_type', 'soa').lower() == 'edfa':
             plus, minus = self._apply_soa(plus, minus, dt_ns)
+        if self.p.sat_abs_on:
+            plus, minus = self._apply_sat_abs(plus, minus)
+        if self.p.hard_clip_on:
+            plus, minus = self._apply_hard_clip(plus, minus)
         if self.p.mzi_on:
             plus, minus = self._apply_mzi(plus, minus, dt_ns)
+        if getattr(self.p, 'post_clip_on', False):
+            plus, minus = self._apply_post_clip(plus, minus)
+        if getattr(self.p, 'voa_post_db', 0.0) != 0.0:
+            voa_scale = 10 ** (-self.p.voa_post_db / 10.0)
+            plus = plus * voa_scale
+            minus = minus * voa_scale
+        if getattr(self.p, 'eom_gate_on', False):
+            plus, minus = self._apply_eom_gate(plus, minus, dt_ns)
         loss_db = float(self.p.ins_loss_db_mean)
         if float(self.p.ins_loss_db_sigma) > 0.0:
             loss_db = self.rng.normal(loss_db, float(self.p.ins_loss_db_sigma))

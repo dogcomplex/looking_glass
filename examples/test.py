@@ -265,6 +265,12 @@ def main():
     ap.add_argument("--no-path-b-sweep", action="store_true", help="Disable Path B sweeps (default is ON)")
     ap.add_argument("--path-b-servo-eta", type=float, default=0.05, help="Per-iteration comparator bias adjustment for analog Path B servo (mV per unit error)")
     ap.add_argument("--path-b-guard-deadzone-mV", type=float, default=0.0, help="Dead-zone (mV) for hybrid guard; if >0, enforces sign based on dv with zeros inside dead-zone")
+    ap.add_argument("--path-b-guard-gain-mW", type=float, default=0.05, help="Guard injection gain (mW) added symmetrically to the optical rails when guard is active")
+    ap.add_argument("--path-b-digital-guard", action="store_true", help="Apply digital sign guard after the analog cascade")
+    ap.add_argument("--path-b-digital-deadzone-mV", type=float, default=0.1, help="Dead-zone (mV) for the digital guard accumulator; values within the band map to 0")
+    ap.add_argument("--path-b-digital-guard-passes", type=int, default=3, help="Number of analog replays to average before applying the digital guard")
+    ap.add_argument("--path-b-return-map", action="store_true", help="Record Path B return map (dv in/out, slopes, histograms)")
+    ap.add_argument("--path-b-balanced", action="store_true", help="Use balanced photodiode/TIA path for Path B calculations")
     ap.add_argument("--path-b-analog-depth", type=int, default=-1, help="If -1, use --path-b-depth; if >0, run analog cascade (optics SA+amp per hop, single final threshold)")
     ap.add_argument("--adaptive-input", action="store_true", help="Integrate multiple frames until dv margin met or max frames (default ON)")
     ap.add_argument("--no-adaptive-input", action="store_true", help="Disable adaptive input integration")
@@ -361,7 +367,8 @@ def main():
     # Base system from typ packs inline
     sys_p = SystemParams(channels=int(args.channels), window_ns=float(args.base_window_ns), temp_C=25.0, seed=args.seed,
                          normalize_dv=bool(getattr(args, 'normalize_dv', False)),
-                         normalize_eps_v=float(getattr(args, 'normalize_eps_v', 1e-6)))
+                         normalize_eps_v=float(getattr(args, 'normalize_eps_v', 1e-6)),
+                         balanced_pd=bool(getattr(args, 'path_b_balanced', False)))
     # Build from overrides if provided (simple loader)
     def _load_yaml(path: str | None):
         if not path:
@@ -740,25 +747,62 @@ def main():
             errs = []
             vth_vec = _np.zeros(b_orch.sys.channels, dtype=float)
             eta = float(getattr(args, 'path_b_servo_eta', 0.05))
+            guard_deadzone = float(getattr(args, 'path_b_guard_deadzone_mV', 0.0))
+            guard_gain = float(getattr(args, 'path_b_guard_gain_mW', 0.05))
+            use_digital_guard = bool(getattr(args, 'path_b_digital_guard', False))
+            balanced_pd = bool(getattr(args, 'path_b_balanced', False))
+            digital_deadzone = float(getattr(args, 'path_b_digital_deadzone_mV', 0.1))
+            guard_passes = max(1, int(getattr(args, 'path_b_digital_guard_passes', 3)) if use_digital_guard else 1)
             for _ in range(T):
                 tern0 = b_orch.rng.integers(-1, 2, size=b_orch.sys.channels)
-                dt = float(b_orch.clk.sample_window())
-                if b_orch.sys.reset_analog_state_each_frame:
-                    b_orch.tia.reset()
-                    b_orch.comp.reset()
-                Pp, Pm = b_orch.emit.simulate(tern0, dt, b_orch.sys.temp_C)
-                for _k in range(analog_depth):
-                    Pp, Pm, _, _ = b_orch.optx.simulate(Pp, Pm, dt)
-                Ip = b_orch.pd.simulate(Pp, dt)
-                Im = b_orch.pd.simulate(Pm, dt)
-                Vp = b_orch.tia.simulate(Ip, dt)
-                Vm = b_orch.tia.simulate(Im, dt)
-                out = b_orch.comp.simulate(Vp, Vm, b_orch.sys.temp_C)
-                errs.append(float(_np.mean(out != tern0)))
-                error = _np.asarray(out, dtype=float) - _np.asarray(tern0, dtype=float)
-                if eta > 0.0:
-                    vth_vec = _np.clip(vth_vec + eta * error, -15.0, 15.0)
-                    b_orch.comp.set_vth_per_channel(vth_vec)
+                dv_samples = []
+                out_samples = []
+                for rep in range(guard_passes):
+                    dt = float(b_orch.clk.sample_window())
+                    if b_orch.sys.reset_analog_state_each_frame:
+                        b_orch.tia.reset()
+                        b_orch.comp.reset()
+                    Pp, Pm = b_orch.emit.simulate(tern0, dt, b_orch.sys.temp_C)
+                    for _k in range(analog_depth):
+                        Pp, Pm, _, _ = b_orch.optx.simulate(Pp, Pm, dt)
+                    if guard_gain > 0.0:
+                        diff_opt = Pp - Pm
+                        adjust = guard_gain * _np.sign(diff_opt)
+                        if guard_deadzone > 0.0:
+                            adjust[_np.abs(diff_opt) < guard_deadzone] = 0.0
+                        Pp = _np.clip(Pp + 0.5 * adjust, 0.0, None)
+                        Pm = _np.clip(Pm - 0.5 * adjust, 0.0, None)
+                    Ip = b_orch.pd.simulate(Pp, dt)
+                    Im = b_orch.pd.simulate(Pm, dt)
+                    if balanced_pd:
+                        diff_current = Ip - Im
+                        Ip = diff_current
+                        Im = -diff_current
+                    Vp = b_orch.tia.simulate(Ip, dt)
+                    Vm = b_orch.tia.simulate(Im, dt)
+                    dv_final = (Vp - Vm) * 1e3
+                    out = b_orch.comp.simulate(Vp, Vm, b_orch.sys.temp_C)
+                    error = _np.asarray(out, dtype=float) - _np.asarray(tern0, dtype=float)
+                    if eta > 0.0:
+                        vth_vec = _np.clip(vth_vec + eta * error, -15.0, 15.0)
+                        b_orch.comp.set_vth_per_channel(vth_vec)
+                    dv_samples.append(dv_final)
+                    out_samples.append(out)
+                if use_digital_guard:
+                    dv_mean = _np.mean(_np.stack(dv_samples), axis=0)
+                    guard_out = _np.sign(dv_mean)
+                    if digital_deadzone > 0.0:
+                        guard_out[_np.abs(dv_mean) < digital_deadzone] = 0.0
+                    out_arr = guard_out.astype(int)
+                elif guard_gain > 0.0 or guard_deadzone > 0.0:
+                    dv_last = dv_samples[-1]
+                    guard_out = _np.sign(dv_last)
+                    if guard_deadzone > 0.0:
+                        guard_out[_np.abs(dv_last) < guard_deadzone] = 0.0
+                    out_arr = guard_out.astype(int)
+                else:
+                    out_arr = _np.asarray(out_samples[-1], dtype=int)
+                errs.append(float(_np.mean(out_arr != tern0)))
             path_b_summary = dict(path_b_summary or {})
             path_b_summary["analog_depth"] = analog_depth
             path_b_summary["analog_p50_ber"] = float(_np.median(errs)) if errs else None
@@ -2282,6 +2326,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

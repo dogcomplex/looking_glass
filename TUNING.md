@@ -135,3 +135,15 @@ Observed outcomes (sim):
 - Dual-wavelength 16-channel tile (configs/packs/overlays/emitter_dual_wdm.yaml + optics_mode_mix_dual.yaml) holds p50 BER ˜0.133 with chop+avg2 at 6 ns; baseline remains 0.6875 (out/tile16_wdm_dual.json). The mode-mix overlay (75/25 pair coupling) plus 6-bit VOA quantization and SOA pattern memory now exercise the new Optics hooks.
 - Path B baseline (8-channel, SA/amp enabled) reports analog-depth p50 BER ˜0.625 with cold-input BER ˜0.375 while Path A stays at zero (out/tile8_pathb_baseline.json), providing the loop-ready datapoint called out in design_1550nm.md.
 - Stress configs (	ile8_ctstress_cal.json, 	ile8_ctstress_nomitig.json, _nocal, _avg_nomitig) confirm calibration + mitigations resist heavy CT/drift/jitter; removing mitigations pushes BER to 0.625, setting the failure boundary for documentation.
+## Priority B Analog Loop Experiments (2025-09-18)
+
+- Implemented two-stage SOA+limiter stack in `looking_glass/sim/optics.py`, adding the saturable absorber (`sat_abs_on`) and a hard `tanh` clip (`hard_clip_on`) to mimic a telecom 2R/3R clamp.
+- Added the digital guard pipeline (`--path-b-digital-guard`, `--path-b-digital-deadzone-mV`, `--path-b-digital-guard-passes`) so the analog cascade can replay the loop, average DV, and apply a dead-zone sign correction (see `examples/test.py:749-805`).
+- Introduced balanced-PD support via `--path-b-balanced`, pushing the PD/TIA path into differential mode (`SystemParams.balanced_pd` and `Orchestrator.step`).
+- New overlays: `optics_pathb_soa_sa.yaml` (SOA + saturable absorber + hard clip) plus `optics_pathb_soa_sa_ch1.yaml` and ideal TIA/comparator/sensor packs for “best case” tests.
+- Results so far:
+  - `out/pathb_sa_dual.json` (SOA+SA+hard clip, digital guard 5×, no balanced PD) still reports Path?B p50?BER = 0.625 (analog cascade 0.75).
+  - `out/pathb_sa_dual_bal.json` (same stack + balanced PD) worsens the analog cascade to 1.0 while Path?B median stays 0.625.
+  - Earlier pure-digital guard runs (`out/pathb_dguard.json`) and SOA+SA sweeps (`out/pathb_sa8.json`, `out/pathb_sa8_hi.json`) all plateaued at ˜0.625.
+- Interpretation: even with aggressive limiting, differential bias servo, and digital averaging, the loop never develops a stable ternary rail. Next steps: tighten the limiter further (lower `hard_clip_sat_mw`, higher `sat_alpha`), add a true second limiter stage (post-MZI clip), or revisit the optics topology (balanced splitter before the SOA, cascaded SA stages).
+- Added optional hard and post clips (`hard_clip_on`, `post_clip_on`) plus balanced-PD mode, but even with extreme clipping (sat_abs 0.12 mW, hard tanh at 0.06 mW, post clip 0.04 mW) Path B stayed at p50 BER 0.625 (balanced analog cascade hit 1.0) — see `out/pathb_sa_dual.json`.
