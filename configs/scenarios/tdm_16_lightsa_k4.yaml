@@ -1,0 +1,17 @@
+trials: 240
+channels: 16
+seed: 7001
+temp_C: 25.0
+emitter_pack:
+  path: configs/packs/tmp_lowcost_emitter_boost.yaml
+optics_pack:
+  path: configs/packs/tmp_codex_optics_medium_voa2_lightSA.yaml
+sensor_pack:
+  path: configs/packs/overlays/receiver_ingaas_typ.yaml
+tia_pack:
+  path: configs/packs/overlays/tia_stage_b2_low_noise.yaml
+comparator_pack:
+  path: configs/packs/overlays/tuned_comparator.yaml
+clock_pack:
+  path: configs/packs/overlays/clock_jitter_20ps.yaml
+

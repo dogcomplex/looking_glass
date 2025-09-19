@@ -1,0 +1,634 @@
+{
+  "config": {
+    "trials": 400,
+    "seed": 12101,
+    "sensitivity": false,
+    "vote3": false,
+    "repeat": 1,
+    "neighbor_ct": false,
+    "base_window_ns": 10.0,
+    "applied_calibration": true,
+    "adaptive_input": false,
+    "adaptive_max_frames": 12,
+    "adaptive_margin_mV": 0.8,
+    "avg_frames": 2,
+    "classifier": "chop",
+    "mask_bad_channels_req": 0,
+    "mask_bad_frac_req": 0.0,
+    "mask_applied_count": 0
+  },
+  "baseline": {
+    "p50_ber": 0.6875,
+    "p50_energy_pj": 693.0649227538592,
+    "window_ns": 8.749835659223022,
+    "p50_tokens_per_s": 1828605773.0849752,
+    "p50_snr_emit": 1.4962510677933527,
+    "p50_snr_pd": 47.43163775611299,
+    "p50_snr_tia": 9.999999999999999e+17
+  },
+  "path_a": {
+    "p50_ber": 0.0,
+    "p50_energy_pj": null,
+    "window_ns": 10.0,
+    "mean_ber": 0.656875
+  },
+  "path_b": {
+    "p50_ber": 0.6875,
+    "p50_energy_pj": 853.5743776258302,
+    "window_ns": 10.0,
+    "p50_tokens_per_s": 1828847696.495675,
+    "p50_snr_emit": 1.4948177063459105,
+    "p50_snr_pd": 3.9002501684020587,
+    "p50_snr_tia": 9.999999999999999e+17,
+    "calibrated_optical_bias_mW": [
+      0.0021647805356876937,
+      0.0032852200514338348,
+      0.003092791539393236,
+      0.002119495038468866,
+      0.004114117312190579,
+      0.0022814420203446373,
+      0.002479371426475474,
+      0.002771496407666829,
+      0.002766765571692309,
+      0.003577765190145188,
+      0.0028893423413801633,
+      0.0023682774634066206,
+      0.0025109677857330093,
+      0.003022490895573049,
+      0.0025258656282861613,
+      0.0036643095568590356
+    ],
+    "calibrated_optical_trim_final_mW": [
+      -0.06112483188736996,
+      -0.05524303500939398,
+      -0.062288136965540974,
+      -0.0597530127273303,
+      -0.05579637987038091,
+      -0.06031759212318023,
+      -0.05693859200426511,
+      -0.05802253645890518,
+      -0.05645058144377521,
+      -0.05877324196460787,
+      -0.056799555504480015,
+      -0.05390158601647037,
+      -0.05941426203704929,
+      -0.054172441611958444,
+      -0.05026656023384832,
+      -0.05846505284646894
+    ],
+    "calibrated_offset_mV": [
+      343.26171875,
+      359.375,
+      345.8251953125,
+      342.8955078125,
+      345.703125,
+      338.0126953125,
+      351.6845703125,
+      353.515625,
+      329.4677734375,
+      362.6708984375,
+      336.669921875,
+      341.30859375,
+      341.1865234375,
+      340.33203125,
+      345.703125,
+      354.3701171875
+    ],
+    "calibrated_vth_mV": [
+      40.0,
+      40.0,
+      40.0,
+      40.0,
+      40.0,
+      40.0,
+      40.0,
+      40.0,
+      40.0,
+      40.0,
+      40.0,
+      40.0,
+      40.0,
+      40.0,
+      40.0,
+      40.0
+    ],
+    "analog_depth": 5,
+    "analog_p50_ber": 0.0,
+    "sparse_active_k": 8,
+    "eval_active_only": true,
+    "tdm_micro_passes": 10,
+    "tdm_symbol_time_ns": 100.0,
+    "tdm_symbols_per_s": 10000000.0
+  },
+  "path_b_chain": {
+    "depth": 5,
+    "per_stage_p50_ber_vs_prev": [
+      0.4375,
+      0.25,
+      0.0625,
+      0.0,
+      0.125
+    ],
+    "per_stage_p50_ber_vs_initial": [
+      0.4375,
+      0.4375,
+      0.5,
+      0.5,
+      0.4375
+    ]
+  },
+  "path_b_sweeps": null,
+  "path_b_return_map": null,
+  "cold_input": null,
+  "packs": {
+    "emitter": {
+      "wavelength_nm": 1550.0,
+      "channels": 16,
+      "power_mw_per_ch": 12.0,
+      "extinction_db": 18.0,
+      "rin_dbhz": -140.0,
+      "linewidth_hz": 1000000.0,
+      "wav_drift_nm_per_C": 0.1,
+      "rise_fall_ns_10_90": 8.0,
+      "temp_coeff_pct_per_C": 0.15,
+      "power_sigma_pct": 4.0,
+      "modulation_mode": "pushpull",
+      "pushpull_alpha": 0.85,
+      "wavelengths_nm": null,
+      "channels_per_lambda": null
+    },
+    "optics": {
+      "transmittance": 0.72,
+      "w_plus_contrast": 0.85,
+      "w_minus_contrast": 0.84,
+      "crosstalk_db": -30.0,
+      "ct_model": "neighbor",
+      "ct_neighbor_db": -30.0,
+      "ct_diag_db": -33.0,
+      "stray_floor_db": -70.0,
+      "psf_kernel": "none",
+      "signal_scale": 1.0,
+      "amp_on": true,
+      "amp_gain_db": 2.0,
+      "amp_ase_sigma": 0.03,
+      "sat_abs_on": true,
+      "sat_I_sat": 0.6,
+      "sat_alpha": 1.2,
+      "hard_clip_on": false,
+      "hard_clip_sat_mw": 0.1,
+      "post_clip_on": false,
+      "post_clip_sat_mw": 0.1,
+      "speckle_on": false,
+      "speckle_sigma": 0.0,
+      "speckle_corr_px": 7,
+      "tile_border_px": 0,
+      "tile_gain_sigma_pct": 0.0,
+      "tile_isolation": false,
+      "grid_px": 0,
+      "ins_loss_db_mean": 0.5,
+      "ins_loss_db_sigma": 0.5,
+      "pdl_db": 0.4,
+      "pdl_step_rad": 0.05,
+      "memory_tau_frames": 0.0,
+      "reflection_event_db": 28.0,
+      "reflection_prob": 0.08,
+      "speckle_time_on": true,
+      "speckle_time_sigma": 0.1,
+      "speckle_time_tau_frames": 12,
+      "xgm_on": false,
+      "xgm_coeff": 0.0,
+      "xpm_on": false,
+      "xpm_coeff": 0.0,
+      "fwm_on": false,
+      "fwm_coeff": 0.0,
+      "pol_scrambler_on": false,
+      "pol_scramble_every_frames": 0,
+      "voa_bits": 0,
+      "soa_pattern_alpha": 0.0,
+      "mode_mix_matrix": null,
+      "soa_on": false,
+      "soa_small_signal_gain_db": 3.0,
+      "soa_psat_mw": 20.0,
+      "soa_noise_figure_db": 6.0,
+      "soa_tau_ns": 20.0,
+      "soa_alpha": 4.0,
+      "mzi_on": false,
+      "mzi_gain": 1.0,
+      "mzi_sat_mw": 5.0,
+      "mzi_hysteresis_mw": 0.05,
+      "mzi_bias_step": 0.02,
+      "mzi_bias_leak": 0.01,
+      "mzi_bias_target_mw": 0.0,
+      "servo_on": false,
+      "servo_kp": 0.01,
+      "servo_ki": 0.0,
+      "servo_ref_mw": 0.0,
+      "servo_leak": 0.0,
+      "servo_max_bias_mw": 5.0,
+      "eom_gate_on": false,
+      "eom_gate_duty": 0.3,
+      "eom_gate_jitter_ps": 5.0,
+      "eom_gate_hold_noise_mw": 0.01,
+      "eom_gate_hold_leak": 0.05,
+      "amp_type": "soa",
+      "obpf_bw_nm": 0.5,
+      "voa_post_db": 2.0,
+      "channels": 0
+    },
+    "tia": {
+      "tia_transimpedance_kohm": 15.0,
+      "bw_mhz": 55.0,
+      "bw2_mhz": 0.0,
+      "in_noise_pA_rthz": 3.6,
+      "peaking_q": 0.6,
+      "slew_v_per_us": 700.0,
+      "adc_bits": 12,
+      "adc_fullscale_v": 1.0,
+      "adc_read_noise_mV_rms": 0.0,
+      "gain_sigma_pct": 1.0
+    },
+    "comparator": {
+      "vth_mV": 5.0,
+      "hysteresis_mV": 0.75,
+      "input_noise_mV_rms": 0.4,
+      "drift_mV_per_C": 0.05,
+      "prop_delay_ns": 1.25,
+      "prop_jitter_ps_rms": 0.0,
+      "saturate_levels": true,
+      "vth_sigma_mV": 0.2,
+      "metastable_on": false,
+      "metastable_width_mV": 0.2,
+      "metastable_flip_prob": 0.05
+    },
+    "clock": {
+      "window_ns": 10.0,
+      "jitter_ps_rms": 20.0
+    }
+  },
+  "realism": {
+    "emitter": {
+      "score": 0.76,
+      "rin_dbhz": -140.0,
+      "extinction_db": 18.0
+    },
+    "optics": {
+      "score": 0.72,
+      "crosstalk_db": -30.0,
+      "stray_floor_db": -70.0
+    },
+    "camera": {
+      "score": 0.7,
+      "read_noise_e_rms": 2.0,
+      "full_well_e": 20000.0
+    },
+    "tia": {
+      "score": 0.775,
+      "bw_mhz": 120.0,
+      "in_noise_pA_rthz": 3.6
+    },
+    "comparator": {
+      "score": 0.667,
+      "input_noise_mV_rms": 0.4
+    }
+  },
+  "components": {
+    "baseline_p50_ber": 0.0,
+    "emitter_ideal_p50_ber": 0.0,
+    "optics_ideal_p50_ber": 0.0,
+    "pd_ideal_p50_ber": 0.0,
+    "tia_ideal_p50_ber": 0.0,
+    "comparator_ideal_p50_ber": 0.0,
+    "mode": "path_a",
+    "delta": {
+      "emitter": 0.0,
+      "optics": 0.0,
+      "pd": 0.0,
+      "tia": 0.0,
+      "comparator": 0.0
+    }
+  },
+  "ber_per_tile": [
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  ],
+  "ber_per_tile_after": null,
+  "baseline_calibrated": {
+    "p50_ber": 0.6875,
+    "p50_energy_pj": 693.0649227538592,
+    "window_ns": 8.749835659223022,
+    "p50_tokens_per_s": 1828605773.0849752,
+    "p50_snr_emit": 1.4962510677933527,
+    "p50_snr_pd": 47.43163775611299,
+    "p50_snr_tia": 9.999999999999999e+17
+  },
+  "baseline_calibrated_alt": {
+    "soft": {},
+    "binary": {}
+  },
+  "vote3_p50_ber": null,
+  "spatial_oversample_p50_ber": null,
+  "lockin_p50_ber": null,
+  "chop_p50_ber": 0.0,
+  "avg_frames_p50_ber": 0.375,
+  "soft_thresh_p50_ber": null,
+  "mitigated_p50_ber": null,
+  "sanity": {
+    "window_non_increasing": true,
+    "rin_non_decreasing": true,
+    "crosstalk_non_decreasing": true
+  },
+  "effects": {
+    "window_ber_improvement": 0.0,
+    "rin_ber_degradation": 0.0,
+    "crosstalk_ber_degradation": 0.0
+  },
+  "window_sweep": {
+    "x_window_ns": [
+      10.0
+    ],
+    "p50_ber": [
+      null
+    ]
+  },
+  "rin_sweep": {
+    "x_rin_dbhz": [],
+    "p50_ber": []
+  },
+  "crosstalk_sweep": {
+    "x_crosstalk_db": [],
+    "p50_ber": []
+  },
+  "calibration": {
+    "vth_suggest_mV": -0.002838349717545763,
+    "ber_before": 0.0,
+    "ber_after": 0.6875,
+    "ber_delta": 0.6875
+  },
+  "baseline_raw": {
+    "p50_ber": 0.0,
+    "p50_energy_pj": 89.68809646943006,
+    "window_ns": 8.000117538889011,
+    "p50_tokens_per_s": 1999970615.7094717,
+    "p50_snr_emit": 1.4231581582565098,
+    "p50_snr_pd": 1.4244862071733069,
+    "p50_snr_tia": 1.9111337192146682,
+    "mean_ber": 0.0
+  },
+  "sensitivity": {
+    "config": {
+      "tia_bw_mhz": 30.0,
+      "comp_input_noise_mV_rms": 0.3,
+      "windows": [
+        3,
+        6,
+        10,
+        15,
+        20,
+        30
+      ],
+      "rin_range": [
+        -170.0,
+        -130.0,
+        9
+      ],
+      "ct_range": [
+        -40.0,
+        -15.0,
+        9
+      ],
+      "neighbor_ct_range": [
+        -40.0,
+        -20.0,
+        5
+      ]
+    },
+    "sanity": {
+      "window_non_increasing": false,
+      "rin_non_decreasing": true,
+      "crosstalk_non_decreasing": true,
+      "neighbor_crosstalk_non_decreasing": true
+    },
+    "effects": {
+      "window_ber_improvement": 0.0625,
+      "rin_ber_degradation": 0.0,
+      "crosstalk_ber_degradation": 0.0,
+      "neighbor_crosstalk_ber_degradation": 0.0
+    },
+    "window_sweep": {
+      "x_window_ns": [
+        3,
+        6,
+        10,
+        15,
+        20,
+        30
+      ],
+      "p50_ber": [
+        0.0625,
+        0.125,
+        0.25,
+        0.1875,
+        0.0,
+        0.0
+      ]
+    },
+    "rin_sweep": {
+      "x_rin_dbhz": [
+        -170.0,
+        -165.0,
+        -160.0,
+        -155.0,
+        -150.0,
+        -145.0,
+        -140.0,
+        -135.0,
+        -130.0
+      ],
+      "p50_ber": [
+        0.1875,
+        0.1875,
+        0.1875,
+        0.1875,
+        0.1875,
+        0.1875,
+        0.1875,
+        0.1875,
+        0.1875
+      ]
+    },
+    "crosstalk_sweep": {
+      "x_crosstalk_db": [
+        -40.0,
+        -36.875,
+        -33.75,
+        -30.625,
+        -27.5,
+        -24.375,
+        -21.25,
+        -18.125,
+        -15.0
+      ],
+      "p50_ber": [
+        0.3125,
+        0.3125,
+        0.3125,
+        0.3125,
+        0.3125,
+        0.3125,
+        0.3125,
+        0.3125,
+        0.3125
+      ]
+    },
+    "neighbor_crosstalk_sweep": {
+      "x_ct_neighbor_db": [
+        -40.0,
+        -35.0,
+        -30.0,
+        -25.0,
+        -20.0
+      ],
+      "p50_ber": [
+        0.1875,
+        0.1875,
+        0.1875,
+        0.1875,
+        0.1875
+      ]
+    },
+    "diag_crosstalk_sweep": {
+      "x_ct_diag_db": [
+        -45.0,
+        -40.0,
+        -35.0,
+        -30.0,
+        -25.0,
+        -20.0
+      ],
+      "p50_ber": [
+        0.1875,
+        0.1875,
+        0.1875,
+        0.1875,
+        0.1875,
+        0.1875
+      ]
+    }
+  },
+  "drift": {
+    "no_cal": {
+      "x_frame": [
+        30,
+        60,
+        90,
+        120,
+        150,
+        180,
+        210,
+        240,
+        270,
+        300,
+        330,
+        360,
+        390,
+        420,
+        450,
+        480,
+        510,
+        540,
+        570,
+        600
+      ],
+      "p50_ber": [
+        0.125,
+        0.15625,
+        0.1875,
+        0.125,
+        0.125,
+        0.15625,
+        0.125,
+        0.125,
+        0.125,
+        0.1875,
+        0.1875,
+        0.125,
+        0.125,
+        0.125,
+        0.1875,
+        0.125,
+        0.125,
+        0.1875,
+        0.15625,
+        0.125
+      ]
+    },
+    "with_cal": {
+      "x_frame": [
+        30,
+        60,
+        90,
+        120,
+        150,
+        180,
+        210,
+        240,
+        270,
+        300,
+        330,
+        360,
+        390,
+        420,
+        450,
+        480,
+        510,
+        540,
+        570,
+        600
+      ],
+      "p50_ber": [
+        0.125,
+        0.1875,
+        0.1875,
+        0.125,
+        0.1875,
+        0.1875,
+        0.125,
+        0.1875,
+        0.1875,
+        0.125,
+        0.1875,
+        0.15625,
+        0.125,
+        0.125,
+        0.1875,
+        0.125,
+        0.15625,
+        0.125,
+        0.15625,
+        0.125
+      ]
+    }
+  }
+}

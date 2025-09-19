@@ -12,7 +12,10 @@ Overall, use your own best judgement and carve out a pragmatic path forward, mak
 
 ADDITIONAL FEEDBACK:
 
-<none at this time.  Please periodically check this file for additional feedback as we go.>
+
+Looking like success with Path B!   If you can get that to 0.0 BER consistently, great.  Then reduce costs and increase throughput as much as possible while keeping everything reasonable.
+
+If you dont mind making a simple-english non-techy REPORT.md on the progress so far and what it means, that would be great.  No rush.  Costs and throughput estimates would be great in there too - and characterizing of the different hardware choices/paths and how they seem to fare so far.
 
 ---
 

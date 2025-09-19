@@ -225,3 +225,120 @@ Observed outcomes (sim):
 - 1ch schedule held at 0.00 median BER across seeds 6004/7001/7002.
 - 4ch with ch4 pack and same schedule: out/pathb_4ch_strongsa_sched.json -> analog_p50_ber=0.25. Return-map median slope ~0.75 (stable), max ~1.93; significant deadzone at stage 1 across levels (0.5 occupancy) suggests comparator biasing causing zeros during ramp.
 - Next: try comparator vth schedule +3 mV and increase stage-1 gain slightly to push rails out of deadzone; then test with neighbor crosstalk softened (optics pack ch8) and evaluate masking 1 worst channel (mask 0.25) to target <0.125.
+### 4ch Robustness and Tweaks (2025-09-19)
+- Seeds 8001/8002/8003 with scheduled strong-SA pack: median Path B BER remains 0.25.
+- Gain/vth tweak (stage gains 2.25,1,0,-0.25,-0.25; vth 15,15,10,7,6) did not change median BER (still 0.25); return map shows stage-1 deadzone persists.
+- Masking 25% worst channels increased reported analog_p50_ber to 0.5, likely because the mask is applied to path_a metrics but Path B analog metric is computed post-analog chain without mask influence. We will avoid masking for Path B analog reporting and focus on improving stage-1 biasing.
+- Next: try enabling optical guard injection (guard_gain ~0.1 mW, deadzone 0.2 mV) to push rails out of the deadzone, and/or add small per-channel optical bias subtraction at stage 0 during calibration.
+### 4ch Guarded Scheduling (2025-09-19)
+- Added optical guard (gain 0.1 mW, deadzone 0.2 mV) with scheduled gains/vths.
+- Across seeds 8301/8302/8303, median Path B BER remains 0.25; return maps keep median slope ~0.754, max slope ~1.69–1.70.
+- Guard does not resolve stage-1 deadzone flips; suggests per-channel optical bias trim or a stronger SA nonlinearity is needed at early stage.
+- Next: run 8 ch with strong-SA ch8 pack to quantify scaling, and prototype a small per-channel optical bias subtraction at stage 0 using the measured calibrated_optical_bias in the analog pass (already partially wired) and re-test 4 ch.
+### 8ch Scheduled Strong-SA (2025-09-19)
+- 8ch with strong-SA ch8 pack and 1ch schedule: median Path B BER = 0.375 at depth 5. Return-map median slope ~0.754 (stable), max ~1.84; stage-1 deadzone occupancy ~0.375 across levels.
+- Scaling degrades BER from 0.25 (4ch) to 0.375 (8ch), consistent with accumulated bias/crosstalk. Guard did not help at 4ch; expect similar at 8ch without per-channel optical trims.
+- Next: implement stronger stage-0 optical bias subtraction during the analog pass using the calibration vector (already computed as calibrated_optical_bias_mW), then re-run 4ch and 8ch to evaluate impact.
+### 4ch Stage-0 Bias Scaling (2025-09-19)
+- Added --path-b-optical-bias-scale to apply calibration bias with a scale factor.
+- 4ch with scales 1.5 and 2.0 leaves median BER at 0.25; return map slopes unchanged; max slope nudged (~1.96), still stable.
+- Conclusion: per-channel bias subtraction alone is insufficient to break the 0.25 plateau at 4 ch. The deadzone pattern suggests early-stage nonlinearity/imbalance beyond static bias.
+- Next: explore modest SA strengthening (use _soa_strongsa pack vs tuned) for 4/8 ch and revisit comparator vth schedule closer to 10/10/8/6/5 mV.
+### SA/vth variants (2025-09-19)
+- 4ch ch4 strong-SA with vth 10/10/8/6/5: analog p50 BER remains 0.25.
+- 4ch generic strong-SA (no ch4 specialization) with vth low: analog p50 BER 0.25.
+- 8ch ch8 strong-SA with vth low: analog p50 BER 0.375.
+- Return-map omitted in these runs (no flag); BER behavior unchanged from prior maps that showed stage-1 deadzone.
+- Conclusion: small vth tightening does not move the plateau. The next impactful knob is likely per-channel optical trim (small VOA/MZM) or more aggressive first-stage nonlinearity, which implies BOM changes. For sim purposes, we can emulate per-channel trim by injecting a tiny per-channel bias from the calibration vector at stage 0.
+### TDM-style Sparse Activation (2025-09-19)
+- Added sparse-activation mode: --path-b-sparse-active-k enforces K active channels per trial (others zero); --path-b-eval-active-only evaluates BER over active subset.
+- 16ch strong-SA with K={1,2,4} active achieved analog p50 BER = 0.00 at depth 5 across seeds (9601..9603). This emulates time-division scanning (per-frame activates only a small subset), which greatly reduces crosstalk and stabilizes early stages.
+- Interpretation: A practical MVP could run 8–16 channels by TDM scanning K active rails per cycle through the analog cascade, while keeping total window at 10 ns per micro-pass; net throughput scales with K. This provides a clear path to low BER with realistic parts by trading instantaneous parallelism for time-multiplexing.
+- Next: quantify throughput vs K (effective cycles per symbol), energy, and re-evaluate pack costs; also test K=8 on 16ch and find the break point where BER rises.
+### TDM vs Optics Nonlinearity (2025-09-19)
+- 16ch with light-SA optics: K=4 active ? analog p50 BER 0.00; K=8 active ? 0.125. This maps a cost/performance frontier: weaker nonlinearity is viable with TDM up to moderate K.
+- Throughput estimate at 10 ns window and depth=5 (no extra repeats):
+  - Total micro-passes per symbol ˜ ceil(16/K) * depth; symbol time ˜ micro_passes * 10 ns.
+  - K=4 ? ceil(16/4)*5=20 passes ? 200 ns/symbol ? 5.0 Msym/s (per bank).
+  - K=8 ? ceil(16/8)*5=10 passes ? 100 ns/symbol ? 10.0 Msym/s with 0.125 BER (light-SA).
+- With strong-SA, K up to 8 achieved 0.00 BER; suggests better optics increase K without BER penalty.
+- Recommendation: MVP path uses TDM with K=4–8 on 16ch; choose optics tier based on allowed BER and cost. Next: compile a brief MVP plan (hardware + sim settings) in TUNING.md and queue a few long-seed sweeps for stability.
+### TDM Metrics (2025-09-19)
+- 16ch light-SA, K=8 ? metrics embedded in output: tdm_micro_passes=10, window_ns=10 ? 100 ns/symbol ? 10 Msym/s; BER 0.125.
+- Code now emits: sparse_active_k, window_ns, tdm_micro_passes, tdm_symbol_time_ns, tdm_symbols_per_s under path_b when sparse mode is used.
+- Next: run multi-seed stability sweep for (K=4,8) under light-SA and strong-SA to check variance, and outline MVP hardware config + ops recipe in TUNING.md.
+### TDM Stability Sweep (2025-09-19)
+- 16ch strong-SA: K=4 and K=8 ? median BER 0.00 across 3 seeds each.
+- 16ch light-SA: K=4 ? 0.00; K=8 ? [0.125, 0.125, 0.00] median 0.125.
+- Conclusion: TDM scanning is robust; strong-SA supports K up to 8 at 0.00 BER; light-SA supports K=4 at 0.00 and K=8 around 0.125 BER. Use K, optics tier to trade throughput vs BER/cost.
+- MVP summary: Balanced PD + tuned comparator (offset trim + small vth), 10 ns window, depth 5, auto-zero at start, stage gain/vth schedule, TDM K=4–8 depending on optics. Achieves 0–0.125 BER with realistic parts and ~5–10 Msym/s per 16ch bank.
+### 32ch TDM Scaling (2025-09-19)
+- 32ch strong-SA:
+  - K=8 active ? BER 0.00; micro_passes=20 (? 200 ns/symbol ? 5 Msym/s).
+  - K=16 active ? BER 0.0625; micro_passes=10 (? 100 ns/symbol ? 10 Msym/s).
+- Scaling remains favorable; we can choose K for throughput vs BER. This suggests multi-bank scaling to 32 ch is viable with TDM.
+## MVP Playbook (TDM Path B) — 2025-09-19
+- Hardware
+  - Balanced PD/TIA path (e.g., 	ia_stage_b2_low_noise), 10 ns clock window, per-channel comparator offset trim and small vth trims.
+  - Optics: choose SA tier by BER target and budget. Strong-SA supports higher K (parallelism per frame) at 0 BER; Light-SA supports moderate K (e.g., K=4 at 0 BER; K=8 at ~0.125 BER).
+- Operations
+  - Auto-zero comparator offsets at start; use per-stage vth/gain schedule (e.g., gains 2,1,0,-0.25,-0.25, vth 12,12,8,6,5 mV).
+  - TDM scan: set --path-b-sparse-active-k K and --path-b-eval-active-only to evaluate K active channels per frame through analog depth 5; rotate subsets to cover all channels.
+  - Use --normalize-dv and balanced PD. Optional: optical guard if needed (not required with TDM in our tests).
+- Performance (16 ch @ 10 ns window; depth 5)
+  - K=4 ? ~5 Msym/s at 0 BER (strong- or light-SA).
+  - K=8 ? ~10 Msym/s at 0 BER (strong-SA) or ~0.125 BER (light-SA).
+- Scaling
+  - 32 ch: K=8 ? 5 Msym/s at 0 BER; K=16 ? 10 Msym/s at ~0.0625 BER (strong-SA).
+- Next steps
+  - Validate multi-seed stability per K, monitor drift and re-center thresholds periodically if necessary.
+  - Cost down optics by lowering SA strength and compensating with smaller K.
+### TDM Rotate Drill (2025-09-19)
+- Added --path-b-sparse-rotate to cycle deterministic K-sized subsets across frames.
+- 16ch strong-SA, K=8, rotate: BER 0.00; micro_passes=10; tdm_symbols_per_s˜5.88M (longer run used 400 trials).
+- Rotation confirms stable low-BER operation when cycling through all channels, matching random-subset results.
+### TDM Drift Sanity (2025-09-19)
+- 16ch strong-SA, K=8, rotate, longer run (400 trials) with light-output to bypass sensitivity plots: BER remains 0.00 (drift block disabled in light mode). For a heavier drift test, drop light-output and enable drift schedule.
+### TDM Drift (enabled) Quick Pass (2025-09-19)
+- 16ch strong-SA, K=8, rotate, 400 trials with drift enabled (no light-output): BER 0.00. This suggests robustness to modeled drift at this scale; periodic re-centering remains available but may not be needed at this SA tier and K.
+- Strong-SA vs Light-SA at K=8 summary (3 seeds + drift): Strong-SA ? 0.00; Light-SA ? median 0.125 (with one 0.00 outlier), both at ~10 Msym/s.
+### TDM Drift Multi-seed (2025-09-19)
+- Strong-SA K=8 (rotate, 400 trials): seeds 12102/12103 ? 0.00 BER.
+- Light-SA K=8: seeds 12201/12202/12203 ? [0.00, 0.125, 0.125].
+- Confirms prior: strong-SA at K=8 is robust at ~10 Msym/s; light-SA at K=8 sits near ~0.125 with occasional perfect seeds. K=4 remains 0.00 for light-SA.
+### Cost/Perf Sweep (2025-09-19)
+- 16ch strong-SA, K=4: BER 0.00; ~5 Msym/s.
+- 32ch light-SA, K=8: BER 0.0625; ~5 Msym/s.
+- 32ch light-SA, K=16: BER 0.0625; ~10 Msym/s.
+- Recommendation: for lower-cost optics, target light-SA with K=8–16 at 32 ch for BER ~0.0625 and 5–10 Msym/s; for zero-BER targets use strong-SA or smaller K.
+### Iteration Summary and Next Directions (2025-09-19)
+- Pivoted from full-parallel Path B (plateaued at 0.25–0.375 BER) to TDM sparse activation. Implemented --path-b-sparse-active-k, --path-b-eval-active-only, --path-b-sparse-rotate, and throughput metrics.
+- Validated at scale:
+  - 16 ch strong-SA: K=4/8 ? 0.00 BER; ~5/10 Msym/s.
+  - 16 ch light-SA: K=4 ? 0.00; K=8 ? ~0.125 median; ~10 Msym/s.
+  - 32 ch strong-SA: K=8 ? 0.00 (5 Msym/s); K=16 ? ~0.0625 (10 Msym/s).
+  - Drift (enabled): strong-SA K=8 holds 0.00 BER.
+- Tooling and docs added:
+  - Scripts: scripts/run_tdm_mvp.py (suite/stability), scripts/run_scenario_tdm.py, scripts/summarize_tdm.py.
+  - Scenario presets: configs/scenarios/tdm_mvp_16ch_strongsa_k8.yaml, 	dm_16_lightsa_k4.yaml, 	dm_32_strongsa_k8.yaml, 	dm_32_lightsa_k8.yaml.
+  - Scenario passthrough: looking_glass/scenario.py --tdm-k/--tdm-rotate/--tdm-eval-active-only.
+  - README TDM section and docs/MVP_TDM_BOM.md (hardware outline).
+- Cost/perf snapshot (sim):
+  - 16ch strong-SA K=4 ? 0.00 @ ~5 Msym/s; 32ch light-SA K=8/16 ? ~0.0625 @ ~5/10 Msym/s.
+- Suggested next experiments:
+  1) Expand cost curve: sweep optics tiers vs K at 16/32 ch; record BER/throughput and energy proxies.
+  2) Add optional periodic re-center in TDM loop (every N micro-passes) and quantify drift benefit.
+  3) Integrate Path A head with TDM Path B front-end for end-to-end tokens/s and accuracy tracking.
+  4) Queue representative TDM runs via the probe queue (append-only) for background validation.
+  5) Map minimal optics strength needed for K=8 zero-BER to refine BOM.
+### Cost Curve Micro-sweep (2025-09-19)
+- 16 ch strong-SA: K=4 ? BER 0.00 @ 5 Msym/s; K=8 ? 0.00 @ 10 Msym/s (seeds 15001, 15002).
+- 32 ch light-SA: K=8 ? 0.125 @ 5 Msym/s; K=16 ? 0.1875 @ 10 Msym/s (seeds 15003, 15004).
+- Takeaway: light-SA can hit 5 Msym/s @ ~0.125 BER (32ch K=8) and 10 Msym/s @ ~0.1875 BER (32ch K=16). Strong-SA holds 0 BER up to K=8 on 16ch.
+- Next: pair TDM Path B (K=8 light/strong SA) with a Path A head to estimate end-to-end tokens/s and accuracy vs BER; extend summarize_tdm to CSV for quick spreadsheet import.
+### TDM Cost Curve Summary (2025-09-19)
+- Aggregate CSV written: out/tdm_costcurve_summary.csv
+- 16 ch strong-SA: K=4/8 ? BER 0.00 at ~5/10 Msym/s.
+- 32 ch light-SA: K=8 ? BER ~0.125 @ 5 Msym/s; K=16 ? ~0.1875 @ 10 Msym/s.
+- 32 ch strong-SA: K=16 ? BER ~0.0625 @ 10 Msym/s.
+- Use strong-SA for zero-BER targets at higher K; use light-SA for cost-down with K matched to BER goals.

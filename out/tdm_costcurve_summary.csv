@@ -1,0 +1,7 @@
+file,analog_p50_ber,tdm_symbols_per_s,sparse_active_k
+out\sweep2_32_strong_k16_s20031.json,0.0625,10000000.0,16
+out\sweep2_32_light_k8_s20061.json,0.125,5000000.0,8
+out\sweep_ms_16_strongsa_k4_s15001.json,0.0,5000000.0,4
+out\sweep_ms_16_strongsa_k8_s15002.json,0.0,10000000.0,8
+out\sweep_ms_32_lightsa_k8_s15003.json,0.125,5000000.0,8
+out\sweep_ms_32_lightsa_k16_s15004.json,0.1875,10000000.0,16

@@ -421,6 +421,7 @@ def main():
     ap.add_argument("--path-b-calibrate-optical", action="store_true", help="Auto-cancel optical bias using calibration data")
     ap.add_argument("--path-b-optical-trim-final-mW", type=str, default=None, help="Comma-separated per-channel optical trim (mW) applied at final stage")
     ap.add_argument("--path-b-return-map", action="store_true", help="Record Path B return map (dv in/out, slopes, histograms)")
+    ap.add_argument("--path-b-optical-bias-scale", type=float, default=1.0, help="Scale subtracting measured stage-0 optical bias during analog pass (default 1.0)")
     ap.add_argument("--path-b-amp-type", type=str, choices=['soa', 'edfa'], default=None, help="Override Path B amplifier type (soa|edfa)")
     ap.add_argument("--path-b-vth-schedule", type=str, default=None, help="Comma-separated comparator vth (mV) per Path B stage during analog cascade")
     ap.add_argument("--path-b-stage-gains-db", type=str, default=None, help="Comma-separated post-stage attenuation (dB, positive=loss, negative=gain) applied after each Path B optical stage")
@@ -429,6 +430,13 @@ def main():
     ap.add_argument("--return-map-passes", type=int, default=36, help="Passes used when computing the Path B return map")
     ap.add_argument("--return-map-deadzone-mW", type=float, default=0.02, help="Dead-zone (mW) threshold for occupancy metrics in the Path B return map")
     ap.add_argument("--path-b-balanced", action="store_true", help="Use balanced photodiode/TIA path for Path B calculations")
+    # Sparse activation (Path B): evaluate with only K active channels per trial
+    ap.add_argument("--path-b-sparse-active-k", type=int, default=0, help="If >0, force exactly K active channels per trial (others set to 0)")
+    ap.add_argument("--path-b-eval-active-only", action="store_true", help="When using sparse-active-k, compute BER on active channels only (models TDM scanning)")
+    ap.add_argument("--path-b-sparse-rotate", action="store_true", help="Cycle deterministically through channel subsets (ceil(N/K) groups) rather than random subsets")
+    # TDM re-centering (optional): periodically re-center comparator vth using recent dv statistics
+    ap.add_argument("--path-b-tdm-recenter-interval", type=int, default=0, help="If >0, every N trials compute per-channel vth as 0.5*(mean_pos+mean_neg) over recent frames and apply")
+    ap.add_argument("--path-b-tdm-recenter-margin-mV", type=float, default=0.0, help="Optional margin added to computed vth during TDM re-centering")
     ap.add_argument("--path-b-analog-depth", type=int, default=-1, help="If -1, use --path-b-depth; if >0, run analog cascade (optics SA+amp per hop, single final threshold)")
     ap.add_argument("--adaptive-input", action="store_true", help="Integrate multiple frames until dv margin met or max frames (default ON)")
     ap.add_argument("--no-adaptive-input", action="store_true", help="Disable adaptive input integration")
@@ -442,6 +450,7 @@ def main():
     ap.add_argument("--quiet", action="store_true", help="Do not print final JSON to stdout (write file only)")
     ap.add_argument("--progress", action="store_true", help="Emit coarse progress messages to stdout")
     ap.add_argument("--json", type=str, default=None)
+    ap.add_argument("--endtoend-report", action="store_true", help="Add an end_to_end block combining Path A and Path B (assumes independent errors)")
     ap.add_argument("--light-output", action="store_true", help="Reduce output size by skipping heavy diagnostic blocks (sensitivity, drift, path-b sweeps, large arrays)")
     # Speed/skip flags
     ap.add_argument("--no-sweeps", action="store_true", help="Skip window/RIN/crosstalk sweeps for faster runs")
@@ -878,6 +887,12 @@ def main():
             eta = float(getattr(args, 'path_b_servo_eta', 0.05))
             if vth_schedule:
                 eta = 0.0
+            bias_scale = float(getattr(args, 'path_b_optical_bias_scale', 1.0))
+            # Sparse activation parameters (optional TDM-style evaluation)
+            sparse_k = max(0, int(getattr(args, 'path_b_sparse_active_k', 0)))
+            eval_active_only = bool(getattr(args, 'path_b_eval_active_only', False))
+            sparse_rotate = bool(getattr(args, 'path_b_sparse_rotate', False))
+            sparse_group_idx = 0
 
             # Calibration and auto-zero for Path B (kept within try/analog block)
             cal_offsets = None
@@ -953,11 +968,36 @@ def main():
                 b_orch.comp.set_vth_per_channel(cal_trim_vec)
             vth_vec = _np.zeros(b_orch.sys.channels, dtype=float)
             T = min(args.trials, 200)
+            recenter_interval = int(getattr(args, 'path_b_tdm_recenter_interval', 0))
+            recenter_margin = float(getattr(args, 'path_b_tdm_recenter_margin_mV', 0.0))
+            _dv_hist = []  # list of dv arrays
+            _truth_hist = []  # list of truth arrays
             errs = []
             stage_errs_prev = [[] for _ in range(analog_depth)]
             stage_errs_initial = [[] for _ in range(analog_depth)]
-            for _ in range(T):
+            for t_idx in range(T):
+                # Base ternary vector
                 tern0 = b_orch.rng.integers(-1, 2, size=b_orch.sys.channels)
+                active_mask_trial = None
+                if sparse_k > 0:
+                    # Enforce exactly K active channels; others set to 0
+                    N = int(b_orch.sys.channels)
+                    k = min(sparse_k, N)
+                    if sparse_rotate:
+                        groups = max(1, (N + k - 1)//k)
+                        g = sparse_group_idx % groups
+                        start = g * k
+                        idx = list(range(start, min(start + k, N)))
+                        # pad if last group smaller
+                        if len(idx) < k:
+                            idx += list(range(0, k - len(idx)))
+                        sparse_group_idx += 1
+                    else:
+                        idx = b_orch.rng.choice(N, size=k, replace=False)
+                    tern0 = _np.zeros(N, dtype=int)
+                    tern0[idx] = b_orch.rng.choice(_np.array([-1, 1], dtype=int), size=k, replace=True)
+                    active_mask_trial = _np.zeros(N, dtype=bool)
+                    active_mask_trial[idx] = True
                 dv_pass = []
                 out_pass = []
                 stage_signs_last = None
@@ -967,7 +1007,7 @@ def main():
                     stage_signs = []
                     for stage_idx, (Pp_stage, Pm_stage, _diff_in, _diff_out) in enumerate(stage_outputs):
                         if cal_optical_bias is not None and stage_idx == 0:
-                            bias = cal_optical_bias
+                            bias = cal_optical_bias * bias_scale
                             if bias.shape[0] != Pp_stage.shape[0]:
                                 bias = _np.full(Pp_stage.shape[0], float(_np.median(bias)))
                             Pp_stage = _np.clip(Pp_stage - 0.5 * bias, 0.0, None)
@@ -994,7 +1034,7 @@ def main():
                     Pp_final = stage_outputs[-1][0].copy()
                     Pm_final = stage_outputs[-1][1].copy()
                     if cal_optical_bias is not None:
-                        bias = cal_optical_bias
+                        bias = cal_optical_bias * bias_scale
                         if bias.shape[0] != Pp_final.shape[0]:
                             bias = _np.full(Pp_final.shape[0], float(_np.median(bias)))
                         Pp_final = _np.clip(Pp_final - 0.5 * bias, 0.0, None)
@@ -1053,7 +1093,52 @@ def main():
                     out_arr = guard_out.astype(int)
                 else:
                     out_arr = _np.asarray(out_pass[-1], dtype=int)
-                errs.append(float(_np.mean(out_arr != tern0)))
+                if active_mask_trial is not None and eval_active_only:
+                    am = _np.asarray(active_mask_trial, dtype=bool)
+                    if am.any():
+                        errs.append(float(_np.mean(out_arr[am] != tern0[am])))
+                    else:
+                        errs.append(0.0)
+                else:
+                    errs.append(float(_np.mean(out_arr != tern0)))
+
+                # Optional periodic re-centering of comparator vth using recent dv statistics
+                try:
+                    if recenter_interval > 0:
+                        # Use final dv of this iteration
+                        dv_for_hist = dv_pass[-1] if dv_pass else None
+                        if dv_for_hist is not None:
+                            _dv_hist.append(_np.asarray(dv_for_hist, dtype=float))
+                            _truth_hist.append(_np.asarray(tern0, dtype=int))
+                            # keep only last N
+                            if len(_dv_hist) > recenter_interval:
+                                _dv_hist = _dv_hist[-recenter_interval:]
+                                _truth_hist = _truth_hist[-recenter_interval:]
+                        if (t_idx + 1) % recenter_interval == 0 and _dv_hist:
+                            dv_stack = _np.stack(_dv_hist, axis=0)
+                            tr_stack = _np.stack(_truth_hist, axis=0)
+                            with _np.errstate(invalid='ignore'):
+                                pos_mask = tr_stack > 0
+                                neg_mask = tr_stack < 0
+                                pos_vals = _np.where(pos_mask, dv_stack, _np.nan)
+                                neg_vals = _np.where(neg_mask, dv_stack, _np.nan)
+                                pos_mean = _np.nanmean(pos_vals, axis=0)
+                                neg_mean = _np.nanmean(neg_vals, axis=0)
+                                v_auto = 0.5 * (pos_mean + neg_mean)
+                                v_auto = _np.nan_to_num(v_auto, nan=0.0)
+                                if recenter_margin != 0.0:
+                                    v_auto = v_auto + float(recenter_margin)
+                                # Respect active-only masking if provided
+                                if active_mask_trial is not None and eval_active_only:
+                                    mask = _np.asarray(active_mask_trial, dtype=bool)
+                                    v_apply = _np.where(mask, v_auto, 0.0)
+                                else:
+                                    v_apply = v_auto
+                                if cal_trim_vec is not None:
+                                    v_apply = v_apply + cal_trim_vec
+                                b_orch.comp.set_vth_per_channel(v_apply)
+                except Exception:
+                    pass
                 if stage_signs_last is not None:
                     prev_vec = _np.asarray(tern0, dtype=int)
                     for stage_idx, stage_out_vec in enumerate(stage_signs_last):
@@ -1064,6 +1149,33 @@ def main():
             path_b_summary = dict(path_b_summary or {})
             path_b_summary['analog_depth'] = analog_depth
             path_b_summary['analog_p50_ber'] = float(_np.median(errs)) if errs else None
+            # Throughput estimate for sparse activation (TDM)
+            try:
+                if sparse_k > 0:
+                    import math as _math
+                    subsets = max(1, _math.ceil(int(b_orch.sys.channels) / float(max(1, sparse_k))))
+                    micro_passes = int(subsets * max(1, analog_depth) * max(1, guard_passes))
+                    symbol_time_ns = float(micro_passes) * float(b_orch.clk.p.window_ns)
+                    tdm_symbols_per_s = (1e9 / symbol_time_ns) if symbol_time_ns > 0 else None
+                    path_b_summary['sparse_active_k'] = int(sparse_k)
+                    path_b_summary['eval_active_only'] = bool(eval_active_only)
+                    path_b_summary['window_ns'] = float(b_orch.clk.p.window_ns)
+                    path_b_summary['tdm_micro_passes'] = micro_passes
+                    path_b_summary['tdm_symbol_time_ns'] = symbol_time_ns
+                    path_b_summary['tdm_symbols_per_s'] = float(tdm_symbols_per_s) if tdm_symbols_per_s is not None else None
+                    # Energy proxy: scale baseline per-trial p50 energy by micro-passes
+                    try:
+                        base_e = None
+                        if isinstance(path_b_summary.get('p50_energy_pj'), (int, float)):
+                            base_e = float(path_b_summary.get('p50_energy_pj'))
+                        elif isinstance(base_summary.get('p50_energy_pj'), (int, float)):
+                            base_e = float(base_summary.get('p50_energy_pj'))
+                        if base_e is not None:
+                            path_b_summary['tdm_pj_per_symbol_est'] = float(base_e) * float(micro_passes)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
             path_b_chain = {
                 'depth': analog_depth,
                 'per_stage_p50_ber_vs_prev': [float(_np.median(e)) if e else None for e in stage_errs_prev],
@@ -2367,12 +2479,15 @@ def main():
         }
         # Optional: Per-tile heatmap in sensitivity mode if tiling is square (blocks^2 == channels)
         try:
-            from looking_glass.plotting import save_heatmap
-            _one = sens_orch.step()
-            if _one.get("per_tile", {}).get("plus") is not None:
-                save_heatmap(_one["per_tile"]["plus"], xlabel="tile-x", ylabel="tile-y", out_path="out/per_tile_plus.png", title="Per-tile Plus Intensity")
-                save_heatmap(_one["per_tile"]["minus"], xlabel="tile-x", ylabel="tile-y", out_path="out/per_tile_minus.png", title="Per-tile Minus Intensity")
-        except (ImportError, RuntimeError, ValueError):
+            if not getattr(args, 'light_output', False):
+                from looking_glass.plotting import save_heatmap
+                _one = sens_orch.step()
+                plus = (_one.get("per_tile", {}) or {}).get("plus")
+                minus = (_one.get("per_tile", {}) or {}).get("minus")
+                if isinstance(plus, list) and isinstance(minus, list) and plus and minus and isinstance(plus[0], list):
+                    save_heatmap(plus, xlabel="tile-x", ylabel="tile-y", out_path="out/per_tile_plus.png", title="Per-tile Plus Intensity")
+                    save_heatmap(minus, xlabel="tile-x", ylabel="tile-y", out_path="out/per_tile_minus.png", title="Per-tile Minus Intensity")
+        except (ImportError, RuntimeError, ValueError, Exception):
             pass
     else:
         summary["sensitivity"] = None
@@ -2612,6 +2727,33 @@ def main():
         os.makedirs(os.path.dirname(args.json), exist_ok=True)
         with open(args.json, "w", encoding="utf-8") as f:
             json.dump(summary, f, indent=2)
+    # Optional: end-to-end combined KPI (simplified)
+    try:
+        if getattr(args, 'endtoend_report', False):
+            pa = summary.get('path_a') or {}
+            pb = summary.get('path_b') or {}
+            ber_a = pa.get('p50_ber')
+            # Prefer analog_p50_ber (TDM Path B), fallback to baseline p50_ber or digital_p50_ber
+            ber_b = pb.get('analog_p50_ber')
+            if not isinstance(ber_b, (int, float)):
+                ber_b = pb.get('p50_ber') if isinstance(pb.get('p50_ber'), (int, float)) else pb.get('digital_p50_ber')
+            e2e = None
+            if isinstance(ber_a, (int, float)) and isinstance(ber_b, (int, float)):
+                # naive independence assumption for quick estimate:
+                # probability both correct = (1-ber_a)*(1-ber_b), so combined ber ~ 1 - that
+                e2e = 1.0 - ((1.0 - float(ber_a)) * (1.0 - float(ber_b)))
+            summary['end_to_end'] = {
+                'path_a_p50_ber': ber_a,
+                'path_b_p50_ber': ber_b,
+                'combined_p50_ber_independent': e2e,
+            }
+            if not args.quiet:
+                print(json.dumps({'end_to_end': summary['end_to_end']}, indent=2))
+            if args.json:
+                with open(args.json, 'w', encoding='utf-8') as f:
+                    json.dump(summary, f, indent=2)
+    except Exception:
+        pass
     # Exit non-zero if any sanity monotonic checks fail
     if not (w_ok and r_ok and c_ok):
         sys.exit(1)

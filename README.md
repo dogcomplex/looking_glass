@@ -247,3 +247,39 @@ Dashboard tips:
 - Stage C (add Path B): demonstrate per‑stage propagation with SA+SOA and final camera readout; WDM demo.
 
 See `DESIGN.md` for details.
+
+
+---
+
+## TDM Path B (MVP recipe)
+
+We found a pragmatic way to scale Path B with realistic parts by time-division multiplexing (TDM): activate only K channels per frame through the analog cascade and rotate subsets.
+
+- 16 ch strong-SA optics: K=8 yields ~10 Msym/s at ~0 BER; K=4 ~5 Msym/s at 0 BER.
+- 16 ch light-SA optics: K=4 ~5 Msym/s at 0 BER; K=8 ~10 Msym/s at ~0.125 BER (median over seeds).
+- 32 ch strong-SA: K=8 → 5 Msym/s at 0 BER; K=16 → 10 Msym/s at ~0.0625 BER.
+
+Try it quickly:
+
+```
+python examples/test.py --trials 240 --channels 16 --base-window-ns 10 \
+  --classifier chop --avg-frames 2 --apply-calibration --no-adaptive-input --no-cold-input --no-sweeps \
+  --emitter-pack configs/packs/tmp_lowcost_emitter_boost.yaml \
+  --optics-pack  configs/packs/tmp_codex_optics_medium_voa2_soa_strongsa.yaml \
+  --sensor-pack  configs/packs/overlays/receiver_ingaas_typ.yaml \
+  --tia-pack     configs/packs/overlays/tia_stage_b2_low_noise.yaml \
+  --comparator-pack configs/packs/overlays/tuned_comparator.yaml \
+  --clock-pack   configs/packs/overlays/clock_jitter_20ps.yaml \
+  --normalize-dv --path-b-depth 5 --path-b-analog-depth 5 --path-b-balanced \
+  --path-b-calibrate-vth --path-b-calibrate-vth-scale 0.5 --path-b-calibrate-vth-passes 64 \
+  --path-b-stage-gains-db "2.0,1.0,0,-0.25,-0.25" --path-b-vth-schedule "12,12,8,6,5" \
+  --path-b-sparse-active-k 8 --path-b-eval-active-only --json out/tdm16_k8.json --quiet
+```
+
+Or run the suite:
+
+```
+python scripts/run_tdm_mvp.py suite
+```
+
+See TUNING.md for context, metrics (including TDM throughput), and stability sweeps.

@@ -5,6 +5,8 @@ from pathlib import Path
 import json
 import csv
 import typing as t
+import sys
+import subprocess
 
 from .orchestrator import Orchestrator, SystemParams
 from .sim.emitter import EmitterParams
@@ -142,6 +144,10 @@ def run_scenario_cli(argv: list[str] | None = None) -> int:
     parser.add_argument("--trials", type=int, default=None, help="Override trials count")
     parser.add_argument("--csv", type=str, default=None, help="Optional CSV output path for per-trial rows")
     parser.add_argument("--json", type=str, default=None, help="Optional JSON output path for summary")
+    # Optional TDM Path B passthrough: if provided, delegate to examples/test.py with TDM flags
+    parser.add_argument("--tdm-k", type=int, default=0, help="If >0, run TDM Path B via examples/test.py with K active channels per frame")
+    parser.add_argument("--tdm-rotate", action="store_true", help="Use deterministic subset rotation for TDM")
+    parser.add_argument("--tdm-eval-active-only", action="store_true", help="Evaluate BER only on active subset during TDM")
     parser.add_argument("--sweep-window-ns", type=str, default=None,
                         help="Optional sweep over window_ns, format start:stop:steps (inclusive start/stop)")
     parser.add_argument("--sweep-rin-db-hz", type=str, default=None,
@@ -158,8 +164,48 @@ def run_scenario_cli(argv: list[str] | None = None) -> int:
     parser.add_argument("--plot", type=str, default=None, help="Optional path to save BER vs window_ns PNG plot")
     args = parser.parse_args(argv)
 
-    orch, trials_default, _ = build_orchestrator_from_scenario(args.scenario)
+    orch, trials_default, scn = build_orchestrator_from_scenario(args.scenario)
     trials = args.trials if args.trials is not None else trials_default
+
+    # If TDM requested, delegate to examples/test.py with equivalent packs and flags
+    if int(getattr(args, 'tdm_k', 0)) > 0:
+        test_py = str((Path(__file__).resolve().parents[1] / 'examples' / 'test.py'))
+        cmd = [
+            sys.executable, test_py,
+            '--trials', str(int(trials)),
+            '--channels', str(int(orch.sys.channels)),
+            '--base-window-ns', str(float(orch.clk.p.window_ns)),
+            '--seed', str(int(orch.sys.seed)),
+            '--classifier', 'chop', '--avg-frames', '2', '--apply-calibration', '--no-adaptive-input', '--no-cold-input', '--no-sweeps',
+            '--normalize-dv', '--path-b-depth', '5', '--path-b-analog-depth', '5', '--path-b-balanced',
+            '--path-b-calibrate-vth', '--path-b-calibrate-vth-scale', '0.5', '--path-b-calibrate-vth-passes', '64',
+            '--path-b-stage-gains-db', '2.0,1.0,0,-0.25,-0.25', '--path-b-vth-schedule', '12,12,8,6,5',
+            '--path-b-sparse-active-k', str(int(getattr(args, 'tdm_k', 0))),
+        ]
+        if bool(getattr(args, 'tdm_rotate', False)):
+            cmd.append('--path-b-sparse-rotate')
+        if bool(getattr(args, 'tdm_eval_active_only', False)):
+            cmd.append('--path-b-eval-active-only')
+        # Packs mapping: allow dict with 'path' or string
+        def _flag(key: str, flag: str):
+            val = scn.get(key)
+            if isinstance(val, dict):
+                val = val.get('path') or val.get('file')
+            if isinstance(val, str) and val.strip():
+                cmd.extend([flag, val.strip()])
+        _flag('emitter_pack', '--emitter-pack')
+        _flag('optics_pack', '--optics-pack')
+        _flag('sensor_pack', '--sensor-pack')
+        _flag('tia_pack', '--tia-pack')
+        _flag('comparator_pack', '--comparator-pack')
+        _flag('clock_pack', '--clock-pack')
+        _flag('thermal_pack', '--thermal-pack')
+        # Output
+        if args.json:
+            cmd.extend(['--json', str(args.json)])
+        cmd.append('--quiet')
+        p = subprocess.run(cmd)
+        return p.returncode
 
     # Optionally save run metadata
     if args.meta:
