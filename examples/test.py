@@ -879,75 +879,76 @@ def main():
             if vth_schedule:
                 eta = 0.0
 
-cal_offsets = None
-cal_trim_vec = None
-cal_optical_bias = None
-cal_optical_trim_final = None
-if getattr(args, 'path_b_calibrate_vth', False):
-    cal_passes = max(1, min(int(getattr(args, 'path_b_calibrate_vth_passes', 64)), args.trials))
-    cal_guard_gain = guard_gain if bool(getattr(args, 'path_b_calibrate_vth_apply_guard', False)) else 0.0
-    offset_samples = []
-    trim_samples = []
-    bias_samples = []
-    final_bias_samples = []
-    tern_zero = _np.zeros(b_orch.sys.channels, dtype=int)
-    tern_plus = _np.ones(b_orch.sys.channels, dtype=int)
-    tern_minus = -tern_plus
-    for _cal in range(cal_passes):
-        for mode, tern_cal in (("zero", tern_zero), ("plus", tern_plus), ("minus", tern_minus)):
-            dt_cal, stage_outputs_cal, base_vth_vec_cal = _run_pathb_stage_pass(
-                b_orch, tern_cal, analog_depth, stage_gain_schedule, vth_schedule)
-            stage0 = stage_outputs_cal[0]
-            Pp_cal = stage0[0].copy()
-            Pm_cal = stage0[1].copy()
-            diff_opt = Pp_cal - Pm_cal
-            if mode == "zero":
-                bias_samples.append(diff_opt.copy())
-            if cal_guard_gain > 0.0:
-                adjust = cal_guard_gain * _np.sign(diff_opt)
-                if guard_deadzone > 0.0:
-                    adjust[_np.abs(diff_opt) < guard_deadzone] = 0.0
-                Pp_cal = _np.clip(Pp_cal + 0.5 * adjust, 0.0, None)
-                Pm_cal = _np.clip(Pm_cal - 0.5 * adjust, 0.0, None)
-            Ip_cal = b_orch.pd.simulate(Pp_cal, dt_cal)
-            Im_cal = b_orch.pd.simulate(Pm_cal, dt_cal)
-            if balanced_pd:
-                diff_current = Ip_cal - Im_cal
-                Ip_cal = diff_current
-                Im_cal = -diff_current
-            Vp_cal = b_orch.tia.simulate(Ip_cal, dt_cal)
-            Vm_cal = b_orch.tia.simulate(Im_cal, dt_cal)
-            dv_cal_mV = (Vp_cal - Vm_cal) * 1e3
-            if mode == "zero":
-                offset_samples.append(dv_cal_mV)
-                trim_samples.append(_np.abs(dv_cal_mV))
-            if mode in ("plus", "minus"):
-                final_bias_samples.append(stage_outputs_cal[-1][3].copy())
-            if vth_schedule and base_vth_vec_cal is not None:
-                b_orch.comp.set_vth_per_channel(base_vth_vec_cal)
-    path_b_summary = dict(path_b_summary or {})
-    if bias_samples:
-        bias_stack = _np.stack(bias_samples, axis=0)
-        cal_optical_bias = _np.median(bias_stack, axis=0)
-        path_b_summary['calibrated_optical_bias_mW'] = cal_optical_bias.tolist()
-    if final_bias_samples:
-        final_bias_stack = _np.stack(final_bias_samples, axis=0)
-        cal_optical_trim_final = _np.median(final_bias_stack, axis=0)
-        path_b_summary['calibrated_optical_trim_final_mW'] = cal_optical_trim_final.tolist()
-    if offset_samples:
-        offset_stack = _np.stack(offset_samples, axis=0)
-        cal_offsets = _np.median(offset_stack, axis=0)
-        b_orch.comp.set_offset_per_channel(cal_offsets)
-        path_b_summary['calibrated_offset_mV'] = cal_offsets.tolist()
-    if trim_samples:
-        trim_stack = _np.stack(trim_samples, axis=0)
-        scale = float(getattr(args, 'path_b_calibrate_vth_scale', 1.0))
-        min_v = float(getattr(args, 'path_b_calibrate_vth_min', -200.0))
-        max_v = float(getattr(args, 'path_b_calibrate_vth_max', 200.0))
-        cal_trim_vec = _np.clip(_np.median(trim_stack, axis=0) * scale, min_v, max_v)
-        path_b_summary['calibrated_vth_mV'] = cal_trim_vec.tolist()
-if cal_trim_vec is not None and not vth_schedule:
-    b_orch.comp.set_vth_per_channel(cal_trim_vec)
+            # Calibration and auto-zero for Path B (kept within try/analog block)
+            cal_offsets = None
+            cal_trim_vec = None
+            cal_optical_bias = None
+            cal_optical_trim_final = None
+            if getattr(args, 'path_b_calibrate_vth', False):
+                cal_passes = max(1, min(int(getattr(args, 'path_b_calibrate_vth_passes', 64)), args.trials))
+                cal_guard_gain = guard_gain if bool(getattr(args, 'path_b_calibrate_vth_apply_guard', False)) else 0.0
+                offset_samples = []
+                trim_samples = []
+                bias_samples = []
+                final_bias_samples = []
+                tern_zero = _np.zeros(b_orch.sys.channels, dtype=int)
+                tern_plus = _np.ones(b_orch.sys.channels, dtype=int)
+                tern_minus = -tern_plus
+                for _cal in range(cal_passes):
+                    for mode, tern_cal in (("zero", tern_zero), ("plus", tern_plus), ("minus", tern_minus)):
+                        dt_cal, stage_outputs_cal, base_vth_vec_cal = _run_pathb_stage_pass(
+                            b_orch, tern_cal, analog_depth, stage_gain_schedule, vth_schedule)
+                        stage0 = stage_outputs_cal[0]
+                        Pp_cal = stage0[0].copy()
+                        Pm_cal = stage0[1].copy()
+                        diff_opt = Pp_cal - Pm_cal
+                        if mode == "zero":
+                            bias_samples.append(diff_opt.copy())
+                        if cal_guard_gain > 0.0:
+                            adjust = cal_guard_gain * _np.sign(diff_opt)
+                            if guard_deadzone > 0.0:
+                                adjust[_np.abs(diff_opt) < guard_deadzone] = 0.0
+                            Pp_cal = _np.clip(Pp_cal + 0.5 * adjust, 0.0, None)
+                            Pm_cal = _np.clip(Pm_cal - 0.5 * adjust, 0.0, None)
+                        Ip_cal = b_orch.pd.simulate(Pp_cal, dt_cal)
+                        Im_cal = b_orch.pd.simulate(Pm_cal, dt_cal)
+                        if balanced_pd:
+                            diff_current = Ip_cal - Im_cal
+                            Ip_cal = diff_current
+                            Im_cal = -diff_current
+                        Vp_cal = b_orch.tia.simulate(Ip_cal, dt_cal)
+                        Vm_cal = b_orch.tia.simulate(Im_cal, dt_cal)
+                        dv_cal_mV = (Vp_cal - Vm_cal) * 1e3
+                        if mode == "zero":
+                            offset_samples.append(dv_cal_mV)
+                            trim_samples.append(_np.abs(dv_cal_mV))
+                        if mode in ("plus", "minus"):
+                            final_bias_samples.append(stage_outputs_cal[-1][3].copy())
+                        if vth_schedule and base_vth_vec_cal is not None:
+                            b_orch.comp.set_vth_per_channel(base_vth_vec_cal)
+                path_b_summary = dict(path_b_summary or {})
+                if bias_samples:
+                    bias_stack = _np.stack(bias_samples, axis=0)
+                    cal_optical_bias = _np.median(bias_stack, axis=0)
+                    path_b_summary['calibrated_optical_bias_mW'] = cal_optical_bias.tolist()
+                if final_bias_samples:
+                    final_bias_stack = _np.stack(final_bias_samples, axis=0)
+                    cal_optical_trim_final = _np.median(final_bias_stack, axis=0)
+                    path_b_summary['calibrated_optical_trim_final_mW'] = cal_optical_trim_final.tolist()
+                if offset_samples:
+                    offset_stack = _np.stack(offset_samples, axis=0)
+                    cal_offsets = _np.median(offset_stack, axis=0)
+                    b_orch.comp.set_offset_per_channel(cal_offsets)
+                    path_b_summary['calibrated_offset_mV'] = cal_offsets.tolist()
+                if trim_samples:
+                    trim_stack = _np.stack(trim_samples, axis=0)
+                    scale = float(getattr(args, 'path_b_calibrate_vth_scale', 1.0))
+                    min_v = float(getattr(args, 'path_b_calibrate_vth_min', -200.0))
+                    max_v = float(getattr(args, 'path_b_calibrate_vth_max', 200.0))
+                    cal_trim_vec = _np.clip(_np.median(trim_stack, axis=0) * scale, min_v, max_v)
+                    path_b_summary['calibrated_vth_mV'] = cal_trim_vec.tolist()
+            if cal_trim_vec is not None and not vth_schedule:
+                b_orch.comp.set_vth_per_channel(cal_trim_vec)
             if cal_trim_vec is not None and not vth_schedule:
                 b_orch.comp.set_vth_per_channel(cal_trim_vec)
             vth_vec = _np.zeros(b_orch.sys.channels, dtype=float)

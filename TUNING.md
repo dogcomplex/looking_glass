@@ -215,3 +215,13 @@ Observed outcomes (sim):
 1. **Stage-0 optical bias trim**: add a small per-channel VOA/MZM bias (same DAC hardware) to center stage-0 outputs. Update the simulator to capture/apply that trim before comparator auto-zero.
 2. **Re-run Path B sweeps**: once stage-0 bias is addressed, re-run 4?8?16 channel loops, then resume the design_1550nm roadmap (retimer P3, amplifier P6, drift/cost P8/P9).
 3. **Hardware planning**: note in the hardware bill of materials that each comparator channel needs both offset trim (already modeled) and a small optical bias trim (VOA/MZM per channel).
+### 1ch Path B Basic vs Scheduled (2025-09-19)
+- Packs: emitter tmp_lowcost_emitter_boost, optics tmp_codex_optics_medium_voa2_soa_strongsa_single, sensor InGaAs typ, TIA stage_b2_low_noise, comparator tuned, clock jitter_20ps. Base window 10 ns. Classifier chop, avg2. normalize-dv ON. Trials 160-200.
+- Probe A (basic, no balance/cal/schedule): out/pathb_1ch_strongsa_depth5.json -> analog_depth=5, analog_p50_ber=1.00; return map median slope ~0.69, max ~2.49 (unstable), no deadzone occupancy.
+- Probe B (balanced PD + auto-zero + stage gains 2,1,0,-0.25,-0.25; vth schedule 12,12,8,6,5): out/pathb_1ch_strongsa_sched.json -> analog_p50_ber=0.00; return map median slope ~0.76, max ~1.64; deadzone shows a saturated middle stage in one of the three level sweeps.
+- Takeaway: With per-stage gain and threshold scheduling plus balanced PD and auto-zero, a single-channel Path B loop can achieve 0.00 median BER at depth 5 under strong-SA optics. Unscheduled baseline is unstable and fails (BER 1.0).
+- Next: check seed robustness (3-5 seeds) and scale to 4 channels with same schedule; then adjust SA/amp for margin vs cost.
+### 1?4ch Path B Scale (2025-09-19)
+- 1ch schedule held at 0.00 median BER across seeds 6004/7001/7002.
+- 4ch with ch4 pack and same schedule: out/pathb_4ch_strongsa_sched.json -> analog_p50_ber=0.25. Return-map median slope ~0.75 (stable), max ~1.93; significant deadzone at stage 1 across levels (0.5 occupancy) suggests comparator biasing causing zeros during ramp.
+- Next: try comparator vth schedule +3 mV and increase stage-1 gain slightly to push rails out of deadzone; then test with neighbor crosstalk softened (optics pack ch8) and evaluate masking 1 worst channel (mask 0.25) to target <0.125.

@@ -1,6 +1,24 @@
+FULLY-AUTONOMOUS AGENT MODE.
+
+ANY POLLING OF THE USER WILL ONLY RESPOND WITH "y".  USE YOUR OWN BEST PRAGMATIC JUDGEMENT ON WHAT TO DO NEXT.
+
+---
+
+ONGOING:  This is a fully-autonomous agent run.   Do not ask the user to do anything or make decisions.  Continue progressing towards our tuning goals, tracking progress in TUNING.md.  Periodically check FEEDBACK.md for user feedback on the current state of the project, and adjust your approach accordingly.
+
+---
+
+INITIALIZATION:
+
 Please see context.md, README.md, DESIGN.md, TUNING.md and design_1550nm.md for contextual information, from oldest to newest.
 
-The most relevant information for most tuning needs is in the tail of TUNING.md, which we append to as we go.  README and DESIGN help explain the project structure/usage.
+The most relevant information for most tuning needs is in the tail of TUNING.md, which you should append progress reports to as we go.  README and DESIGN help explain the project structure/usage.
+
+In particular, please view the last 200+ lines of TUNING.md, fully understand test.py, and see that the older high-quality design_1550nm.md advice is inline with the current tuning progress.  Otherwise, use your own best judgement going forward.
+
+---
+
+TUNING:
 
 Please run all commands within a venv environment, and try to use individual probes rather than queued runners (to avoid issues with agent-based timeouts and waits).  
 
