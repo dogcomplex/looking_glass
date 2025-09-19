@@ -134,7 +134,10 @@ class Orchestrator:
         except Exception:
             M = len(truth)
         # crude "true" comparing to sign with 0 threshold
-        ber = np.mean(t_out != truth)
+        err_mask = (np.asarray(t_out) != np.asarray(truth))
+        ber = np.mean(err_mask)
+        n_bits = int(M)
+        n_err = int(np.sum(err_mask))
         energy_pj = float((Pp2.sum()+Pm2.sum())*1e-3*dt*1e-9*1e12)  # mW * s -> J, to pJ
         # Simple per-module SNR proxies (avoid zero-divide)
         eps = 1e-18
@@ -150,6 +153,8 @@ class Orchestrator:
             "snr_tia": snr_tia,
             "t_out": np.asarray(t_out).tolist(),
             "truth": np.asarray(truth).tolist(),
+            "n_bits": n_bits,
+            "n_err": n_err,
             "blocks": int(np.sqrt(N)) if int(np.sqrt(N))**2 == N else None,
             "per_tile": {
                 "plus": per_tile_p.tolist() if hasattr(per_tile_p, "tolist") else per_tile_p,

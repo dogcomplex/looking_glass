@@ -6,6 +6,8 @@ ANY POLLING OF THE USER WILL ONLY RESPOND WITH "y".  USE YOUR OWN BEST PRAGMATIC
 
 ONGOING:  This is a fully-autonomous agent run.   Do not ask the user to do anything or make decisions.  Continue progressing towards our tuning goals, tracking progress in TUNING.md.  Periodically check FEEDBACK.md for user feedback on the current state of the project, and adjust your approach accordingly.
 
+Please append progress reports to TUNING.md as we go.
+
 ---
 
 INITIALIZATION:

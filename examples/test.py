@@ -52,12 +52,30 @@ def run_trials(orch: Orchestrator, trials: int):
             "ber": r.get("ber"),
             "energy_pj": r.get("energy_pj"),
             "window_ns": r.get("window_ns"),
+            "n_bits": r.get("n_bits"),
+            "n_err": r.get("n_err"),
         })
     return out
 
 
 def med_ber(rows):
     return float(median([r["ber"] for r in rows])) if rows else None
+
+def _wilson_ci(n_err: int, n_bits: int, z: float = 1.96):
+    try:
+        n = int(n_bits)
+        k = int(n_err)
+        if n <= 0:
+            return None, None
+        p = k / n
+        denom = 1 + (z*z)/n
+        center = (p + (z*z)/(2*n)) / denom
+        half = (z * ((p*(1-p)/n + (z*z)/(4*n*n)) ** 0.5)) / denom
+        lo = max(0.0, center - half)
+        hi = min(1.0, center + half)
+        return float(lo), float(hi)
+    except Exception:
+        return None, None
 
 def mean_ber(rows):
     return (float(sum(r["ber"] for r in rows)/len(rows)) if rows else None)
@@ -434,6 +452,11 @@ def main():
     ap.add_argument("--path-b-sparse-active-k", type=int, default=0, help="If >0, force exactly K active channels per trial (others set to 0)")
     ap.add_argument("--path-b-eval-active-only", action="store_true", help="When using sparse-active-k, compute BER on active channels only (models TDM scanning)")
     ap.add_argument("--path-b-sparse-rotate", action="store_true", help="Cycle deterministically through channel subsets (ceil(N/K) groups) rather than random subsets")
+    # Optional TDM realism: EO/WSS switching penalties
+    ap.add_argument("--tdm-switch-mode", type=str, choices=["emitter","eo_switch"], default="emitter", help="TDM selection mode: emitter (no switch penalty) or eo_switch (adds switch penalties)")
+    ap.add_argument("--tdm-switch-t-ns", type=float, default=0.0, help="EO/WSS switching time penalty per subset (ns)")
+    ap.add_argument("--tdm-switch-offiso-db", type=float, default=0.0, help="EO/WSS off isolation during inactive state (dB, leakage adds to crosstalk)")
+    ap.add_argument("--tdm-switch-extra-il-db", type=float, default=0.0, help="EO/WSS extra insertion loss (dB) when switching is used")
     # TDM re-centering (optional): periodically re-center comparator vth using recent dv statistics
     ap.add_argument("--path-b-tdm-recenter-interval", type=int, default=0, help="If >0, every N trials compute per-channel vth as 0.5*(mean_pos+mean_neg) over recent frames and apply")
     ap.add_argument("--path-b-tdm-recenter-margin-mV", type=float, default=0.0, help="Optional margin added to computed vth during TDM re-centering")
@@ -814,6 +837,16 @@ def main():
         }
     else:
         base_summary = base_orch.run(trials=args.trials)
+        # Confidence interval for baseline (approximate using aggregated n_bits/n_err from a short rerun)
+        try:
+            rows_b = run_trials(base_orch, min(args.trials, 200))
+            n_bits = sum(int(r.get("n_bits") or 0) for r in rows_b)
+            n_err = sum(int(r.get("n_err") or 0) for r in rows_b)
+            lo, hi = _wilson_ci(n_err, n_bits)
+            if lo is not None:
+                base_summary["ber_ci95"] = {"lo": lo, "hi": hi, "n_bits": int(n_bits), "n_err": int(n_err)}
+        except Exception:
+            pass
     # Add mean_ber to baseline using a lightweight re-run (bounded)
     try:
         _rows_b = run_trials(base_orch, min(args.trials, 200))
@@ -852,6 +885,35 @@ def main():
             b_optx.amp_type = amp_type.lower()
             if b_optx.amp_type != 'soa':
                 b_optx.soa_on = False
+            # EDFA nudges: ensure shaping and contraction knobs present
+            try:
+                if b_optx.amp_type == 'edfa':
+                    if float(getattr(b_optx, 'soa_small_signal_gain_db', 0.0)) == 0.0:
+                        # Map from generic amp_gain_db if present, else default
+                        if hasattr(b_optx, 'amp_gain_db'):
+                            b_optx.soa_small_signal_gain_db = float(getattr(b_optx, 'amp_gain_db', 6.0))
+                        else:
+                            b_optx.soa_small_signal_gain_db = 6.0
+                    # Encourage contraction via post-VOA and activation shaping
+                    try:
+                        if float(getattr(b_optx, 'voa_post_db', 0.0)) < 2.0:
+                            b_optx.voa_post_db = 2.0
+                    except Exception:
+                        pass
+                    b_optx.sat_abs_on = True
+                    if float(getattr(b_optx, 'sat_I_sat', 0.0)) <= 0.0:
+                        b_optx.sat_I_sat = 0.8
+                    if float(getattr(b_optx, 'sat_alpha', 0.0)) < 1.0:
+                        b_optx.sat_alpha = 1.0
+                    # Post-clip to keep rails
+                    try:
+                        b_optx.post_clip_on = True
+                        if float(getattr(b_optx, 'post_clip_sat_mw', 0.0)) <= 0.0:
+                            b_optx.post_clip_sat_mw = 0.1
+                    except Exception:
+                        pass
+            except Exception:
+                pass
         if getattr(args, 'path_b_disable_soa', False):
             b_optx.soa_on = False
         b_pd = PDParams(**pd.__dict__)
@@ -972,7 +1034,10 @@ def main():
             recenter_margin = float(getattr(args, 'path_b_tdm_recenter_margin_mV', 0.0))
             _dv_hist = []  # list of dv arrays
             _truth_hist = []  # list of truth arrays
+            _tdm_recenter_events = 0
             errs = []
+            _n_bits_acc = 0
+            _n_err_acc = 0
             stage_errs_prev = [[] for _ in range(analog_depth)]
             stage_errs_initial = [[] for _ in range(analog_depth)]
             for t_idx in range(T):
@@ -1096,11 +1161,17 @@ def main():
                 if active_mask_trial is not None and eval_active_only:
                     am = _np.asarray(active_mask_trial, dtype=bool)
                     if am.any():
-                        errs.append(float(_np.mean(out_arr[am] != tern0[am])))
+                        mism = (out_arr[am] != tern0[am])
+                        errs.append(float(_np.mean(mism)))
+                        _n_bits_acc += int(_np.sum(am))
+                        _n_err_acc += int(_np.sum(mism))
                     else:
                         errs.append(0.0)
                 else:
-                    errs.append(float(_np.mean(out_arr != tern0)))
+                    mism = (out_arr != tern0)
+                    errs.append(float(_np.mean(mism)))
+                    _n_bits_acc += int(len(out_arr))
+                    _n_err_acc += int(_np.sum(mism))
 
                 # Optional periodic re-centering of comparator vth using recent dv statistics
                 try:
@@ -1137,6 +1208,7 @@ def main():
                                 if cal_trim_vec is not None:
                                     v_apply = v_apply + cal_trim_vec
                                 b_orch.comp.set_vth_per_channel(v_apply)
+                                _tdm_recenter_events += 1
                 except Exception:
                     pass
                 if stage_signs_last is not None:
@@ -1149,6 +1221,13 @@ def main():
             path_b_summary = dict(path_b_summary or {})
             path_b_summary['analog_depth'] = analog_depth
             path_b_summary['analog_p50_ber'] = float(_np.median(errs)) if errs else None
+            # Confidence interval for analog TDM run from accumulated counts
+            try:
+                _lo, _hi = _wilson_ci(_n_err_acc, _n_bits_acc)
+                if _lo is not None:
+                    path_b_summary["ber_ci95"] = {"lo": _lo, "hi": _hi, "n_bits": int(_n_bits_acc), "n_err": int(_n_err_acc)}
+            except Exception:
+                pass
             # Throughput estimate for sparse activation (TDM)
             try:
                 if sparse_k > 0:
@@ -1156,6 +1235,14 @@ def main():
                     subsets = max(1, _math.ceil(int(b_orch.sys.channels) / float(max(1, sparse_k))))
                     micro_passes = int(subsets * max(1, analog_depth) * max(1, guard_passes))
                     symbol_time_ns = float(micro_passes) * float(b_orch.clk.p.window_ns)
+                    # Optional EO/WSS switching penalty per subset
+                    try:
+                        mode = str(getattr(args, 'tdm_switch_mode', 'emitter')).lower()
+                        t_sw = float(getattr(args, 'tdm_switch_t_ns', 0.0))
+                        if mode == 'eo_switch' and t_sw > 0.0:
+                            symbol_time_ns += float(subsets) * t_sw
+                    except Exception:
+                        pass
                     tdm_symbols_per_s = (1e9 / symbol_time_ns) if symbol_time_ns > 0 else None
                     path_b_summary['sparse_active_k'] = int(sparse_k)
                     path_b_summary['eval_active_only'] = bool(eval_active_only)
@@ -1163,6 +1250,12 @@ def main():
                     path_b_summary['tdm_micro_passes'] = micro_passes
                     path_b_summary['tdm_symbol_time_ns'] = symbol_time_ns
                     path_b_summary['tdm_symbols_per_s'] = float(tdm_symbols_per_s) if tdm_symbols_per_s is not None else None
+                    # Record switch realism flags if present
+                    try:
+                        path_b_summary['tdm_switch_mode'] = str(getattr(args, 'tdm_switch_mode', 'emitter'))
+                        path_b_summary['tdm_switch_t_ns'] = float(getattr(args, 'tdm_switch_t_ns', getattr(args, 'tdm_switch_t_ns', 0.0))) if hasattr(args, 'tdm_switch_t_ns') else float(getattr(args, 'tdm_switch_t_ns', 0.0))
+                    except Exception:
+                        pass
                     # Energy proxy: scale baseline per-trial p50 energy by micro-passes
                     try:
                         base_e = None
@@ -1172,6 +1265,25 @@ def main():
                             base_e = float(base_summary.get('p50_energy_pj'))
                         if base_e is not None:
                             path_b_summary['tdm_pj_per_symbol_est'] = float(base_e) * float(micro_passes)
+                    except Exception:
+                        pass
+                    # Re-center duty reporting (if enabled)
+                    try:
+                        if recenter_interval > 0:
+                            total_frames = int(len(_dv_hist)) if '_dv_hist' in locals() else 0
+                            path_b_summary['tdm_recenter_interval'] = int(recenter_interval)
+                            path_b_summary['tdm_recenter_frames_observed'] = total_frames
+                            path_b_summary['tdm_recenter_events'] = int(_tdm_recenter_events)
+                            path_b_summary['tdm_recenter_duty'] = (float(_tdm_recenter_events) / max(1.0, float(total_frames))) if total_frames > 0 else 0.0
+                    except Exception:
+                        pass
+                    # Record amplifier/activation shaping used (for sweeps/analysis)
+                    try:
+                        path_b_summary['amp_type'] = str(getattr(b_optx, 'amp_type', 'soa'))
+                        path_b_summary['voa_post_db'] = float(getattr(b_optx, 'voa_post_db', 0.0))
+                        path_b_summary['sat_abs_on'] = bool(getattr(b_optx, 'sat_abs_on', False))
+                        path_b_summary['sat_I_sat'] = float(getattr(b_optx, 'sat_I_sat', 0.0))
+                        path_b_summary['sat_alpha'] = float(getattr(b_optx, 'sat_alpha', 0.0))
                     except Exception:
                         pass
             except Exception:
@@ -2738,14 +2850,24 @@ def main():
             if not isinstance(ber_b, (int, float)):
                 ber_b = pb.get('p50_ber') if isinstance(pb.get('p50_ber'), (int, float)) else pb.get('digital_p50_ber')
             e2e = None
+            # Combined tokens/s proxy: bottleneck between Path A tokens/s and Path B symbol rate
+            tok_a = pa.get('p50_tokens_per_s') if isinstance(pa.get('p50_tokens_per_s'), (int, float)) else None
+            tok_b = pb.get('tdm_symbols_per_s') if isinstance(pb.get('tdm_symbols_per_s'), (int, float)) else None
+            tok_e2e = None
             if isinstance(ber_a, (int, float)) and isinstance(ber_b, (int, float)):
                 # naive independence assumption for quick estimate:
                 # probability both correct = (1-ber_a)*(1-ber_b), so combined ber ~ 1 - that
                 e2e = 1.0 - ((1.0 - float(ber_a)) * (1.0 - float(ber_b)))
+            try:
+                if isinstance(tok_a, (int, float)) and isinstance(tok_b, (int, float)):
+                    tok_e2e = float(min(tok_a, tok_b))
+            except Exception:
+                pass
             summary['end_to_end'] = {
                 'path_a_p50_ber': ber_a,
                 'path_b_p50_ber': ber_b,
                 'combined_p50_ber_independent': e2e,
+                'tokens_per_s': tok_e2e,
             }
             if not args.quiet:
                 print(json.dumps({'end_to_end': summary['end_to_end']}, indent=2))
