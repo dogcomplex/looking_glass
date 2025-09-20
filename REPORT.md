@@ -590,3 +590,110 @@ Configurations
 Verification plan
 - Run 1‑ch acceptance first; then 4‑/8‑ch scaling at 6–12 ns; then TDM subsets for 16‑ch.
 - Track BER/CI, return‑map slopes, drift/recenter metrics, and tokens/s where applicable.
+
+
+=====================================
+
+FURTHER FEEDBACK (3):
+
+This is a strong update—you’ve clearly pushed the simulator toward “engineering-useful” territory. Here’s a tight plausibility pass with the biggest wins, red flags, and the fastest paths to squeeze more signal out of your setup.
+
+What looks solid
+
+Instrumentation & KPIs: BER CIs, energy/symbol, TDM realism, end-to-end hooks—the right scaffolding to avoid self-delusion.
+
+Diagnosing contraction: Using return-map slopes is exactly what you want for Path B. Your read that the plateau is decision-dominated (comparators saturating early) is consistent with the slope/deadzone signatures.
+
+SOA vs EDFA behavior: “SOA stable at 0 BER (1-ch), EDFA high BER unless shaped/VOA’d” matches physics: SOAs add pattern-dependent gain and beat noise but are easy to clamp and keep contracted; EDFAs inject ASE + tilt and want OBPF+gain balancing to behave in a loop.
+
+Balanced PD + soft vth schedules: The single biggest lever you’ve found—good.
+
+Biggest red flags / likely causes
+
+BER granularity hints under-sampling. Repeated values like 0.3125, 0.375, 0.4375 suggest a small effective sample (e.g., 5/16, 6/16, 7/16 errors in a short window). Your CIs help, but I’d:
+
+Increase symbols per condition (≥10k) for the top 2–3 recipes; keep 800 for scouting.
+
+Report p50/p95 BER + Wilson CI and an exact error count to catch discreteness.
+
+“No improvement with guard/vth grid” smells comparator-limited. When coarse knobs don’t move BER but slopes change, the comparator is probably clipping too early or with too much hysteresis/offset sigma.
+
+Log pre-comparator voltage histograms per stage and decision margin (Δ to vth). If 60–80% of samples pile within ±1–2σ of vth, you’re quantization-limited, not optics-limited.
+
+EDFA plateau likely from ASE + tilt + partial saturation. Your “median slope ~0.87, max ~4–5, BER still high” is classic: bursts get over-amplified, noise floor lifts the rest. You need:
+
+Tighter OBPF after EDFA (0.4–0.8 nm) and a pre/post-gain tilt compensator (first-order wavelength weighting).
+
+Dynamic VOA to keep EDFA input power constant (preventing transient gain swings).
+
+Seed sensitivity of the “0-BER TDM preset”. Good catch—means your calibration must be part of the preset, not optional. The plan to harden with --path-b-calibrate-* and light digital guard is right.
+
+Quick wins to try next (minimal code changes)
+
+Comparator overlay audit (most leverage):
+
+Reduce hysteresis 10–30%, add small dither (Gaussian ~0.1–0.2 of current σ) to avoid sticky thresholds.
+
+Add a per-stage auto-bias trim: target the median pre-decision sample to sit at vth − 0.4σ (keeps contraction but delays saturation).
+
+Stage-gain schedule shape: Your (-1, -0.25, +0.25) didn’t help; try concave early attenuation then flat: (-1.25, -0.75, -0.5) for d=3; for d=5 use (-1.0, -0.75, -0.5, -0.25, 0). Aim median slope ~0.7 in stage 1 and ~0.6 by stage 3, never >1.
+
+Window & averaging: You saw 8 ns didn’t help and 12 ns sometimes regressed; that suggests timing jitter vs bandwidth is balanced. Lock 10 ns and push avg-frames=3 only when you enable recenter=64; otherwise keep avg=2 to preserve loop gain.
+
+EDFA micro-sweep with proper shaping: Fix EDFA Pin within ±0.2 dB via pre-VOA AGC; OBPF FWHM 0.6 nm; add gain-tilt pre-emphasis (simple linear λ weight) so the EDFA sees a flat spectral load. Then sweep post-gain OBPF ±0.2 nm and post-VOA for contraction.
+
+Add these diagnostics (they’ll shorten your hunt)
+
+Per-stage eye diagrams (pre-comparator) with σ/μ overlays and deadzone occupancy vs stage.
+
+Noise budget printout per stage: shot, thermal, ASE (if EDFA), RIN (if SOA), plus TIA ENBW. You want SNR > ~9–12 dB where the decision is made.
+
+Crosstalk matrix heatmap for K-sparse TDM: measure inter-subset leakage; if >-20 dB, tighten masks or insert small de-skew between active subsets.
+
+Contraction map: median slope per stage and 95th-percentile slope; design for median <0.7 and 95th <0.95.
+
+Interpretation of your current numbers
+
+Best analog (8-ch @12 ns = 0.3125): Plausible as a comparator/budget-noise plateau. If pre-decision SNR is ~10 dB and you don’t adapt vth per run, hovering at ~30% BER is common in ternary-ish thresholds.
+
+1-ch @6–8 ns 0-BER: Also plausible—single-path SOA with balanced PD and soft vth can be made contraction-heavy and deterministic.
+
+Deep-loop preset (0.125 BER @ ~3.3 Msym/s, 30 micro-passes): Looks like genuine inner-loop compute with periodic recenter. The numbers hang together if each micro-pass costs ~100 ns and your per-symbol budget is a few hundred ns.
+
+Modeling realism gaps to close (to keep sims “afraid”)
+
+Comparator non-idealities: Input-referred offset drift, 1/f, hysteresis dependence on slew, meta-stability window with jitter. Add a slew-rate-dependent threshold wander term.
+
+SOA dynamics: Gain compression vs instantaneous input power (pulsed behavior), internal ASE beating with signal; simple 2-state rate-equation surrogate is enough to punish overdrive.
+
+EDFA transients: Carrier lifetime (~ms) + gain control loop; simulate a low-BW AGC so sudden Pin changes briefly blow up the slope.
+
+TIA bandwidth & peaking: Emulate group delay and mild peaking; excessive peaking will fake improvement in slope while worsening BER—your diagnostics will catch this.
+
+Clock/data mis-alignment: With 20 ps jitter at 10 ns windows you’re fine, but add slow drift and phase wander so calibration actually matters across trials.
+
+What to lock into presets (so they generalize)
+
+Always-on calibration (--path-b-calibrate-vth --path-b-calibrate-optical) with bounded trims (±10%) so it can’t cheat.
+
+Seed-hardened 0-BER TDM preset: keep digital guard passes=1–2 as a guardrail; document symbol rate & micro-pass cost.
+
+EDFA preset: pin input power, OBPF width, and gain-tilt shaping; publish the contraction map next to BER so you can spot “false improvements.”
+
+Hardware alignment sanity (so BOM work maps cleanly)
+
+InGaAs PD + TIA pair: set simulator ENBW and input-referred noise to match the datasheet values you intend to buy; keep the same shaping you used to get 0.3125 in sim when you bench it.
+
+SOA/EDFA choices: your sim packs should have the saturation power, NF, and small-signal gain roughly matching the short-list parts; otherwise the loop will behave differently on day one.
+
+TL;DR next steps I’d do now
+
+Comparator overlay tweak (↓hysteresis 20%, +tiny dither), auto-bias to vth − 0.4σ, and re-run the best 8-ch @12 ns recipe at ≥10k symbols → try to break past 0.3125.
+
+EDFA with disciplined shaping (constant Pin + 0.6 nm OBPF + linear tilt pre-emphasis) and re-sweep post-VOA to get median slope ~0.7 stage 1 → see if it can approach the SOA result.
+
+Bake calibration into presets, add p95 BER + Wilson CI, and log decision margins per stage. If margins cluster near zero early, you’re still comparator-limited.
+
+Freeze a seed-hardened TDM 0-BER demo (guard=1–2), and a deep-loop demo (recenter=64) with the contraction map and micro-pass duty called out.
+
+If you want, I can turn your current “best 8-ch @12 ns” into a seed-hardened preset (exact flags + recommended symbol count) and write the compact diagnostics block you can drop into your reports so every future run prints: error count, Wilson CI, slope(p50/p95) per stage, decision margin histogram stats, and SNR budget.

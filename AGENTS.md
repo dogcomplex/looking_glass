@@ -12,7 +12,7 @@ Please append progress reports to TUNING.md as we go.
 
 INITIALIZATION:
 
-Please see context.md, README.md, DESIGN.md, TUNING.md and design_1550nm.md for contextual information, from oldest to newest.
+Please see context.md, README.md, DESIGN.md, TUNING.md, design_1550nm.md and deeploop_advice.md for contextual information, from oldest to newest.  Please read all of them fully.
 
 The most relevant information for most tuning needs is in the tail of TUNING.md, which you should append progress reports to as we go.  README and DESIGN help explain the project structure/usage.
 

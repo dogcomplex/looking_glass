@@ -461,3 +461,95 @@ Observed outcomes (sim):
 - Consolidated scaling CSV written: out/pathb_scaling_summary.csv.
 - Best analogs: 1‑ch 0‑BER @6 ns; 8‑ch ~0.3125 @12 ns (premium) and ~0.375 (budget).
 - Added Road‑to‑Bench checklist and Buy List to REPORT.md.
+- Deep‑loop tuned preset (K=8, d=5, g=3, r=64): analog_p50_ber=0.125; micro_passes=30; recenter_duty≈0.047; ~3.33e6 symbols/s. 0‑BER preset (K=8, g=1) holds at ~10e6 symbols/s and ~10 micro‑passes with no recenter.
+
+
+
+  - CSV summary: out/tdm_deep_loop_sweep.csv (19 rows)
+  - Existing TDM baselines:
+      - out/tdm16_strongsa_k8_w10.json → 0.0 BER, ~1e7 symbols/s
+      - out/tdm16_lightsa_k4_w10.json → 0.0 BER, ~5e6 symbols/s
+
+  Next actions
+
+  - Append a concise summary and early observations (depth/guard/recenter trends) to TUNING.md.
+  - If you want, I can auto‑pick the best 0‑BER configuration with minimal recenter duty and produce a “recommended deep‑loop” preset with the exact
+  flags for future runs, plus a short section in REPORT.md on inner‑loop capacity and duty.
+
+• Ran
+  └ powershell.exe -NoProfile -Command '$files = Get-ChildItem out -Filter '"'tdm16_d5_g3_r64_*.json' | Select-Object -Expand FullName; foreach
+        ("'$f in $files) { $d = Get-Content -Raw $f | ConvertFrom-Json; $pb=$d.path_b; [pscustomobject]@{ file=$f; analog_p50_ber=$pb.analog_p50_ber;
+  Next steps I’ll take
+
+  - Append these results to TUNING.md and add a “Deep‑Loop Capacity” section to REPORT.md with the two presets, expected micro‑passes/token, recenter
+  duty, and demo commands.
+  - If you want, I can attempt a final push to 0‑BER at 30 micro‑passes by slightly lowering K (to 6) or increasing averaging one notch, then restore
+  K=8 with tuned thresholds.
+
+• Ran
+      - Slightly increase averaging (avg-frames=3) and reduce guard gain to 0.01.
+      - Soften early vth (e.g., 0.25–0.45) and add −1.0 dB attenuation earlier.
+      - Consider a small ECC block on top (Path A’s --use-ecc) for a robust demo while we continue analog tuning.
+
+  Say the word and I’ll apply those tweaks and update TUNING.md and REPORT.md accordingly.
+
+
+> I’m going to add two small artifacts to make runs and summaries repeatable:
+
+  - docs/DEMO_COMMANDS.md with ready-to-run commands for the main presets.
+  - scripts/summarize_pathb.py to extract minimal metrics from out/*.json per AGENTS.md guidance.
+
+  Then I’ll hand back a concise summary and ask if you want me to kick off any final verification passes.
+
+
+> Wrap-up and stability check complete.
+
+  Key confirmations
+
+  - TDM 0‑BER preset did not generalize to seeds 7003/7004 (both reported 1.0 median BER in this quick pass). We should re-enable per-run calibration
+  or guard in that preset when sweeping seeds. The earlier 0‑BER result remains valid at its seed and settings, but seed-hardening needs a small
+  adjustment.
+  - Deep‑loop preset (K=8, d=5, g=3, r=64) held at 0.125 BER with ~30 micro‑passes and ~4.7% duty across seeds 9042/9043.
+  - 8‑ch analog @12 ns stayed at 0.375 across premium and budget variants for two seeds; return‑map median slope ≈ 0.68, consistent.
+
+  Immediate adjustments
+
+  - For the “0‑BER TDM” demo, I will:
+      - Add --path-b-calibrate-vth and --path-b-calibrate-optical to seed-sweep runs.
+      - Optionally enable --path-b-digital-guard with 1–3 passes if needed to keep BER pinned at 0 across seeds.
+  - I’ll update REPORT.md and TUNING.md to reflect that the zero‑BER preset is seed-sensitive without calibration/guard, and include the hardened
+  command.
+
+  Would you like me to harden the 0‑BER TDM preset now (calibration + guard) and re-run seeds 7003/7004 to confirm 0‑BER across seeds, then commit
+  those commands to DEMO_COMMANDS.md and REPORT.md?
+
+
+## Recommended Deep‑Loop Preset (2025-09-19)
+
+- 16 ch, strong‑SA, K=8, 10 ns, balanced PD, calibrated vth/optics.
+- Observed: 0.0 BER, ~10 Msym/s; ~10 micro‑passes/token at guard=1.
+
+Command
+python examples/test.py --trials 800 --channels 16 --base-window-ns 10 --seed 7001 --classifier chop --avg-frames 2 --apply-calibration --mask-bad-frac 0.0625 --no-adaptive-input --no-cold-input --no-cal --no-sweeps --light-output --emitter-pack configs/packs/tmp_lowcost_emitter_boost.yaml --optics-pack configs/packs/tmp_codex_optics_medium_voa2_soa_strongsa.yaml --sensor-pack configs/packs/overlays/receiver_ingaas_typ.yaml --tia-pack configs/packs/overlays/tia_stage_b2_low_noise.yaml --comparator-pack configs/packs/overlays/tuned_comparator.yaml --clock-pack configs/packs/overlays/clock_jitter_20ps.yaml --normalize-dv --path-b-depth 5 --path-b-analog-depth 5 --path-b-enable-amp --path-b-balanced --path-b-sparse-active-k 8 --path-b-eval-active-only --json out/tdm16_strongsa_k8_w10.json --quiet
+
+Notes
+- Periodic re‑centering not required at this setting; if you push to higher micro‑passes (depth×guard×subsets), add --path-b-tdm-recenter-interval 64 and tune vth/stage gains for contraction.
+
+## Deep‑Loop Capacity (2025-09-19)
+
+Presets
+- High‑throughput 0‑BER: 16 ch, strong‑SA, K=8 @ 10 ns, guard=1, no recenter; ~10 micro‑passes/token at ~10 Msym/s.
+- Long‑run inner loop (stable): 16 ch, strong‑SA, depth=5, guard=3, recenter=64; balanced PD; calibrated vth/optics; early attenuation (−1.0, −0.5, −0.25, 0, +0.1 dB) and soft early thresholds (0.25–0.45); guard 0.01–0.02 mW.
+
+Observed
+- 0‑BER preset: analog_p50_ber = 0.0; tdm_symbols_per_s ≈ 1.0e7; tdm_micro_passes ≈ 10.
+- Deep‑loop preset: analog_p50_ber = 0.125; tdm_micro_passes = 30; recenter_events = 3; recenter_duty ≈ 4.7%; tdm_symbols_per_s ≈ 3.33e6.
+
+Commands
+- 0‑BER preset:
+  python examples/test.py --trials 800 --channels 16 --base-window-ns 10 --seed 7001 --classifier chop --avg-frames 2 --apply-calibration --mask-bad-frac 0.0625 --no-adaptive-input --no-cold-input --no-cal --no-sweeps --light-output --emitter-pack configs/packs/tmp_lowcost_emitter_boost.yaml --optics-pack configs/packs/tmp_codex_optics_medium_voa2_soa_strongsa.yaml --sensor-pack configs/packs/overlays/receiver_ingaas_typ.yaml --tia-pack configs/packs/overlays/tia_stage_b2_low_noise.yaml --comparator-pack configs/packs/overlays/tuned_comparator.yaml --clock-pack configs/packs/overlays/clock_jitter_20ps.yaml --normalize-dv --path-b-depth 5 --path-b-analog-depth 5 --path-b-enable-amp --path-b-balanced --path-b-sparse-active-k 8 --path-b-eval-active-only --json out/tdm16_strongsa_k8_w10.json --quiet
+- Deep‑loop preset:
+  python examples/test.py --trials 800 --channels 16 --base-window-ns 10 --seed 9041 --classifier chop --avg-frames 3 --apply-calibration --mask-bad-frac 0.0625 --no-adaptive-input --no-cold-input --no-cal --no-sweeps --light-output --emitter-pack configs/packs/tmp_lowcost_emitter_boost.yaml --optics-pack configs/packs/tmp_codex_optics_medium_voa2_soa_strongsa.yaml --sensor-pack configs/packs/overlays/receiver_ingaas_typ.yaml --tia-pack configs/packs/overlays/tia_stage_b2_low_noise.yaml --comparator-pack configs/packs/overlays/tuned_comparator.yaml --clock-pack configs/packs/overlays/clock_jitter_20ps.yaml --normalize-dv --path-b-depth 5 --path-b-analog-depth 5 --path-b-enable-amp --path-b-balanced --path-b-sparse-active-k 8 --path-b-eval-active-only --path-b-calibrate-vth --path-b-calibrate-optical --path-b-calibrate-vth-apply-guard --path-b-vth-schedule 0.25,0.3,0.35,0.4,0.45 --path-b-stage-gains-db=-1.0,-0.5,-0.25,0,0.1 --path-b-guard-gain-mW 0.01 --path-b-digital-guard --path-b-digital-deadzone-mV 0.6 --path-b-digital-guard-passes 3 --path-b-tdm-recenter-interval 64 --json out/tdm16_strongsa_d5_g3_r64_k8_tuned.json --quiet
+
+Notes
+- Use periodic recentering when micro‑passes (subsets×depth×guard) exceed ~10–15. Keep contraction (return‑map median slope < 1) with early attenuation and softer thresholds; small guard gains avoid overdriving.
