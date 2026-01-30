@@ -1,0 +1,101 @@
+ChatGPT said:
+Thought for 29s
+
+Short answer: yes—this is relevant, not because we’ll copy the quantum code, but because its scaling tricks and error-handling patterns port cleanly to our optical/analog loop.
+
+What the paper actually does (in 2 lines)
+
+Proposes a non-local unitary encoder that grows a surface code from distance d to 2d−1 in four time steps, achieving total depth 4 log₂ d + O(1)—about ½ the depth of previous non-local encoders. 
+
+2506.04084v1
+
+Shows that despite long-range gates, single errors still map to matchable pairs (so simple matching decoders work), and benchmarked regimes where the new encoder beats both local encoders and measurement-based prep in error rate and time. 
+
+2506.04084v1
+
+Why it matters to us
+
+Think of their encoder as a two-stage doubling schedule with sparse, highly parallel updates:
+
+Rotated → Regular code (Stage 1),
+
+Regular → larger Rotated code (Stage 2).
+This “convert-then-double” rhythm gives logarithmic growth with predictable error propagation. For our optics, that suggests a repeatable 2-phase pass schedule through the loop (two distinct coupling patterns) that doubles effective “resolution/width” per macro-iteration while keeping diagnostics simple. 
+
+2506.04084v1
+
+Key portable ideas:
+
+Log-depth expansion beats linear-depth growth. Translate to optics as: prefer two interleaved coupling topologies that you reuse hierarchically to expand mode/feature count rather than adding many bespoke stages. 
+
+2506.04084v1
+
+Error locality despite non-local ops. They ensure a single fault triggers only two “syndromes.” In our loop, design parity/contrast checks so any local photonic drift trips exactly two monitors—keeps the health graph matchable and easy to debug. 
+
+2506.04084v1
+
+Initial state quality caps later robustness. Unitary growth does not increase fault-distance; if the seed is noisy, scaling won’t fix it. For us: perform a short digitize-and-re-threshold “seed calibration” before big expansions; otherwise drift scales with size. 
+
+2506.04084v1
+
+Crossover of “idle vs. gate” errors. They find regimes where fewer, denser steps win over many sparse steps. For optics: tune whether you prefer long exposures with minimal reconfiguration vs shorter bursts with more SLM/phase updates based on your detector noise : actuator noise ratio. 
+
+2506.04084v1
+
+Concrete things we can “steal”
+
+Two-pattern growth schedule (A↔B conversion):
+Implement two fixed coupling/weight patterns in the loop (A then B) that, when alternated, double the active degrees of freedom seen by the camera per macro-iteration—no new hardware topology each time. Map their Rot→Reg→Rot idea to (interferometric mesh A) → (mesh B). 
+
+2506.04084v1
+
+Matchable health graph:
+Design health checks so a single component drift flips two aggregated checks (e.g., two spatial parities), enabling a minimum-weight matching alarm instead of full state estimation. This keeps monitoring O(N log N). 
+
+2506.04084v1
+
+Front-loaded seed cleaning:
+Add a short measure-and-reset step before each size doubling (our analog of their small post-selected block) to cap accumulated bias. 
+
+2506.04084v1
+
+Depth budgeting:
+Favor fewer high-fan-out optical updates over many small tweaks if your “measurement time ≫ update time,” mirroring their advantage when measurements are slow. 
+
+2506.04084v1
+
+Simulator updates to make now
+
+Add a 2-phase tiling expander: implement (A,B) update kernels; each macro-iteration doubles effective width/feature channels; track SNR/contrast after each macro-doubling. 
+
+2506.04084v1
+
+Inject single-fault tests and require “two-syndrome” detection: randomly perturb one element (phase, gain, pixel PRNU) and verify exactly two virtual checks flip; adopt a simple matching decoder over those checks. 
+
+2506.04084v1
+
+Seed quality gate: simulate a short digitize/re-threshold step before expansion; verify that without it, error scales with size (mirroring fixed fault-distance). 
+
+2506.04084v1
+
+Idle-vs-update noise sweep: sweep the ratio (detector/read noise) : (actuator/update noise) to find the crossover where fewer denser steps beat many sparse steps, like their p₁/p₂ crossover. 
+
+2506.04084v1
+
+Time model: penalize “measurement” far more than “update” when that matches your hardware—then choose expansion depth accordingly (log-depth wins when readout dominates). 
+
+2506.04084v1
+
+Quick caveats
+
+The paper is quantum / surface-code specific; we’re borrowing the scheduling and error-graph insights, not the qubit logic itself. 
+
+2506.04084v1
+
+Their “ternary trick”: not used here—this work doesn’t rely on ternary weights; our ternary approach is an orthogonal cost/stability lever. 
+
+2506.04084v1
+
+If you want, I can sketch the two optical update patterns (A,B) and the minimal two-syndrome monitor set so your sim can start testing the log-depth growth right away. 
+
+2506.04084v1

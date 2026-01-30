@@ -1,0 +1,231 @@
+Skip to content
+Chat history
+
+
+
+You said:
+are there Microcomb Sources for 1550nm fiberoptic equipment that can split to many wavelengths? or is this a chip-only thing?  whats the typical pricing and capability range if so?
+ChatGPT said:
+
+Thought for 4m 34s
+Yes — 1550 nm “microcomb” (Kerr / DKS microresonator) sources exist as usable fiber-coupled hardware, not just bare chips. They’re chip-based internally, but vendors sell them either as bare die or as fiber-packaged modules (often a 14-pin butterfly). 
+Deeplight
++1
+
+What you actually get (and how you “split” it)
+A microcomb source typically outputs one fiber carrying many evenly spaced lines. To “split to many wavelengths,” you add a DWDM mux/demux (often an AWG) to fan those lines out into individual ITU channels/ports. (The demux is usually much cheaper/easier to source than the comb generator itself.) 
+Shenzhen Lightwit Photonics
+
+Typical capability range (microcomb side)
+Example specs from a commercial 1550 nm Kerr microcomb generator product line:
+
+Center wavelength: 1550 nm 
+Deeplight
++1
+
+Line spacing (FSR): customizable 10–1000 GHz 
+Deeplight
++1
+
+Optical bandwidth: 20–30 nm (3 dB), with a note that this corresponds to >35 lines at 100 GHz spacing 
+Deeplight
+
+Packaging: 14-pin butterfly option (fiber-packaged) or bare die 
+Deeplight
++1
+
+Pump: commonly external (not included), typically driven by a tunable laser scan 
+Deeplight
++1
+
+So: not chip-only, but often not fully turnkey either (because the narrow-linewidth tunable pump + control is a big part of the “system”). 
+Deeplight
++1
+
+If you just want “many ITU wavelengths in fiber” (not necessarily microcomb)
+There are also DWDM “comb source” boxes aimed at telecom/test workflows that provide many ITU-grid channels (implementation may be spectral slicing / other non-microcomb approaches). For example, MPBC advertises up to 100 channels, 50 GHz or 100 GHz spacing, spanning 1524–1620 nm, with flatness < 2 dB and tight ITU-grid deviation. 
+optilab.com
+
+Pricing reality (anchors you can budget from)
+Published list prices are uncommon for microcomb modules (often “request quote”), but you can bracket the “system” cost with real market anchors:
+
+The pump laser / tunable laser you’ll likely need can easily be $30k–$45k even on the used market (e.g., an Agilent/Keysight 81600B listing at $37,447, and a used Santec TSL-570 listing at $45,000). 
+assetrelay.com
++1
+
+A non-microcomb alternative (bank of discrete lasers) can be very expensive at high channel counts: Optilab lists a 40-channel DWDM source bank from C$86,955 and an 80-channel version from C$170,972. 
+optilab.com
+
+The DWDM demux needed to split wavelengths can range wildly; low-cost 3rd-party listings show 80-ch 50 GHz AWG mux/demux around US$600–$900 (quality/specs vary a lot here). 
+Shenzhen Lightwit Photonics
+
+Rule of thumb: a lab-usable multi-wavelength setup using a microcomb is often “tens of thousands” once you include the pump + control, and can climb higher depending on how turnkey/stable/locked you need it.
+
+What to decide first (so you buy the right “comb”)
+Do you need strict ITU-grid absolute accuracy (plug into DWDM transceivers) or just “lots of wavelengths” for testing?
+
+Channel spacing: 50 GHz vs 100 GHz (microcomb FSR choice matters; so does your demux). 
+Deeplight
++1
+
+Per-line power/OSNR: microcombs often need EDFAs / flattening if you want many usable lines at decent power. 
+Deeplight
++1
+
+If you tell me whether your use-case is (A) coherent carriers for comms, (B) DWDM component testing, or (C) just “many lasers” for a lab setup, I can narrow it to the most cost-effective architecture (microcomb vs sliced-comb box vs laser bank) and what specs actually matter.
+
+You said:
+up til this we've just been assuming we get 8 lasers and multiplex them in a fiberoptic line, aiming for 10-40k range for the whole system.  If you can beat that range and price with similar practicality, please  have at it
+ChatGPT said:
+
+Thought for 4m 45s
+Yes—you can get a 1550-nm “many wavelengths from one input fiber” source, but “microcomb” specifically is still mostly a chip-based engine that usually needs a pump laser + packaging/control to be usable in fiber, and the turnkey “telecom rack unit” ecosystem is still not as commoditized as plain WDM parts. In fact, EU microcomb commercialization work has explicitly noted the lack of a market-ready turnkey rackmount microcomb source (at least at the time of that project). 
+CORDIS
+
+If your real goal is “beat 8 discrete lasers + mux for $10–40k”, you can usually beat it hard with two practical approaches—often without any microcomb at all:
+
+Option A (cheapest): “comb-like” multiwavelength via ASE + DWDM filter slicing
+This is the classic lab trick: use a C-band ASE broadband source and a DWDM demux to carve it into multiple “channels.”
+
+C-band ASE source (1525–1565 nm): ~$1,408 
+Fiber Mart
+
+8-ch DWDM 100 GHz mux/demux module: about $931–$1,070 depending on variant 
+Channel Comp
+
+Total: roughly $2.3k–$2.5k (plus patch cords, etc.).
+
+Caveat (important): this is not 8 narrow-linewidth lasers. It’s spectrally-sliced broadband light (low coherence, different noise/OSNR behavior). For lots of sensing/test/“I just need 8 wavelengths” use-cases it’s perfect; for coherent comms / tight linewidth needs, it’s not.
+
+If you’re okay with surplus/used gear, there are very cheap 1×8 DWDM demux parts out there (example listings around $230), and even mux+demux pairs around $445. 
+Lightwavestore.com
++1
+
+If you need more per-channel power, you can add an optical amplifier (still often cheaper than 8 lasers), e.g. a ~1530–1565 nm booster amplifier around $1,248. 
+Fiber Mart
+
+Option B (most “like 8 lasers”, still cheap): use 8 DWDM SFP/SFP+ transceivers as your lasers
+This is the “telecom hacker” answer: DWDM pluggables are already stabilized ITU-grid lasers with drivers/modulation built in.
+
+Typical street pricing examples:
+
+10G DWDM SFP+ transceiver: ~$250 each (varies by reach/vendor) 
+fs.com
+
+8-ch DWDM passive mux/demux: $931–$1,070 
+Channel Comp
+
+8× SFP+ switch to host them (CRS309 class): suggested $269 
+Newegg.com
+
+Back-of-napkin total:
+8×$250 = $2,000 (optics) + ~$931 (mux) + $269 (switch) ≈ $3.2k.
+
+That’s way under your $10–40k target and it’s very practical: you truly have “8 lasers on the ITU grid,” already engineered to behave in fiber systems.
+
+What microcombs would change (and why they’re usually not the cost winner yet)
+A microcomb can generate many evenly spaced lines in/near the C-band from a single pump; research demonstrations show using on the order of tens of WDM lines in C-band (e.g., 20 lines) 
+PMC
+. But to be a drop-in “WDM laser bank,” you still need:
+
+a good pump laser + control,
+
+packaging/coupling,
+
+often flattening/equalization,
+
+and still a DWDM demux/AWG to break out channels.
+
+So today, microcomb is usually chosen for capability/architecture reasons (many lines, mutual coherence, integrated photonics roadmap), not because it reliably beats “8 pluggables + passive mux” on price or convenience.
+
+My recommendation for your stated goal
+If the target is 8 wavelengths, practical, fiber-native, cheapest total system:
+
+If coherence/linewidth doesn’t matter: go ASE + DWDM demux (Option A).
+
+If you want it to feel like “8 real lasers” with minimal fuss: go 8× DWDM SFP+ + passive mux (Option B).
+
+If you tell me whether you need (a) coherent/narrow-linewidth, (b) independent per-channel modulation, and (c) what channel spacing you want (100 GHz vs 200 GHz vs CWDM), I can narrow it to the best exact architecture.
+
+You said:
+how bout price per wavelength.  what could you get us if we want to be closer to that 100 wavelengths per cable
+ChatGPT said:
+
+Thought for 3m 24s
+Yes — you can buy “one box in, many DWDM lines out” at 1550 nm, but most of what’s practical/affordable today is not a true microcomb. In telecom test gear, “comb source” often means a high-power broadband erbium/ASE source that’s spectrally sliced onto the ITU grid (many discrete wavelengths), which is perfectly fine if you just need lots of wavelength channels (not phase-coherent comb physics).
+
+What “~100 wavelengths per fiber” usually means
+A very common target is ~96 channels on the 50 GHz ITU grid across C-band (that’s basically “about 100 lambdas”). ITU defines the DWDM frequency grid and 50 GHz spacing. 
+ITU
+
+Vendors also describe typical 80-channel (50 GHz) deployments in that neighborhood. 
+fs.com
+
+Price per wavelength: the realistic options
+1) Cheapest $/λ: Broadband (ASE) + 96-ch AWG mux/demux
+96-channel 50 GHz AWG DWDM mux/demux units are sold around US$8.7–8.8k. 
+fiberinthebox.com
++1
+
+Budget C-band ASE sources show up around ~US$0.9–1.1k (vendor-dependent). 
+civillaser.com
+
+Back-of-napkin: (8,700 + 1,000) / 96 ≈ ~US$100 per wavelength.
+
+Big catch: per-channel power can be low after splitting + AWG insertion loss (some specs quote ≤7 dB insertion loss on 96-ch AWG devices). 
+DFT TELECOM
+
+So this wins on cost and “100 wavelengths exists,” but you may need an EDFA if you want decent power per channel.
+
+2) Turnkey (still “one source → ~100 ITU lines”): DWDM comb source instrument
+Example: MPBC markets DWDM Comb Sources that are “spectrally sliced to the ITU grid” with up to 100 channels at 50 GHz spacing and 22 dBm total output. 
+mpbcommunications.com
+
+That 22 dBm total, if spread over 100 lines, is on the order of ~2 dBm/line before external demux losses (rule-of-thumb averaging).
+
+Pricing: usually quote-only (often tens of thousands in practice), but the whole point is “replace a bank of DFB lasers.” A distributor summary explicitly frames it that way. 
+Sintec Optronics Pte Ltd
+
+If this comes in at, say, $30k–$80k (typical quote territory), you’re at ~$300–$800 per wavelength for ~100 lines — but far more turnkey than DIY ASE+slicer.
+
+3) “Real lasers per channel”: Laser banks / source banks
+Optilab lists DWDM source banks at:
+
+40-channel: $86,955
+
+80-channel: $170,972 
+optilab.com
+
+That’s roughly $2.1k per wavelength at 80 channels — great stability/line quality, terrible $/λ if your goal is “100 lambdas cheaply.”
+
+4) If your actual goal is DWDM data links: DWDM pluggables per channel
+For example, 10G DWDM SFP+ modules can be a few hundred USD each (one listing shows ~US$277). 
+Fiber Mart
+
+That’s ~$277 per wavelength per end (and you still need mux/demux), but this is the “networking way” rather than “one shared light source.”
+
+Where microcombs fit (and why they usually won’t beat your $10–40k / 8-laser assumption yet)
+True microcomb sources (Kerr soliton combs in microresonators) are still mostly OEM / research / custom-integration in 1550 systems — not commonly sold as a cheap off-the-shelf “100 DWDM lines for $10k” box. They can be amazing when you need coherent carriers (esp. coherent DWDM), but pricing/practicality usually isn’t the budget winner today.
+
+If you want ~100 wavelengths per cable and want to beat your 10–40k / 8-laser plan
+The strongest “price per wavelength” play is:
+
+ASE (or high-power erbium broadband) + 96-ch 50 GHz AWG mux/demux → ~$100/λ class on the BOM, then add amplification only if your power budget demands it. 
+DFT TELECOM
++3
+civillaser.com
++3
+fiberinthebox.com
++3
+
+If you tell me whether each wavelength needs to be (a) a clean narrow-line carrier for modulation, or (b) just a distinct “color channel” for routing/ID/sensing, I can pin the recommendation hard (because that’s the line between “ASE slicing is perfect” vs “you really do need laser-like lines”).
+
+Do you like this personality?
+
+
+
+
+
+
+No file chosenNo file chosen
+ChatGPT can make mistakes. Check important info. See Cookie Preferences.

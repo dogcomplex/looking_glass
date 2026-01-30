@@ -1,0 +1,703 @@
+awesome—here’s a clean, end-to-end recap of the fiber-optic build using full component names. I’ve split it into (A) the single-channel, one-way MVP you’ll build first, and (B) the 8-wavelength recirculating loop you’ll scale into. After each BoM, you’ll find a numbered signal path that shows how light moves through every block.
+
+
+---
+
+A) Single-channel MVP (1550 nm, one-way path, no loop)
+
+Bill of Materials (with full names)
+
+Light source & stabilization
+
+1. 1550 nm Distributed Feedback (DFB) Laser Diode, 14-pin butterfly package with Thermo-Electric Cooler (TEC) and thermistor
+
+
+2. Laser Diode Current Controller (e.g., ILX Lightwave LDX-3412 / LDC-3722B channel, constant-current, low-noise)
+
+
+3. TEC Temperature Controller (matched to butterfly; stable to ±0.01 °C)
+
+
+4. 14-pin Butterfly Laser Diode Mount / Socket with TEC and Thermistor Breakout (with LC/FC feedthroughs as needed)
+
+
+
+Launch conditioning 5) Fiber-Optic Isolator, 1550 nm, Single-Mode, FC/APC (protects the laser from back-reflections)
+6) In-line Fiber-Optic Variable Optical Attenuator (VOA), 1550 nm, FC/APC (sets power into the reservoir)
+7) Polarization Controller (paddle or in-line fiber squeezer), 1550 nm (tunes state of polarization for SOA/reservoir)
+
+Reservoir “mixing + nonlinearity” 8) 50:50 Single-Mode Fiber Couplers (1×2 / 2×2), 1550 nm, FC/APC (build a small mixing network)
+9) Short Segment of Few-Mode or Graded-Index Multimode Fiber, 1550 nm-compatible (optional but recommended for richer mode-mixing)
+10) Semiconductor Optical Amplifier (SOA), 1550 nm C-Band, butterfly package (nonlinear element; e.g., InPhenix IPSAD15xx family)
+11) Post-SOA Fiber-Optic Isolator, 1550 nm, FC/APC (prevents SOA self-oscillation and reflection-induced instabilities)
+
+Readout & tap 12) 99:1 or 95:5 Fiber-Optic Tap Coupler, 1550 nm, FC/APC (small tap to detector; majority continues or is dumped)
+13) InGaAs Photodiode Receiver Module (DC–GHz), 1550 nm, with Transimpedance Amplifier (TIA) (choose bandwidth for your task)
+14) Anti-Aliasing RF Filter (optional; match to ADC sampling)
+15) High-Speed Analog-to-Digital Converter (ADC) / Data Acquisition Card (e.g., 14-bit, ≥250 MS/s for ~100 MHz analog BW)
+16) Digital Control Computer (for readout regression/last-layer decoding, monitoring)
+
+Interconnects & mechanics 17) Single-Mode Patch Cords, SMF-28e, FC/APC (use LC only where the device forces you; APC reduces parasitic reflections)
+18) Fiber Adapters (FC-to-LC, FC/APC bulkheads), Panel Feedthroughs
+19) 19-inch Rack Shelf or Optical Breadboard, Cable Management, Thermal Heat-sink Plates
+20) Laser Safety Eyewear (OD-rated for 1550 nm), Beam Dumps / End Caps
+
+
+---
+
+MVP signal path (one-way)
+
+1. DFB Laser Diode → Laser Diode Current Controller + TEC Temperature Controller
+Stable CW output at 1550 nm with low RIN and locked wavelength via temperature.
+
+
+2. Laser Output → Fiber-Optic Isolator (1550 nm)
+Protects source; keeps reflections out.
+
+
+3. Isolator → Variable Optical Attenuator
+Sets the reservoir input power / operating point.
+
+
+4. VOA → Polarization Controller
+Tunes SOP to maximize SOA nonlinearity / desired mixing response.
+
+
+5. Polarization Controller → Mixing Network (50:50 couplers + optional few-mode/graded-index fiber segment)
+Passive linear mixing / path diversity; creates a richer “reservoir state.”
+
+
+6. Mixer → Semiconductor Optical Amplifier (SOA)
+Provides saturable gain nonlinearity (key to ternary/low-precision behavior).
+Followed by Post-SOA Isolator for stability.
+
+
+7. SOA Output → 99:1 (or 95:5) Tap Coupler
+Small fraction to detector; the rest can go to dump (MVP) or into future loop hardware.
+
+
+8. Tap → InGaAs Photodiode Receiver (with TIA) → (optional RF filter) → High-Speed ADC
+Produces your analog feature vector (digitized), which the Digital Control Computer uses for last-layer decoding/regression.
+
+
+
+(That’s your minimal proof that “optical reservoir + ternary readout” works at C-band. From here, you either add the loop or add more wavelengths.)
+
+
+---
+
+B) Eight-Wavelength Recirculating Loop (DWDM ring reservoir)
+
+Bill of Materials (additions beyond the MVP)
+
+Multi-λ sources (choose one approach)
+
+1. Eight 1550 nm DFB Laser Diodes (fixed ITU channels), each with 14-pin butterfly, TEC, thermistor
+– or –
+Eight Tunable C-Band External-Cavity or DBR Laser Diodes, butterfly
+(You can also prototype with DWDM XFP/SFP+ transceivers as cheap CW sources, but direct laser diodes are cleaner for analog work.)
+
+
+2. Multi-Channel Laser Diode Current Controller (8×) (or multiple 1–2 ch units)
+
+
+3. Multi-Channel TEC Temperature Controller (8×)
+
+
+4. Eight Butterfly Laser Diode Mounts / Sockets
+
+
+
+Per-λ launch conditioning 5) Eight Fiber-Optic Isolators, 1550 nm, FC/APC
+6) Eight In-line Variable Optical Attenuators (VOA)
+7) Eight Polarization Controllers
+
+Wavelength combining / selection 8) 8-Channel Dense Wavelength Division Multiplexing (DWDM) Multiplexer, 100 GHz or 200 GHz grid, C-Band, LC/UPC or FC/APC
+9) 8-Channel DWDM Demultiplexer, matched grid (for per-λ readout/fan-out)
+10) (Optional) Wavelength Selective Switch (WSS) if you want dynamic per-λ routing (not required for the first loop)
+
+Reservoir core (shared) 11) Semiconductor Optical Amplifier (SOA), 1550 nm C-Band (choose saturation power/gain to support all λ)
+12) Post-SOA Fiber-Optic Isolator, 1550 nm
+13) Passive Mixing Network (tree of 50:50 couplers, optional few-mode fiber segment)
+14) Recirculation Delay Line (e.g., 100–2,000 m SMF-28e spool depending on symbol period / update cadence)
+15) In-Loop Variable Optical Attenuator (controls loop gain to ≈1)
+16) (Optional) Electro-Optic Phase Modulator (LiNbO₃) or Intensity Modulator (Mach–Zehnder) for additional controllable dynamics
+17) 1×2 Fiber-Optic Couplers for Injection Port (from sources) and Readout Tap (to demux)
+
+Per-λ readout fan-out 18) 1–5% Tap Coupler in the loop path → DWDM Demultiplexer → Eight InGaAs Photodiode Receivers (with TIAs)
+19) Multi-Channel ADC / Digitizer (e.g., 8× 14-bit ≥250 MS/s)
+20) Control/Acquisition Computer (synchronization, last-layer decoding, monitoring)
+
+Supervision, monitoring & timing 21) Optical Power Monitors (in-line) / Photodiode Tap Monitors (to watch per-λ power balance)
+22) Function / Arbitrary Waveform Generator (for small dithers, resets, or EOM drive)
+23) Clock/Trigger Distribution (align ADC sampling to loop round-trip if needed)
+
+
+---
+
+Eight-λ loop signal path (recirculating)
+
+Launch & combine
+
+1. Eight DFB/Tunable Laser Diodes (with current + TEC control) → each through Isolator → VOA → Polarization Controller.
+
+
+2. Eight conditioned wavelengths → DWDM Multiplexer → Combined Multi-λ Fiber.
+
+
+
+Reservoir loop 3) MUX Output → Passive Mixing Network (couplers + optional few-mode fiber) (creates rich inter-λ and path-mix dynamics).
+4) Mixer → Semiconductor Optical Amplifier (SOA) (shared nonlinearity; saturable gain across all λ).
+5) SOA → Post-SOA Isolator (stability).
+6) Isolator → In-Loop Variable Optical Attenuator (set loop gain ~0.95–1.05; tune memory depth).
+7) In-Loop VOA → Recirculation Delay Line (fiber spool defines round-trip time / effective layer depth).
+8) Delay Line → 1×2 Coupler:
+
+Tap Arm (1–5%) → DWDM Demultiplexer → 8× InGaAs Photodiode Receivers → Multi-Channel ADC → Digital Last-Layer.
+
+Through Arm (95–99%) → back to Mixing Network to complete the loop.
+
+
+Injection / reset (optional) 9) Injection Coupler (before or after the mixer) accepts a gated input burst or pilot tone per λ.
+10) Electro-Optic Modulator (optional) can inject phase/intensity perturbations for control or learning signals.
+
+
+---
+
+Notes, options, and practical guidance
+
+Connectors: Prefer FC/APC for all analog compute paths (low back-reflection). Use LC/UPC only where a module forces it; adapt with FC/APC↔LC/UPC hybrid jumpers.
+
+SOA choice: A C-band butterfly SOA (tens of mA to ~200 mA bias) gives your nonlinearity and per-round-trip gain; set operating point with VOAs. (Your InPhenix IPSAD15xx-series device fits.)
+
+EDFA vs SOA: An Erbium-Doped Fiber Amplifier is great for bulk gain but is less “sharp” as the nonlinear activation and adds more ASE noise; keep the SOA as the main nonlinearity and use an EDFA only if you must recover loss in long loops.
+
+Mixing richness: A little few-mode/graded-index fiber or a deeper coupler lattice noticeably improves “feature explosion” before the SOA.
+
+Polarization: SOAs and many passive parts are polarization sensitive; use polarization controllers (or PM versions of parts) to stabilize operating points.
+
+Scaling: Add wavelengths by replicating the per-λ front-end (Isolator + VOA + PC), feeding the same DWDM MUX and shared loop. Add detectors by replicating DEMUX + PD + ADC channels.
+
+MDM/camera branch (optional): If you later try photonic-lantern + InGaAs area camera readout, add a Photonic Lantern (SM→Few-Mode) and InGaAs Area Camera after a tap; this replaces the DEMUX + PD bank for a high-fan-out spatial read but costs more.
+
+
+
+---
+
+Minimal shopping checklist (per build phase)
+
+MVP (single channel)
+
+1× 1550 nm DFB Laser Diode, butterfly (with TEC & thermistor)
+
+1× Laser Diode Current Controller (low noise)
+
+1× TEC Temperature Controller
+
+1× Butterfly Mount / Socket
+
+2× 1550 nm Fiber-Optic Isolators (pre-/post-SOA)
+
+1× Variable Optical Attenuator
+
+1× Polarization Controller
+
+2–4× 50:50 Fiber Couplers (build a 2–3 stage mixer)
+
+1× Semiconductor Optical Amplifier (SOA), C-Band
+
+1× 99:1 (or 95:5) Tap Coupler
+
+1× InGaAs Photodiode Receiver Module (with TIA) (BW per your target)
+
+1× High-Speed ADC (and PC)
+
+Patch cords/adapters, safety, mechanics
+
+
+8-λ loop (adds)
+
+7× additional DFB/Tunable Laser Diodes (+ drivers, TECs, mounts)
+
+1× 8-Channel DWDM Multiplexer (100/200 GHz ITU grid)
+
+1× 8-Channel DWDM Demultiplexer (matched grid)
+
+1× In-Loop VOA, 1× Recirculation Fiber Spool, extra couplers
+
+7× extra Polarization Controllers, Isolators, VOAs (per λ)
+
+7× additional InGaAs PD Receivers and ADC channels (or time-multiplex and switch, at the cost of speed)
+
+
+
+---
+
+Step-by-step build order (recommended)
+
+1. Bench the laser + TEC alone; verify stable power vs. temperature.
+
+
+2. Add pre-isolator → VOA → PC, confirm stable launch power and SOP.
+
+
+3. Insert the mixer (couplers + optional few-mode fiber), measure insertion loss and speckle stability.
+
+
+4. Insert the SOA with post-isolator; set bias to desired nonlinearity region; verify no lasing/oscillation.
+
+
+5. Add tap → PD → ADC, capture MVP data and train a digital readout to confirm usable features.
+
+
+6. When happy, add loop elements: in-loop VOA, fiber delay, tap DEMUX, and close the ring.
+
+
+7. Scale to multi-λ by adding sources, then the DWDM MUX/DEMUX, then additional PD channels.
+
+
+
+
+---
+
+If you want, I can turn this into a printable BoM spreadsheet with columns for qty, spec, connector, notes, and vendor candidates, but the above is the full parts and flow you asked for with explicit names.
+
+
+
+
+
+
+Short version: Ising models give you a physics-native way to cast hard ML/optimization subproblems into a spin system your optics can relax on; shadow tomography warns you there’s an information bottleneck when you try to measure lots of things from few states/exposures. Both touch your hardware in deep ways—and both can become rabbit holes if you don’t respect their limits.
+
+How they touch your hardware
+
+1) Ising models (QUBO / spin-glass framing).
+
+Many useful subproblems in your loop—ternary quantization (−1/0/+1), sparse mask selection, routing, clustering, even certain training steps—can be written as minimizing an Ising energy 
+𝐸
+(
+𝑠
+)
+=
+∑
+𝑖
+<
+𝑗
+𝐽
+𝑖
+𝑗
+𝑠
+𝑖
+𝑠
+𝑗
++
+∑
+𝑖
+ℎ
+𝑖
+𝑠
+𝑖
+E(s)=∑
+i<j
+	​
+
+J
+ij
+	​
+
+s
+i
+	​
+
+s
+j
+	​
+
++∑
+i
+	​
+
+h
+i
+	​
+
+s
+i
+	​
+
+ with 
+𝑠
+𝑖
+∈
+{
+−
+1
+,
++
+1
+}
+s
+i
+	​
+
+∈{−1,+1} (or a ternary extension).
+
+Your optics already looks like an analog relaxer: linear couplings via free-space kernels / MDM lanterns / fiber meshes (≈ the 
+𝐽
+J matrix), saturating SOAs or modulators for the nonlinearity (spin squashing), and a feedback loop for annealing. So for some tasks, you can let the physics find low-energy configurations fast.
+
+Caveat (rabbit hole #1): general Ising is NP-hard; embeddings, precision limits, and control overhead balloon quickly. It’s powerful as a module (e.g., for ternary weight selection, routing, or combinatorial side-tasks), not a silver bullet for whole-model training.
+
+2) Shadow tomography (information limits on readout).
+
+Informally: given a state 
+𝜌
+ρ and a huge family of measurements 
+{
+𝐸
+𝑖
+}
+{E
+i
+	​
+
+}, shadow tomography tells you how many copies/exposures you need to estimate all 
+T
+r
+(
+𝐸
+𝑖
+𝜌
+)
+Tr(E
+i
+	​
+
+ρ) to ±ε accuracy. The headline result is you can estimate exponentially many expectations with only polylogarithmically many copies—but there’s still unavoidable dependence on 
+log
+⁡
+𝑀
+,
+log
+⁡
+𝐷
+,
+𝜀
+logM,logD,ε. In particular, the Aaronson “Shadow Tomography Theorem” shows you can do it with roughly 
+𝑂
+~
+ ⁣
+(
+(
+log
+⁡
+4
+𝑀
+)
+(
+log
+⁡
+𝐷
+)
+/
+𝜀
+4
+)
+O
+~
+((log
+4
+M)(logD)/ε
+4
+) copies; earlier versions had 
+𝜀
+−
+5
+ε
+−5
+ which can be improved to 
+𝜀
+−
+4
+ε
+−4
+. 
+
+1711.01053v2
+
+ 
+
+1711.01053v2
+
+And there are lower bounds: any method needs at least 
+Ω
+(
+min
+⁡
+{
+𝐷
+2
+,
+log
+⁡
+𝑀
+}
+/
+𝜀
+2
+)
+Ω(min{D
+2
+,logM}/ε
+2
+) copies; even the classical special case still needs 
+Ω
+(
+min
+⁡
+{
+𝐷
+,
+log
+⁡
+𝑀
+}
+/
+𝜀
+2
+)
+Ω(min{D,logM}/ε
+2
+). Translation: you can’t magic away the sample/integration time needed to estimate tons of readouts accurately—even in a classical optical system. 
+
+1711.01053v2
+
+ 
+
+1711.01053v2
+
+Why it matters to you: if you treat a single camera exposure as “all M layer dot-products at once,” shadow-style reasoning says accuracy per output will be bounded by photon/SNR budgets and grows with 
+𝑀
+M. You’ll often need multiple exposures/integration windows or adaptive measurement sequences to keep errors in line—exactly the kind of “gentle” multi-measurement scheduling shadow tomography formalizes (gentle measurement, gentle search, postselected learning). 
+
+1711.01053v2
+
+ 
+
+1711.01053v2
+
+Why it’s a “dark rabbit hole”
+
+Illusion of free parallelism. Cameras give you D pixels “for free,” but to report M precise functionals (e.g., many masks/weights) you hit 
+log
+⁡
+𝑀
+logM and 
+𝜀
+ε costs in copies/integration time—even classically. Pushing M high without budgeting photons/time forces down per-output accuracy or forces longer runs. 
+
+1711.01053v2
+
+Destructive / state-damaging measurements (classical analogue). Shadow tomography’s “gentle measurement” story comes from quantum, but the moral holds in noisy analog optics: aggressive readouts (bright probes, nonlinear elements) change the medium (heating, carrier depletion, gain saturation). You need sequencing that’s “gentle” enough not to ruin later measurements. 
+
+1711.01053v2
+
+Embedding overhead in Ising. Mapping rich ML objectives into spins can explode variable count/precision and demand control loops whose digital overhead erodes your physics win. Great local tool; dangerous as a universal hammer.
+
+Practical restrictions you’ll feel (even though you’re classical)
+
+Sample/Exposure complexity: Expect total exposure budget to scale at least like 
+Ω
+(
+min
+⁡
+{
+𝐷
+,
+log
+⁡
+𝑀
+}
+/
+𝜀
+2
+)
+Ω(min{D,logM}/ε
+2
+) in the nicest classical cases; plan runs accordingly. 
+
+1711.01053v2
+
+Photon shot noise / dynamic range: Accuracy 
+𝜀
+∼
+1
+/
+𝑁
+photons
+ε∼1/
+N
+photons
+	​
+
+	​
+
+ per output; multiplexing more outputs in one exposure splits photons/SNR across them.
+
+Detector limits: Full-well capacity, read noise, PRNU; these set hard ceilings on simultaneous accurate M.
+
+Coupler precision: Implementing dense 
+𝐽
+J (Ising) or many masks needs stable phase/amplitude control; errors push you into spin-glass landscapes (local minima).
+
+I/O bottlenecks: Reading all outputs digitally can dominate wall-clock; prefer on-optic accumulation, compressive readouts, or staged/gated measurements (shadow-style adaptivity).
+
+Worst-case hardness: Ising/QUBO remains NP-hard; the optics gives heuristic speed/parallelism, not guaranteed global optima.
+
+How to use this constructively
+
+Map shadow-style quantities onto your loop.
+
+Let 
+𝐷
+D = number of resolvable optical modes / camera pixels used; 
+𝑀
+M = number of distinct linear readouts (masks/weights) you want per state; 
+𝜀
+ε = targeted per-readout accuracy.
+
+Budget exposures/integration: plan for ~
+𝑂
+~
+(
+(
+log
+⁡
+4
+𝑀
+)
+(
+log
+⁡
+𝐷
+)
+/
+𝜀
+4
+)
+O
+~
+((log
+4
+M)(logD)/ε
+4
+) effective copies if you try to estimate all M with high accuracy in one session via adaptive sequences; lower if you only need a subset per pass. 
+
+1711.01053v2
+
+Prefer adaptive measurement schedules (choose the next mask based on where your current hypothesis is wrong) to conserve exposure budget—the “postselected learning” + “gentle search” moral. 
+
+1711.01053v2
+
+ 
+
+1711.01053v2
+
+Use Ising where it shines, not everywhere.
+
+Good fits: ternary mask selection, structured pruning, routing/assignment, small combinatorial bottlenecks inside each iteration.
+
+Keep embeddings small, use coarse/ternary spins (fits your “ternary trick”), and gate annealing schedules with your existing feedback loop.
+
+Measure few energy terms per cycle (don’t try to read every coupling); use local observables and a small set of global monitors.
+
+Concrete upgrades for your simulator
+
+Photon/Exposure budget model (shadow-style).
+
+Input: 
+𝐷
+,
+𝑀
+,
+𝜀
+D,M,ε, detector specs, laser power.
+
+Output: minimal number of exposures/integration time to achieve target error across all requested readouts; enforce classical lower bound scaling with 
+min
+⁡
+{
+𝐷
+,
+log
+⁡
+𝑀
+}
+/
+𝜀
+2
+min{D,logM}/ε
+2
+. 
+
+1711.01053v2
+
+Adaptive measurement loop (“gentle” scheduling).
+
+Maintain a hypothesis of the current mask responses; select the next mask to probe where error is largest; throttle probe intensity to limit state perturbation; update via online convex methods (matrix MWU). (This is the classical analogue of the postselected learning + gentle search combo.) 
+
+1711.01053v2
+
+ 
+
+1711.01053v2
+
+State-damage model.
+
+Include saturation, heating, carrier lifetime; make measurement SNR vs. subsequent SNR a function of probe energy (“gentleness” control). 
+
+1711.01053v2
+
+Ising submodule.
+
+Provide an optional Ising/QUBO solver block with realistic analog constraints: limited precision 
+𝐽
+𝑖
+𝑗
+J
+ij
+	​
+
+, noisy couplings, bounded anneal rate; report embedding overhead and success probability (local minima rate).
+
+Output throttling strategies.
+
+Offer three readout modes: (a) Compressive: project to K≪M random/features then reconstruct; (b) Batched masks: M split across B batches to keep SNR per mask high; (c) On-optic accumulation: accumulate weighted sums optically and digitize only a few scalars.
+
+Ternary-aware accuracy.
+
+Track decision error rates for {-1,0,+1} classification under finite SNR; show how fewer levels relax ε and reduce required exposure count (but watch bias thresholds).
+
+Bottom line:
+
+Ising models are a good tool in the toolbox for specific combinatorial substeps; use them surgically.
+
+Shadow-tomography-style limits are the discipline your simulator needs: they keep your expectations honest about how many accurate readouts you can squeeze from a small number of exposures. Your optics gives you massive constant-factor wins (parallel pixels, low energy per MAC), but the 
+(
+log
+⁡
+𝑀
+,
+log
+⁡
+𝐷
+,
+𝜀
+)
+(logM,logD,ε) dependencies still rule the total wall-time/energy you must budget—even in classical photonics. 
+
+1711.01053v2
+
+ 
+
+1711.01053v2

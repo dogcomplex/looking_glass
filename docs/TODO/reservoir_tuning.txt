@@ -1,0 +1,220 @@
+
+
+
+Self-wiring neural networks that learn structure without a single gradient
+
+Reservoir computing is elegant: feed signals through a random recurrent network, then train only a simple linear readout. It's fast, cheap, and works surprisingly well—until you hit a wall. That static, random wiring was never designed for your task, and performance suffers.
+
+Tanguy Cazalets and Joni Dambre take inspiration from neuroscience to fix this. Their method, Hebbian Architecture Generation (HAG), starts from an almost empty reservoir and progressively grows connections between neurons that frequently fire together—embodying the classic maxim "neurons that fire together wire together." No backpropagation, no gradient descent. Just unsupervised structural plasticity guided by long-horizon correlation statistics.
+
+The results are striking. On speech and audio classification benchmarks, HAG-grown reservoirs consistently beat traditional Echo State Networks and popular plasticity rules like Intrinsic Plasticity or Anti-Oja learning. On smaller datasets (Japanese Vowels, CatsDogs), HAG matches or exceeds gradient-trained LSTMs and GRUs—while training orders of magnitude faster. The method slashes neuron-to-neuron correlation (from ~0.99 to ~0.47 on Speech Commands), expands effective dimensionality, and dramatically improves class separability metrics like silhouette scores and inter/intra-class distance ratios.
+
+What's conceptually satisfying is why it works: by wiring together co-active units over extended time windows, HAG carves out a task-relevant subspace rather than blindly inflating dimensionality. It learns just enough structure to make classes linearly separable—nothing more, nothing less.
+
+The broader message: structural self-organization, long studied in biological neural circuits, is a practical route to adaptive machine learning. HAG bridges the efficiency of reservoir computing with the flexibility of learned architectures, all without propagating a single error signal through time. For neuromorphic hardware, physical reservoirs, and low-data regimes, that combination could matter a lot.
+
+Paper: https://nature.com/articles/s41467-025-67137-1
+
+
+- How does this all play out with our optical reservoir computing system. Think there's any way to utilize fiberoptic equipment to do that similar reservoir tuning, or maybe splitting/merging of parallel channel streams for self-organization? Or is this out of reach of our equipment class? What do you think of this paper and these findings overall
+
+
+-----
+
+Short answer: yes—HAG-style “self-wiring” absolutely maps to your optical RC stack, and you can do most of it with the telecom-class gear you’re already circling (WDM/WSS, VOAs, EDFAs, mode-mixers/lanterns, MEMS fiber switches, MZ modulators, cameras/PD arrays). Below I give (1) what the paper actually claims, (2) how to implement an optical HAG loop with your parts, (3) what’s in/out of reach, and (4) what to tweak in your simulator so it doesn’t overestimate results.
+
+1) What the HAG paper actually says (in a nutshell)
+
+Core idea. Start with (almost) no recurrent connections and grow edges between neuron pairs whose activities are highly correlated over long windows—a literal “neurons that fire together wire together” rule. No gradients; just unsupervised structural plasticity plus a simple linear readout. 
+
+s41467-025-67137-1_reference
+
+ 
+
+s41467-025-67137-1_reference
+
+Two variants. A mean-HAG (targets mean activity) and a variance-HAG (targets activity variance) with homeostatic bounds; when a unit is under-active, add an incoming edge from its most-correlated partner; when over-active, prune randomly; keep everything stable via homeostasis. 
+
+s41467-025-67137-1_reference
+
+ 
+
+s41467-025-67137-1_reference
+
+ 
+
+s41467-025-67137-1_reference
+
+Non-negative (“excitatory-only”) weights by design—great fit for optics. Signed weights are emulable with a differential (w⁺−w⁻) encoding if you really need negatives. 
+
+s41467-025-67137-1_reference
+
+What it improves. For speech/audio classification, HAG consistently outperforms classic ESNs and popular plasticity rules (IP, Anti-Oja); on small datasets it even matches/exceeds LSTM/GRU; on large data, gradient RNNs still win. 
+
+s41467-025-67137-1_reference
+
+Why it works. It increases effective dimensionality, slashes pairwise neuron correlation (less redundancy), and yields tighter, better-separated clusters—i.e., easier linear separation at the readout. 
+
+s41467-025-67137-1_reference
+
+ 
+
+s41467-025-67137-1_reference
+
+ 
+
+s41467-025-67137-1_reference
+
+Cost vs RNNs. Event-driven rewiring is cheap; still orders of magnitude less compute than multi-epoch BPTT for LSTM/GRU. 
+
+s41467-025-67137-1_reference
+
+2) How to implement HAG with your fiber/MDM/WDM stack
+
+Think of each reservoir node as a photonic “tap” (a spatial mode, wavelength, or path) with its own detector channel. “Weights” are implemented by variable coupling/attenuation into that node’s input combiner.
+
+A. Observability (to measure long-window correlations)
+
+Use your InGaAs PD array or the lantern + camera branch to sample each node’s intensity time-series. Accumulate rolling statistics (mean, variance) and correlations over multi-scale windows (sample T_current from a log grid, as in the paper). 
+
+s41467-025-67137-1_reference
+
+B. Structural growth (adding edges to under-active nodes)
+
+Under-active node i: add one strongest-correlate j as a new input:
+
+WDM/WSS path: route λ_j into i’s input combiner through a WSS + VOA (δw step = -Δ dB on VOA, i.e., a small gain).
+
+MDM path: split j’s spatial mode with a tunable splitter/MZI (on PIC) or a MEMS variable fiber coupler (bulk) and feed i.
+
+Free-space crossbar (DMD/SLM): add a new mirror/pixel from beam j to i’s lenslet.
+
+Keep weights non-negative (natural in optics). If you need signed edges, use balanced detection: two inputs into differential photodiodes (w⁺, w⁻) and subtract electronically (doubling channels), exactly what the paper notes. 
+
+s41467-025-67137-1_reference
+
+C. Structural pruning (for over-active nodes)
+
+Over-active node i: randomly prune one incoming edge by nudging that path’s VOA up (−δw in weight space). Don’t overthink which one; the rule is deliberately simple. 
+
+s41467-025-67137-1_reference
+
+D. Homeostasis & stability (the “echo state” analog)
+
+Global gain loop: EDFA gain + per-branch VOAs enforce activity targets (mean-HAG) or variance targets (variance-HAG).
+
+Saturation guard: cap any node’s intensity (θ_sat) by scaling back its inbound VOAs if it nears camera/PD saturation (paper uses synaptic scaling safeguard). 
+
+s41467-025-67137-1_reference
+
+Practical optical analog of spectral radius≈1: keep net loop gain ≲ 1 across the band; use soft nonlinearities (SOA saturation/MZM) to avoid blow-ups.
+
+E. Where the “reservoir” lives
+
+Mixing fabric = adjacency. You can realize the recurrent mixing with:
+
+WSS/ROADM mesh (wavelength domain)
+
+Mode-mux/lantern + multi-plane light conversion (spatial domain)
+
+MEMS 3D fiber switch or DMD/SLM (free-space matrix)
+
+Your “weight update” is literally a routing plus VOA tweak that the HAG control loop decides.
+
+F. Readout
+
+Sum the chosen taps (or camera pixels) with fixed linear coefficients (can be done digitally or with a calibrated analog combiner) and train only W_out by ridge regression—exactly as HAG assumes.
+
+3) Is this out of reach for your equipment class?
+
+Totally feasible. Telecom-class WSS/ROADM + VOAs + EDFAs + detectors already give you the primitives to add one connection, prune one connection, and nudge one weight. The control loop (compute correlations, pick top-rij pairs, apply δw/−δw) lives in a PC/FPGA and runs event-driven (every few hundred ms–seconds), which matches motorized/thermal hardware timescales. The paper’s algorithm is explicitly event-driven, unsupervised, and low-compute, so you’re imitating the intended regime. 
+
+s41467-025-67137-1_reference
+
+Signed weights? Optional; stick to excitatory-only for v1. The paper deliberately chose that constraint (and it matches optics). If later you want negatives, add differential branches. 
+
+s41467-025-67137-1_reference
+
+Speed. The HAG rewiring loop is slow; inference stays fast (all-optical). That’s fine: you’ll pre-wire on recorded streams, then freeze for deployment.
+
+4) What to change in your simulator (so it’s not “too happy”)
+
+Right now you’re seeing 0.0 ternary error because the sim likely ignores messy physical stuff that HAG must fight against. Add these:
+
+Homeostatic windows + event cadence. Implement mean-HAG and variance-HAG exactly: rolling statistics over multi-scale windows, random window draws, δw steps, random pruning for over-active nodes, saturation scaling. Expect slower convergence and occasional “edge churn.” 
+
+s41467-025-67137-1_reference
+
+ 
+
+s41467-025-67137-1_reference
+
+Excitatory-only constraint. Forbid negatives unless using explicit w⁺/w⁻ doubling; track channel count blow-up if you enable signed emulation. 
+
+s41467-025-67137-1_reference
+
+Correlation-driven growth. Use long-horizon linear correlations (and consider distance-correlation as a stricter alternative) to pick edges; don’t update weights every timestep. 
+
+s41467-025-67137-1_reference
+
+ 
+
+s41467-025-67137-1_reference
+
+Optical non-idealities. Add wavelength/mode-dependent loss/gain ripple, PD/camera shot noise, EDFA ASE, VOA step quantization, WSS crosstalk, phase drift, detector saturation.
+
+Cluster/separability metrics. Track pairwise neuron |r|, CEVD (effective PCA dimension), silhouette/DBI/CH indices across classes; HAG’s wins show up here before accuracy. 
+
+s41467-025-67137-1_reference
+
+ 
+
+s41467-025-67137-1_reference
+
+ 
+
+s41467-025-67137-1_reference
+
+Compute budget. Simulate the event-driven cost vs a gradient RNN baseline so you don’t overcredit adaptation speed. 
+
+s41467-025-67137-1_reference
+
+5) What to “steal” from HAG for your build
+
+Start sparse; grow on data. Don’t random-wire a dense ROADM mesh. Begin with input → reservoir stubs and let the system add a single λ/mode at a time via WSS + VOA. 
+
+s41467-025-67137-1_reference
+
+Use variance-HAG for richer dynamics (it tended to push spectral radius/effective dimensionality more), but keep a saturation guard. 
+
+s41467-025-67137-1_reference
+
+ 
+
+s41467-025-67137-1_reference
+
+Measure and minimize redundancy. Design your controller to reduce |r| across channels—if average |r| creeps up, favor adding edges from less correlated partners or prune “lock-step” paths. 
+
+s41467-025-67137-1_reference
+
+Tune to the task. HAG shines on classification / low-data; forecasting gains are smaller. For long-horizon prediction, keep some scheduled pruning and lower loop gain to preserve temporal memory. 
+
+s41467-025-67137-1_reference
+
+6) Answering your specific questions
+
+“Can we do HAG-like tuning with fiber gear?” Yes. Use WSS/VOA/EDFA knobs to add/prune/scale edges; compute correlations from PD/camera streams; iterate event-driven. This is squarely in your equipment class.
+
+“Split/merge for self-organization?” Exactly—split high-corr channels with a tunable coupler and merge into under-active nodes; prune by closing VOAs; all controllable from a microservice.
+
+“Is this out of reach?” No. The only “hard” bit is control software and plumbing.
+
+“What do you think of the paper overall?” It’s a strong, biologically-inspired structural plasticity result that: (i) fits optics (non-negative weights), (ii) improves separability via decorrelation/just-enough dimensionality, and (iii) stays compute-light. Caveats: the biggest wins are on small/medium classification; LSTM/GRU still rule big data; forecasting gains are modest. 
+
+s41467-025-67137-1_reference
+
+ 
+
+s41467-025-67137-1_reference
+
+If you want, I can sketch a minimal HAG controller (Python) that sits on top of a hypothetical ROADM/WSS API: it reads rolling PD/camera stats, chooses (i*,j*) pairs, and issues “add/prune/δw” commands on the optical fabric.

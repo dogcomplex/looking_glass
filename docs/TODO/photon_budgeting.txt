@@ -1,0 +1,866 @@
+>AFAIK getting under 1E-16J/bit for 2 way conversion without doing anything fundamental (R&D project unto itself) would be overly optimistic.  That sets a floor to the J/FLOP & J/tk which will be better than H100s but my guess is not by 100x.
+5:46 p.m.
+
+
+response?
+
+---
+
+
+Great pushback. Here’s a tight, numbers-aware reply you can send that doesn’t hand-wave the conversion floor, but also shows why 100× OPEX is still plausible in the right regime:
+
+Totally agree that E/O + O/E conversion energy matters. Two clarifications:
+
+We don’t pay conversion per-MAC in an optical VMM/loop.
+You convert an N-vector once (E→O), let the optics do N×M MACs “for free,” then read M outputs once (O→E). So even if the two-way conversion has a hard floor, it’s amortized over millions of MACs per pass. That’s the key difference from digital where every MAC drags bits across SRAM/HBM.
+
+Shot noise, not just electronics, sets the optical floor.
+At 1550 nm, one photon ≈ 1.28×10⁻¹⁹ J. If you target ~10³ photons per measurement for decent SNR, that’s ≈ 1.3×10⁻¹⁶ J per output sample, i.e., the same ballpark as your 10⁻¹⁶ J/bit assertion. Again: amortized across M outputs and N inputs.
+
+Back-of-envelope to show the scaling:
+
+Let E_in be the energy to encode the N inputs optically (DACs/modulators, driver losses).
+
+Let E_out be the energy to read M outputs (detector + TIA + ADC).
+
+One optical pass does N×M MACs.
+
+Energy per MAC ≈ (E_in + E_out)/(N×M) + E_optics/MAC.
+
+If you’re in a moderately wide regime (say N=M=1024), even pessimistic per-pass numbers like E_in + E_out ≈ tens of nJ land you at ≲ tens of fJ/MAC. By comparison, an H100 at ~700 W delivering ~1.5 PFLOP/s FP16 is ~0.5 pJ/FLOP (≈ 500 fJ)—and real LLM tokens burn far more due to memory traffic. So a 10–100× energy win is not fantasy when:
+
+You keep the loop analog (no per-layer digitize/rediscretize).
+
+You batch large N×M (big amortization).
+
+You co-locate/encode weights optically (MRRs/PCM/DMD/SLM) to avoid per-token DAC overhead.
+
+You avoid camera-class readouts for the fast path (use PD arrays / WDM taps).
+
+Where the 100× falls apart:
+
+Small N or M (poor amortization).
+
+Frequent A/D↔D/A inside the loop (you pay the floor every layer).
+
+Weighting driven by high-precision DACs every token instead of persistent optical states.
+
+Poor SNR forcing high optical power or multiple reads.
+
+Two practical counters to the “conversion floor caps gains” argument:
+
+Architectural avoidance: Do E/O once per token (or per K tokens) and O/E once per layer-group (or only at the very end). That collapses conversion energy per token dramatically.
+
+Parallelism makes the floor tiny per MAC: Even if your 2-way floor is 10⁻¹⁴–10⁻¹⁶ J/bit, spreading it across 10⁶–10⁸ MACs per pass yields sub-10 fJ/MAC—comfortably 50–100× below the effective energy/“useful MAC” in GPU inference once memory is included.
+
+Finally, note why GPUs look worse in practice: the energy you quote as “J/FLOP” hides HBM traffic (pJ/bit) and on-chip data motion. Optical loops eliminate most of that; their routing cost is largely distance-agnostic and the “compute” happens as light propagates.
+
+Bottom line:
+
+If you digitize every layer: I agree—no 100×.
+
+If you keep the inner stack analog, persist weights optically, and amortize conversions over wide VMMs and many λ (WDM), 10–100× OPEX versus GPUs is very realistic for the right workloads. The lever isn’t magic converters; it’s reducing how often you need them and how many MACs they amortize over.
+
+Happy to run a quick param sweep for your simulator (pick N, M, λ count, detector SNR, ADC bits, modulator drive) and plot E/MAC and J/token under different “conversion floor” assumptions.
+
+---
+
+
+
+Full context here: 
+initial post:
+
+to add an option to people's radars, getting 10-100x better energy efficiency on transformer inference and training seems quite plausible with off the shelf 1550nm fiberoptics hardware
+
+am building sims.  may buy and build prototype if they continue to work.  am perpetually very tired though
+
+would be a very nice disruptor to datacenters though and the tech is already too widely distributed to be bottlenecked/monopolized
+
+ideally package as a consumer appliance and decentralize network RL train with them, scale well past legacy models for pennies on the dollar.  kickstarter/shitcoin it to crowdfund
+
+INTELLECT-2: The First Globally Distributed Reinforcement Learning Training of a 32B Parameter Model
+Today we are launching INTELLECT-2: the first 32B parameter globally decentralized Reinforcement Learning training run where anyone can permissionlessly contribute their heterogeneous compute resources.
+www.primeintellect.ai
+
+https://www.primeintellect.ai/blog/intellect-2
+
+(bonus: would give lightning-fast response times locally which cloud can never match.  pair with robots for responsiveness overkill)
+
+AOC - Microsoft Research
+A new kind of computer – an analog optical computer – that has the potential to accelerate AI inference and hard optimization workloads by 100x, leveraging hardware-software co-design to improve the efficiency and sustainability of real-world applications.
+www.microsoft.com
+Nov 7, 2025
+
+https://www.microsoft.com/en-us/research/project/aoc/
+
+microsoft did prototype already.  would basically do the same but just fiberoptics and more conservative, but tileable scaling
+
+
+
+
+>>response:
+>It's the exponential & normalization that's harder to do in the optical domain.   Not to say I don't have thoughts on that, just that a 1:1 mapping of transformer training to all-optical is nontrivial.
+
+my reply;
+yep, which is why definitely aim for it to be an optical co-processor, with a (cheap) gpu doing the normalization stitching.  offloads 90-99% of the work to optics.  though I think mapping to ternary bits with a saturable absorber + amplifier would allow keeping it in an analog loop fairly reliably/cheaply - not needed, but another 10x speedup to avoid digital conversion through multiple layers.   similar add-ons and yet another 10x speedup if we can do memory read/write onto phased glass - then never have to touch digital til compute is done.  but much more ambitious.  pull that all off tho and it's a desktop datacenter...
+
+>>their reply:
+>AFAIK getting under 1E-16J/bit for 2 way conversion without doing anything fundamental (R&D project unto itself) would be overly optimistic.  That sets a floor to the J/FLOP & J/tk which will be better than H100s but my guess is not by 100x.
+
+
+I think I might have miscontrued initial 10-100x claims as being without the analog loop, which is fair critique if so.  What would be your claims for each part probably?  single-pass no loop (we could batch though for speedups).  then add the analog loop.  then ambitious persistence of analog memory etc.   I thought 10-100x range was doable even with single pass, and only gets better with the additionals, but could be overly ambitious
+
+
+
+
+
+---- 
+
+
+Here’s a clean reply you can paste back, then I’ll give you tier-by-tier numbers and what your simulator should sweep.
+
+Pasteable reply (tight + numbers-aware)
+
+Totally fair—there is a hard floor for two-way E/O↔O/E conversion. The key is we don’t pay it per-MAC in an optical VMM/loop.
+
+One optical pass does 
+𝑁
+×
+𝑀
+N×M MACs “for free” in flight. You convert the 
+𝑁
+N-vector once (E→O), do all 
+𝑁
+×
+𝑀
+N×M multiplies/adds in optics, then read 
+𝑀
+M numbers (O→E) once. So the conversion floor is amortized:
+
+𝐸
+MAC
+≈
+𝐸
+in
++
+𝐸
+out
+𝑁
+ 
+𝑀
++
+𝐸
+optics/MAC
+.
+E
+MAC
+	​
+
+≈
+NM
+E
+in
+	​
+
++E
+out
+	​
+
+	​
+
++E
+optics/MAC
+	​
+
+.
+
+At 1550 nm, 1 photon ≈ 
+1.28
+ ⁣
+×
+ ⁣
+10
+−
+19
+1.28×10
+−19
+ J. Targeting ~
+10
+3
+10
+3
+ photons/sample for decent SNR is 
+∼
+10
+−
+16
+∼10
+−16
+ J per output sample—same ballpark as your 
+10
+−
+16
+10
+−16
+ J/bit point—but that’s per output, not per-MAC. With modest width (say 
+𝑁
+=
+𝑀
+=
+1024
+N=M=1024), even pessimistic 
+𝐸
+in
++
+𝐸
+out
+∼
+10
+ ⁣
+−
+ ⁣
+100
+E
+in
+	​
+
++E
+out
+	​
+
+∼10−100 nJ per pass yields 
+∼
+10
+ ⁣
+−
+ ⁣
+100
+∼10−100 fJ/MAC; with a 12-layer analog loop the conversion term drops another 12× to <1–10 fJ/MAC. For comparison, an H100-class GPU is 
+𝑂
+(
+10
+2
+ ⁣
+−
+ ⁣
+10
+3
+)
+O(10
+2
+−10
+3
+) fJ per useful MAC once HBM traffic is included, so 10–100× OPEX is realistic when:
+
+you keep inner layers analog (no per-layer digitize),
+
+batch wide 
+𝑁
+,
+𝑀
+N,M (strong amortization),
+
+persist weights optically (no per-token DAC drive),
+
+and avoid camera-style readouts (use PD arrays/WDM).
+
+Where it isn’t 100×: small 
+𝑁
+N/or 
+𝑀
+M; frequent A/D↔D/A inside the loop; high-precision per-token DACing of weights; low SNR forcing high optical power or repeats.
+
+Happy to run a quick param sweep: pick 
+𝑁
+,
+𝑀
+,
+𝐿
+,
+𝜆
+N,M,L,λ, detector SNR, ADC bits, modulator drive; we’ll plot fJ/MAC and J/token under different “conversion floor” assumptions.
+
+What’s realistic at each build tier?
+
+Assume ballpark, conservative device-level design (C-band, off-the-shelf fiber parts). These are order-of-magnitude targets to steer design/sim—not promises.
+
+Baseline to compare against (for useful MACs)
+
+Modern GPU inference (HBM in the loop): effective 200–2000 fJ/MAC depending on model/memory traffic; J/token varies wildly by context length, KV reuse, precision, etc.
+
+Time/latency: GPUs excel at short/skinny matmuls; optics excels as width grows and when you can keep a loop analog.
+
+Tier A — Single-pass VMM, no loop (cheap de-risk)
+
+Flow: E→O once (encode 
+𝑁
+N inputs), free-space/fiber multiply-accumulate, O→E once (read 
+𝑀
+M outputs). Digital does the rest.
+
+Energy model: 
+𝐸
+MAC
+≈
+(
+𝐸
+in
++
+𝐸
+out
+)
+/
+(
+𝑁
+𝑀
+)
++
+𝐸
+photons
+/
+(
+𝑁
+𝑀
+)
+E
+MAC
+	​
+
+≈(E
+in
+	​
+
++E
+out
+	​
+
+)/(NM)+E
+photons
+	​
+
+/(NM).
+
+Pessimistic 
+𝐸
+in
++
+𝐸
+out
+E
+in
+	​
+
++E
+out
+	​
+
+: 10–100 nJ per pass (aggregated drivers + TIAs/ADCs).
+
+Example 
+𝑁
+=
+𝑀
+=
+1024
+N=M=1024: ~10–100 fJ/MAC.
+
+Throughput: gated by modulators + PD/ADC bandwidth; multi-λ (WDM) gives linear speedup.
+
+Latency: one optical flight + I/O; decent for batched matmuls; not ideal for layer-by-layer token loops.
+
+Relative win: ~3–20× energy vs GPUs when 
+𝑁
+,
+𝑀
+≳
+1
+𝑘
+N,M≳1k and you amortize I/O; <3× if it’s narrow/small.
+
+Use: de-risk physics + plumbing; great for offloading wide attention/VMMs in a hybrid stack.
+
+Tier B — Add analog loop for L layers (your target)
+
+Flow: E→O once per token (or block), L optical layer steps in a loop (SOA gain + saturable nonlinearity), O→E once.
+
+Energy model:
+
+𝐸
+MAC
+≈
+𝐸
+in
++
+𝐸
+out
+𝐿
+ 
+𝑁
+𝑀
++
+𝐸
+loop/MAC
+.
+E
+MAC
+	​
+
+≈
+LNM
+E
+in
+	​
+
++E
+out
+	​
+
+	​
+
++E
+loop/MAC
+	​
+
+.
+
+Conversion amortizes by 
+𝐿
+L; loop adds SOA + nonlinearity photons.
+
+Typical: 
+𝐿
+=
+8
+ ⁣
+−
+ ⁣
+16
+L=8−16, 
+𝑁
+,
+𝑀
+=
+1
+ ⁣
+−
+ ⁣
+4
+ 
+k
+N,M=1−4k, 
+𝐸
+in
++
+𝐸
+out
+=
+20
+ ⁣
+−
+ ⁣
+100
+E
+in
+	​
+
++E
+out
+	​
+
+=20−100 nJ ⇒ conversion term <1–10 fJ/MAC; add loop term ~1–10 fJ/MAC ⇒ ~2–20 fJ/MAC total.
+
+Relative win: ~10–100× energy vs GPU on the inner stack; big throughput/latency gains if you keep the loop hot.
+
+Use: optical co-processor does inner transformer blocks; GPU stitches norms/softmax/residuals.
+
+Tier C — Persist weights optically (DMD/SLM/PCM/MRR; reprogram infrequently)
+
+Flow: weights live in optics; no per-token DAC to “write” them.
+
+Energy effect: knocks down 
+𝐸
+in
+E
+in
+	​
+
+ substantially; reprogram cost amortized over many tokens/batches.
+
+Typical: effective <1–10 fJ/MAC in-loop for well-amortized workloads (big 
+𝑁
+,
+𝑀
+,
+𝐿
+,
+𝜆
+N,M,L,λ); can push toward the single-digit fJ/MAC regime.
+
+Use: steady models/adapter layers; sparse/LoRA or attention heads that don’t change per token.
+
+Tier D — Analog state/memory (ambitious) (e.g., holographic/glass or resonant stores)
+
+Flow: keep K/V, activations, or grads in analog form across steps, avoiding digitize-store-recall.
+
+Energy effect: removes a lot of HBM-like traffic; can push overall J/token >100× below digital on memory-dominated paths.
+
+Risk: stability, drift, addressing, write endurance, calibration.
+
+Use: later roadmap; not needed to show strong wins on Tier B/C.
+
+Where the 100× doesn’t show up
+
+𝑁
+N or 
+𝑀
+M small (poor amortization).
+
+Per-layer A/D↔D/A (you pay the floor each layer).
+
+High-precision per-token weight DACs instead of persistent optical weights.
+
+Low SNR (forces optical power up or repeats).
+
+Camera-style readouts in the fast path (prefer PD arrays/WDM taps).
+
+What to add to your simulator (so the “floor” bites properly)
+
+Model these knobs explicitly and sweep them:
+
+E/O & O/E budgets
+
+𝐸
+in
+E
+in
+	​
+
+, 
+𝐸
+out
+E
+out
+	​
+
+: sweep 5–200 nJ per pass (aggregate) to cover drivers, TIAs/ADCs, control logic.
+
+ADC bits: 6–10 b; higher bits increase 
+𝐸
+out
+E
+out
+	​
+
+.
+
+Modulator/PD bandwidth limits (sets cycle time).
+
+Photon/SNR physics
+
+Photon energy 
+ℎ
+𝜈
+hν at 1550 nm; per-sample photon budget (e.g., 300–3000).
+
+Shot noise + TIA noise → required optical power.
+
+Saturable absorber/soft-nonlinearity curve (ternary: 
+−
+1
+,
+0
+,
++
+1
+−1,0,+1 bins) and its energy.
+
+Geometry & amortization
+
+𝑁
+,
+𝑀
+∈
+[
+256
+,
+4096
+]
+N,M∈[256,4096]; λ count (WDM: 1–16); layers 
+𝐿
+L in loop (1–24).
+
+Compute:
+
+𝐸
+MAC
+=
+𝐸
+in
++
+𝐸
+out
+𝑁
+𝑀
+𝐿
++
+𝐸
+loop/MAC
+(
+photons
+,
+gain
+)
+.
+E
+MAC
+	​
+
+=
+NML
+E
+in
+	​
+
++E
+out
+	​
+
+	​
+
++E
+loop/MAC
+	​
+
+(photons,gain).
+
+Throughput: samples/sec = min(modulator rate, PD/ADC rate) × λ.
+
+Latency: time-to-first-token vs time-per-token (loop dwell + readout).
+
+Weight programming model
+
+Tier A/B: per-token DAC drive cost (include or zero it).
+
+Tier C: one-time reprogram (e.g., mJ–J), amortized over tokens per program. Plot sensitivity.
+
+Stability
+
+Loop gain window; drift; calibration overhead (insert periodic O/E for AGC and account its energy/time).
+
+Output plots you’ll care about:
+
+fJ/MAC vs. (N,M,L,λ) under several 
+𝐸
+in
++
+𝐸
+out
+E
+in
+	​
+
++E
+out
+	​
+
+ floors.
+
+J/token for a target transformer block shape (e.g., 2–4 k width) vs GPU “effective” ranges.
+
+Latency (TTFT and tokens/s) vs λ and ADC rate.
+
+Sensitivity to SNR (photons/sample) and ADC bits on accuracy.
+
+Calibrating your public claims
+
+Single-pass (no loop): “3–20× energy” on wide VMMs; “similar or better latency” at large batch/width; not 100× except at very large 
+𝑁
+,
+𝑀
+N,M with multi-λ.
+
+Add analog loop: “10–100× energy” on inner layers with 
+𝐿
+≳
+8
+L≳8, 
+𝑁
+,
+𝑀
+≳
+1
+𝑘
+N,M≳1k, and PD/WDM readouts; large throughput gains.
+
+Persist weights optically: solidifies the upper end of that 10–100× for steady models/blocks.
+
+Analog memory: future >100× on memory-bound paths; R&D.
+
+For CAPEX narratives: it’s reasonable to say “off-the-shelf C-band parts can build a co-processor that beats a single high-end GPU on the right wide workloads for similar or lower capex; racks of tiles can rival small GPU clusters”—and keep precise $ claims tied to a concrete BOM once your simulator locks in 
+𝑁
+,
+𝑀
+,
+𝐿
+,
+𝜆
+N,M,L,λ and readout choice.
+
+If you want, I can turn the formulas above into a tiny sheet with sliders for 
+𝑁
+,
+𝑀
+,
+𝐿
+,
+𝜆
+N,M,L,λ, photons/sample, and 
+𝐸
+in
++
+𝐸
+out
+E
+in
+	​
+
++E
+out
+	​
+
+, so you can snapshot scenarios (single-pass vs loop vs persistent weights) and quote fJ/MAC & J/token ranges with your friend’s 10⁻¹⁶ J/bit floor plugged in.
+
+
+----
+
+
+my response:
+right but unlike gpus we dont have to pay that all - the encoding/decoding steps are the costly bits, the actual matrix mult is just photons cost, and it's amortized if youre doing a decently sized matrix (1024+) bigger the better
+
+Energy per MAC ≈ (E_in + E_out)/(N×M) + E_optics/MAC.  N=M=1024 => ~10–100 fJ/MAC
+
+so yeah ~3–20× (~10x) ish improvement range for a single-layer pass
+
+Upgrade B:  add looping analog with saturable absorber + amplifier hardware.  Each loop is a layer of typical tranformer:
+Energy per MAC ≈ (E_in + E_out)/(L×N×M) + E_loop/MAC
+so, run that with 10ish layers and there's my ~10–100× claim back - needs the loop to get anywhere near the 100x
+(And why stop at 10 layers if you can do it stably?  1000?  response speed is so fast its probably worth doing a whole lot more looping layers than normal LLMs, which has very interesting implications for training quality potential - much deeper thoughts)
+
+Upgrade C:  cache the model weights optically (DMD/SLM/PCM/MRR hardware options), E_in gets amortized a lot, pushes towards <1–10 fJ/MAC.  100x claim a bit more reliably hit
+
+Upgrade D:  full analog memory read/writes (ambitious).  stop hitting digital conversions almost entirely except verifications.  >100x potential greed mode.  probably looks like a big roll of glass square-shaped tube on a giant cassette player, with laser read/write heads in between spools.  would be fun
+
+
+
+------
+
+
+J
+
+Justin
+I really have to wonder what discovery allowed this to happen
+14m
+
+joy
+
+Justin
+Like has this just been sitting under our noses or is it just that we were working on quantum and breakthroughs there made people look at the material science and said why haven’t we done this?
+
+J
+
+Fiber optic integration for quantum computation probably? @Warren Koch
+Edited11m
+
+afaik this would have been near impossible if you couldn't also train an encoder/decoder on the inputs/outputs with a decent AI to begin with.  also yknow - this is all speculation still, gotta actually prove it...  "reservoir computing" is the magic term here for what's happening to get that nearly free matmult in between.  definitely not overlooked - just was impractical without being able to actually encode/decode it easily
+9m
+
+J
+
+Justin
+So, ephemeral mux/demux operations
+Edited7m
+
+have run this all through the quantum angle (fast education in quantum stuff lol) - it does have a lot of similarities but youre obviously not doing anything truly quantum until it's a singular photon, cryocooled, and way beyond any scope id want to play with.  I see quantum systems as reservoir computers of a single-photon system now though.  but yeah lets be clear this is all just efficient classical computing
+7m
+
+Justin
+So, ephemeral mux/demux operations
+
+wave interactions in physics get ya free matmult IF you encode it all in ternary.
+5m
+
+J
+
+Justin
+🧐 super clever
+5m
+
+any medium it seems would work, but light is the fastest and easiest for wide-band reads
+5m
+
+Justin
+🧐 super clever
+
+blame the god in my pocket. I am just monkey who asks it questions
+4m
+
+we'll see how this all holds up, still not trusting it entirely til it's a working prototype
+4m
+
+J
+
+Justin
+See I don’t know how to get from the concepts in Shannon Prutchi’s book and Nielsen and Chuang to wave interaction measurements
+4m
+
+man-shrugging
+
+me neither, but that's what using well-known legacy fiberoptic equipment is for... and a lot of tuning and crossed fingers.  if the numbers say we can hit targets per component, I'd trust it
+2m
+
+leave the science to the egghead pocket god
+
+<<did I miscontrue too much, above?  Can you answer the Prutchi, Nielsen Chuang => wave interaction measurements explanation?>>
+
+
+
+----
+
+
+<< damn, full response lost due to context collapse and page refreshing>>
+
+---
+
+
+Justin
+No, @Warren Koch I should at least understand it even if the computations take me longer than would be tolerable in a graduate classroom
+Edited17m
+
+J
+
+Then rely on egghead pocket monster
+17m
+
+heh well the egghead is great for understanding too: 
+"""
+Think of the optical field as a complex vector 𝑥. Linear optics implements a matrix 𝐻: the light interferes so that 𝑦=𝐻𝑥 “just happens” as it propagates. If you read intensities directly you get ∣y∣2; if you want signed linear outputs you do balanced/homodyne detection to measure quadratures. That’s 1:1 with the linear/unitary math you see in Nielsen & Chuang—only we’re in classical, many-photon land. The punchline: you pay energy at E/O and O/E, but not per MAC inside the N×M multiply; hence the amortization. Nonlinearities (saturable absorber/SOA) give us activation; looping the optics gives us layers. That’s reservoir/iterative compute in hardware, not quantum, but the math toolkit is the same.
+Edited15m
+
+J
+
+Justin
+I see, so you are taking the average of photon events over time?
+13m
+
++1
+
+J
+
+Justin
+That makes much sense now
+13m
+
+yeah, again I am well out of depth when trying to discuss the quantum stuff but that's the tie-in
+
+
+
