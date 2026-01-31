@@ -1,0 +1,143 @@
+{
+  "output": "G:\\LOKI\\LOCUS\\SENSUS\\looking_glass\\SUMMARY\\summaries\\2026-01-30_17-40-27.112_summary_changes_part2.txt",
+  "files": [
+    {
+      "path": ".\\context2.md",
+      "start": 26,
+      "end": 788254,
+      "lang": "markdown"
+    },
+    {
+      "path": ".\\looking_glass\\__init__.py",
+      "start": 788280,
+      "end": 788339,
+      "lang": "python"
+    },
+    {
+      "path": ".\\looking_glass\\orchestrator.py",
+      "start": 788365,
+      "end": 796975,
+      "lang": "python"
+    },
+    {
+      "path": ".\\looking_glass\\params.py",
+      "start": 797001,
+      "end": 797082,
+      "lang": "python"
+    },
+    {
+      "path": ".\\looking_glass\\utils.py",
+      "start": 797108,
+      "end": 797220,
+      "lang": "python"
+    },
+    {
+      "path": ".\\looking_glass\\plotting.py",
+      "start": 797246,
+      "end": 799261,
+      "lang": "python"
+    },
+    {
+      "path": ".\\looking_glass\\tuner.py",
+      "start": 799287,
+      "end": 807015,
+      "lang": "python"
+    },
+    {
+      "path": ".\\looking_glass\\dashboard_server.py",
+      "start": 807041,
+      "end": 859174,
+      "lang": "python"
+    },
+    {
+      "path": ".\\looking_glass\\preflight.py",
+      "start": 859200,
+      "end": 863812,
+      "lang": "python"
+    },
+    {
+      "path": ".\\looking_glass\\scenario.py",
+      "start": 863838,
+      "end": 878558,
+      "lang": "python"
+    },
+    {
+      "path": ".\\looking_glass\\sim\\__init__.py",
+      "start": 878584,
+      "end": 878640,
+      "lang": "python"
+    },
+    {
+      "path": ".\\looking_glass\\sim\\sensor.py",
+      "start": 878666,
+      "end": 879490,
+      "lang": "python"
+    },
+    {
+      "path": ".\\looking_glass\\sim\\tia.py",
+      "start": 879516,
+      "end": 882278,
+      "lang": "python"
+    },
+    {
+      "path": ".\\looking_glass\\sim\\comparator.py",
+      "start": 882304,
+      "end": 886578,
+      "lang": "python"
+    },
+    {
+      "path": ".\\looking_glass\\sim\\clock.py",
+      "start": 886604,
+      "end": 887100,
+      "lang": "python"
+    },
+    {
+      "path": ".\\looking_glass\\sim\\mitigations.py",
+      "start": 887126,
+      "end": 887234,
+      "lang": "python"
+    },
+    {
+      "path": ".\\looking_glass\\sim\\thermal.py",
+      "start": 887260,
+      "end": 888514,
+      "lang": "python"
+    },
+    {
+      "path": ".\\looking_glass\\sim\\camera.py",
+      "start": 888540,
+      "end": 890800,
+      "lang": "python"
+    },
+    {
+      "path": ".\\looking_glass\\sim\\cold_storage.py",
+      "start": 890826,
+      "end": 893343,
+      "lang": "python"
+    },
+    {
+      "path": ".\\looking_glass\\sim\\optics.py",
+      "start": 893369,
+      "end": 908795,
+      "lang": "python"
+    },
+    {
+      "path": ".\\looking_glass\\sim\\emitter.py",
+      "start": 908821,
+      "end": 913069,
+      "lang": "python"
+    },
+    {
+      "path": ".\\examples\\run_smoke.py",
+      "start": 913095,
+      "end": 913976,
+      "lang": "python"
+    },
+    {
+      "path": ".\\examples\\run_sanity.py",
+      "start": 914002,
+      "end": 918719,
+      "lang": "python"
+    }
+  ]
+}

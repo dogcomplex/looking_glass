@@ -1,0 +1,2345 @@
+{
+  "output": "G:\\LOKI\\LOCUS\\SENSUS\\looking_glass\\SUMMARY\\summaries\\2026-01-30_17-40-26.965_summary_part3.txt",
+  "files": [
+    {
+      "path": ".\\examples\\test.py",
+      "start": 26,
+      "end": 157517,
+      "lang": "python"
+    },
+    {
+      "path": ".\\configs\\packs\\emitter_typ.yaml",
+      "start": 157543,
+      "end": 157720,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\optics_typ.yaml",
+      "start": 157746,
+      "end": 158015,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\sensor_typ.yaml",
+      "start": 158041,
+      "end": 158135,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tia_typ.yaml",
+      "start": 158161,
+      "end": 158273,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\comparator_typ.yaml",
+      "start": 158299,
+      "end": 158432,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\clock_typ.yaml",
+      "start": 158458,
+      "end": 158527,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\thermal_typ.yaml",
+      "start": 158553,
+      "end": 158621,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\emitter_optimistic.yaml",
+      "start": 158647,
+      "end": 158832,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\emitter_pessimistic.yaml",
+      "start": 158858,
+      "end": 159043,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\optics_optimistic.yaml",
+      "start": 159069,
+      "end": 159342,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\optics_pessimistic.yaml",
+      "start": 159368,
+      "end": 159644,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\camera_typ.yaml",
+      "start": 159670,
+      "end": 159855,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_emitter.yaml",
+      "start": 159881,
+      "end": 160635,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_tia.yaml",
+      "start": 160661,
+      "end": 161435,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_comparator.yaml",
+      "start": 161461,
+      "end": 162083,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics.yaml",
+      "start": 162109,
+      "end": 162669,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_harsh.yaml",
+      "start": 162695,
+      "end": 163412,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_medium.yaml",
+      "start": 163438,
+      "end": 163990,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_lowcost_emitter.yaml",
+      "start": 164016,
+      "end": 164258,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_lowcost_optics.yaml",
+      "start": 164284,
+      "end": 164624,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_lowcost_tia.yaml",
+      "start": 164650,
+      "end": 164807,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_lowcost_comparator.yaml",
+      "start": 164833,
+      "end": 164972,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_lowcost_emitter_boost.yaml",
+      "start": 164998,
+      "end": 165247,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_lowcost_emitter_boost_13p5.yaml",
+      "start": 165273,
+      "end": 165527,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_lowcost_emitter_boost_15.yaml",
+      "start": 165553,
+      "end": 165805,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_lowct.yaml",
+      "start": 165831,
+      "end": 166385,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_led_array.yaml",
+      "start": 166411,
+      "end": 166832,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_budget_sensor.yaml",
+      "start": 166858,
+      "end": 167228,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_led_array_stress.yaml",
+      "start": 167254,
+      "end": 167649,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_budget_tia.yaml",
+      "start": 167675,
+      "end": 168033,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_budget_comparator.yaml",
+      "start": 168059,
+      "end": 168416,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_budget_clock.yaml",
+      "start": 168442,
+      "end": 168518,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_highct.yaml",
+      "start": 168544,
+      "end": 168771,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_thermal_drift_heavy.yaml",
+      "start": 168797,
+      "end": 168938,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_budget_clock_heavy.yaml",
+      "start": 168964,
+      "end": 169108,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_medium_voa2.yaml",
+      "start": 169134,
+      "end": 169708,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_medium_voa4.yaml",
+      "start": 169734,
+      "end": 170308,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_medium_voa6.yaml",
+      "start": 170334,
+      "end": 170908,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_medium_voa2_gate.yaml",
+      "start": 170934,
+      "end": 171628,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_medium_voa2_edfa.yaml",
+      "start": 171654,
+      "end": 172420,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_medium_voa2_clip.yaml",
+      "start": 172446,
+      "end": 173139,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_medium_voa2_clipsoft.yaml",
+      "start": 173165,
+      "end": 173831,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_medium_voa2_clip_nosa.yaml",
+      "start": 173857,
+      "end": 174542,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_medium_voa1.yaml",
+      "start": 174568,
+      "end": 175142,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_medium_voa2_lightSA.yaml",
+      "start": 175168,
+      "end": 175780,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_medium_amp6_voa35.yaml",
+      "start": 175806,
+      "end": 176403,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_medium_voa2_nosa.yaml",
+      "start": 176429,
+      "end": 177026,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_medium_voa2_amp0.yaml",
+      "start": 177052,
+      "end": 177645,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_medium_voa1p5_amp1.yaml",
+      "start": 177671,
+      "end": 178269,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_medium_voa2_SAstrong.yaml",
+      "start": 178295,
+      "end": 178908,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_medium_voa2_contrast.yaml",
+      "start": 178934,
+      "end": 179562,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_medium_voa2_highcontrast.yaml",
+      "start": 179588,
+      "end": 180220,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_medium_voa2_satlin.yaml",
+      "start": 180246,
+      "end": 180842,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_emitter_highpower.yaml",
+      "start": 180868,
+      "end": 181134,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_medium_voa2_satHigh.yaml",
+      "start": 181160,
+      "end": 181758,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_medium_voa2_soa_tuned.yaml",
+      "start": 181784,
+      "end": 182433,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_medium_voa2_soa_strongsa.yaml",
+      "start": 182459,
+      "end": 183111,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_medium_voa2_soa_strongsa_single.yaml",
+      "start": 183137,
+      "end": 183486,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_medium_voa2_soa_strongsa_ch4.yaml",
+      "start": 183512,
+      "end": 183881,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\tmp_codex_optics_medium_voa2_soa_strongsa_ch8.yaml",
+      "start": 183907,
+      "end": 184276,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\emitters\\thorlabs_L850P200_typ.yaml",
+      "start": 184302,
+      "end": 185058,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\emitters\\ushio_HL8518MG_typ.yaml",
+      "start": 185084,
+      "end": 185781,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\emitters\\coherent_OBIS-850-nm_typ.yaml",
+      "start": 185807,
+      "end": 186456,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\emitters\\ams_osram_SPL-PL85_typ.yaml",
+      "start": 186482,
+      "end": 187059,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\emitters\\broadcom_VCSEL-12-ch-850-nm-array_typ.yaml",
+      "start": 187085,
+      "end": 187750,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\modulators\\texas_instruments_DLPLCR4500EVM_typ.yaml",
+      "start": 187776,
+      "end": 188341,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\modulators\\texas_instruments_DLP2010NIR-EVM_typ.yaml",
+      "start": 188367,
+      "end": 188871,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\modulators\\vialux_V-7000-(DLP7000)_typ.yaml",
+      "start": 188897,
+      "end": 189401,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\modulators\\holoeye_LETO-3_typ.yaml",
+      "start": 189427,
+      "end": 189942,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\modulators\\meadowlark_optics_1920x1152-SLM-(VIS)_typ.yaml",
+      "start": 189968,
+      "end": 190523,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\cameras\\teledyne_flir_BFS-U3-51S5M-C_typ.yaml",
+      "start": 190549,
+      "end": 191314,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\cameras\\basler_acA1920-155um_typ.yaml",
+      "start": 191340,
+      "end": 192013,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\cameras\\allied_vision_Alvium-1800-U-2040_typ.yaml",
+      "start": 192039,
+      "end": 192736,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\cameras\\ids_UI-3280CP-Rev.2_typ.yaml",
+      "start": 192762,
+      "end": 193416,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\cameras\\the_imaging_source_DMK-33UX264_typ.yaml",
+      "start": 193442,
+      "end": 194127,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\cameras\\teledyne_flir_BFS-U3-51S5M-C_optimistic.yaml",
+      "start": 194153,
+      "end": 194950,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\cameras\\teledyne_flir_BFS-U3-51S5M-C_pessimistic.yaml",
+      "start": 194976,
+      "end": 195775,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\sensors\\thorlabs_FDS1010_typ.yaml",
+      "start": 195801,
+      "end": 196403,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\sensors\\hamamatsu_S5973_typ.yaml",
+      "start": 196429,
+      "end": 196918,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\sensors\\osi_optoelectronics_PIN-10D_typ.yaml",
+      "start": 196944,
+      "end": 197492,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\sensors\\vishay_BPW34_typ.yaml",
+      "start": 197518,
+      "end": 197992,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\sensors\\thorlabs_PDA20CS2_typ.yaml",
+      "start": 198018,
+      "end": 198601,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\tias\\femto_DLPCA-200_typ.yaml",
+      "start": 198627,
+      "end": 199410,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\tias\\femto_DHPCA-100_typ.yaml",
+      "start": 199436,
+      "end": 200034,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\tias\\texas_instruments_OPA857EVM_typ.yaml",
+      "start": 200060,
+      "end": 200683,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\tias\\thorlabs_TIA60_typ.yaml",
+      "start": 200709,
+      "end": 201255,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\tias\\analog_devices_AD8015_typ.yaml",
+      "start": 201281,
+      "end": 201808,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\comparators\\analog_devices_LTC6752_typ.yaml",
+      "start": 201834,
+      "end": 202384,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\comparators\\texas_instruments_TLV3501_typ.yaml",
+      "start": 202410,
+      "end": 202891,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\comparators\\analog_devices_ADCMP607_typ.yaml",
+      "start": 202917,
+      "end": 203350,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\comparators\\texas_instruments_LMH7220_typ.yaml",
+      "start": 203376,
+      "end": 203836,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\comparators\\maxim_integrated_MAX9601_typ.yaml",
+      "start": 203862,
+      "end": 204304,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\optics\\thorlabs_Engineered-Diffuser-5°_typ.yaml",
+      "start": 204330,
+      "end": 204818,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\optics\\thorlabs_Engineered-Diffuser-20°_typ.yaml",
+      "start": 204844,
+      "end": 205330,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\optics\\edmund_optics_Ground-Glass-Diffuser-120-grit_typ.yaml",
+      "start": 205356,
+      "end": 205839,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\optics\\edmund_optics_Light-Shaping-Diffuser-10°_typ.yaml",
+      "start": 205865,
+      "end": 206382,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\optics\\generic_K9-glass-cube-25mm_typ.yaml",
+      "start": 206408,
+      "end": 206892,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\optics\\thorlabs_Engineered-Diffuser-10°_typ.yaml",
+      "start": 206918,
+      "end": 207435,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\optics\\thorlabs_Engineered-Diffuser-15°_typ.yaml",
+      "start": 207461,
+      "end": 207977,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\optics\\thorlabs_Engineered-Diffuser-3°_typ.yaml",
+      "start": 208003,
+      "end": 208530,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\aoms\\gooch_&_housego_3080-197_typ.yaml",
+      "start": 208556,
+      "end": 209033,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\aoms\\isomet_1205C-1_typ.yaml",
+      "start": 209059,
+      "end": 209475,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\aoms\\g&h_AODRIVER-F-80_typ.yaml",
+      "start": 209501,
+      "end": 209787,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\aoms\\isomet_232A-2_typ.yaml",
+      "start": 209813,
+      "end": 210076,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\aoms\\aa_opto-electronic_MT80-A1_typ.yaml",
+      "start": 210102,
+      "end": 210562,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\amplifiers\\thorlabs_BOA780_typ.yaml",
+      "start": 210588,
+      "end": 211084,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\amplifiers\\thorlabs_SOA1013S-(C-band)_typ.yaml",
+      "start": 211110,
+      "end": 211542,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\amplifiers\\thorlabs_EDFA100P_typ.yaml",
+      "start": 211568,
+      "end": 211937,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\amplifiers\\amonics_AEDFA-23-B-FA_typ.yaml",
+      "start": 211963,
+      "end": 212329,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\amplifiers\\batop_SESAM-@-850-nm-(custom)_typ.yaml",
+      "start": 212355,
+      "end": 212868,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\fiber\\thorlabs_SMF-28-Ultra-5km_typ.yaml",
+      "start": 212894,
+      "end": 213315,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\fiber\\thorlabs_SMF-28-Ultra-1000m_typ.yaml",
+      "start": 213341,
+      "end": 213730,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\fiber\\generic_OM3-MMF-300m_typ.yaml",
+      "start": 213756,
+      "end": 214194,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\fiber\\corning_SMF-28e+-1km_typ.yaml",
+      "start": 214220,
+      "end": 214626,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\fiber\\thorlabs_PM1550-500m_typ.yaml",
+      "start": 214652,
+      "end": 215080,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\thermal\\wavelength_electronics_LFI-3751_typ.yaml",
+      "start": 215106,
+      "end": 215589,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\thermal\\thorlabs_TED200C_typ.yaml",
+      "start": 215615,
+      "end": 216023,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\thermal\\arroyo_5305-TECSource_typ.yaml",
+      "start": 216049,
+      "end": 216458,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\thermal\\meerstetter_TEC-1091_typ.yaml",
+      "start": 216484,
+      "end": 216872,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\thermal\\analog_technologies_TEC-A1-5V_typ.yaml",
+      "start": 216898,
+      "end": 217381,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\clocks\\pjrc_Teensy-4.1_typ.yaml",
+      "start": 217407,
+      "end": 217756,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\clocks\\spincore_PulseBlasterPB24-100-32k_typ.yaml",
+      "start": 217782,
+      "end": 218152,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\clocks\\national_instruments_USB-6341_typ.yaml",
+      "start": 218178,
+      "end": 218547,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\clocks\\pico_technology_PicoScope-5444D-(AWG)_typ.yaml",
+      "start": 218573,
+      "end": 218929,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\vendors\\clocks\\analog_devices_AD9910-DDS-Eval-Board_typ.yaml",
+      "start": 218955,
+      "end": 219343,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\comparator_sweep.yaml",
+      "start": 219369,
+      "end": 219809,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\tia_sweep.yaml",
+      "start": 219835,
+      "end": 220299,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\tuned_tia.yaml",
+      "start": 220325,
+      "end": 220671,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\tuned_comparator.yaml",
+      "start": 220697,
+      "end": 220941,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\tuned_emitter_boost.yaml",
+      "start": 220967,
+      "end": 221224,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\tia_12k_65.yaml",
+      "start": 221250,
+      "end": 221359,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_low_ct.yaml",
+      "start": 221385,
+      "end": 221541,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_stage_a_hygiene.yaml",
+      "start": 221567,
+      "end": 221908,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\tia_stage_b_low_noise.yaml",
+      "start": 221934,
+      "end": 222242,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\comparator_stage_c_trims.yaml",
+      "start": 222268,
+      "end": 222493,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_stage_e_power_mod.yaml",
+      "start": 222519,
+      "end": 222813,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\tia_stage_b2_low_noise.yaml",
+      "start": 222839,
+      "end": 223078,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_stage_e2_power_mod.yaml",
+      "start": 223104,
+      "end": 223400,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\comparator_stage_c2_trims.yaml",
+      "start": 223426,
+      "end": 223602,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_stage_f_amp.yaml",
+      "start": 223628,
+      "end": 223927,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_stage_g_saturable.yaml",
+      "start": 223953,
+      "end": 224254,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\comparator_stage_c3_precision.yaml",
+      "start": 224280,
+      "end": 224460,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\tia_stage_b3_precision.yaml",
+      "start": 224486,
+      "end": 224726,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_stress_ct_stray.yaml",
+      "start": 224752,
+      "end": 225004,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\comparator_stress_sigma.yaml",
+      "start": 225030,
+      "end": 225203,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\tia_stress_gainvar.yaml",
+      "start": 225229,
+      "end": 225464,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_speckle_stress.yaml",
+      "start": 225490,
+      "end": 225603,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\comparator_metastable_stress.yaml",
+      "start": 225629,
+      "end": 225764,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_stage_fg_amp_sat.yaml",
+      "start": 225790,
+      "end": 226143,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_projector_low.yaml",
+      "start": 226169,
+      "end": 226438,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_projector_mid.yaml",
+      "start": 226464,
+      "end": 226734,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_projector_strong.yaml",
+      "start": 226760,
+      "end": 227031,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\camera_projector_typ.yaml",
+      "start": 227057,
+      "end": 227216,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_projector_isolated.yaml",
+      "start": 227242,
+      "end": 227528,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_projector_iso_strong.yaml",
+      "start": 227554,
+      "end": 227862,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_projector_dmd_strong.yaml",
+      "start": 227888,
+      "end": 228196,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_stage_f_amp_g4.yaml",
+      "start": 228222,
+      "end": 228524,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_stage_g_saturable_soft.yaml",
+      "start": 228550,
+      "end": 228857,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_stage_fg_amp_sat_soft.yaml",
+      "start": 228883,
+      "end": 229241,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_projector_iso_stronger.yaml",
+      "start": 229267,
+      "end": 229558,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_projector_iso_extreme.yaml",
+      "start": 229584,
+      "end": 229875,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_iso_boost.yaml",
+      "start": 229901,
+      "end": 230199,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_ambient_stress.yaml",
+      "start": 230225,
+      "end": 230509,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_iso_boost2.yaml",
+      "start": 230535,
+      "end": 230756,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_upper_bound.yaml",
+      "start": 230782,
+      "end": 231004,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_accept_grid256.yaml",
+      "start": 231030,
+      "end": 231213,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_accept_grid512.yaml",
+      "start": 231239,
+      "end": 231422,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\emitter_budget_noisy.yaml",
+      "start": 231448,
+      "end": 231633,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\emitter_vcsel_array_8ch.yaml",
+      "start": 231659,
+      "end": 231845,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\emitter_cband_dfb_typ.yaml",
+      "start": 231871,
+      "end": 232057,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\fiber_cband_loop_typ.yaml",
+      "start": 232083,
+      "end": 232761,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\edfa_chain_typ.yaml",
+      "start": 232787,
+      "end": 233087,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\soa_chain_soft.yaml",
+      "start": 233113,
+      "end": 233390,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\receiver_ingaas_typ.yaml",
+      "start": 233416,
+      "end": 233643,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\edfa_chain_stress.yaml",
+      "start": 233669,
+      "end": 233831,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\soa_chain_stress.yaml",
+      "start": 233857,
+      "end": 234066,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\dwdm_crosstalk_ripple.yaml",
+      "start": 234092,
+      "end": 234291,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\receiver_ingaas_lowbw.yaml",
+      "start": 234317,
+      "end": 234487,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\edfa_chain_budget.yaml",
+      "start": 234513,
+      "end": 234675,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\soa_chain_budget.yaml",
+      "start": 234701,
+      "end": 234909,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\fiber_cband_loop_stress.yaml",
+      "start": 234935,
+      "end": 235581,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\comparator_jitter_5ps.yaml",
+      "start": 235607,
+      "end": 235685,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\comparator_jitter_15ps.yaml",
+      "start": 235711,
+      "end": 235791,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\clock_jitter_8ps.yaml",
+      "start": 235817,
+      "end": 235885,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\clock_jitter_20ps.yaml",
+      "start": 235911,
+      "end": 235981,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\tia_bw_100mhz_slew.yaml",
+      "start": 236007,
+      "end": 236106,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\tia_bw_300mhz_slew.yaml",
+      "start": 236132,
+      "end": 236231,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\edfa_ase_tight_obpf.yaml",
+      "start": 236257,
+      "end": 236384,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\edfa_ase_high_tight_obpf.yaml",
+      "start": 236410,
+      "end": 236543,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\soa_gain1p5_sat_strong.yaml",
+      "start": 236569,
+      "end": 236721,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\soa_gain3p0_sat_strong.yaml",
+      "start": 236747,
+      "end": 236900,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_hyperstress_dwdm.yaml",
+      "start": 236926,
+      "end": 237031,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_harsher_nonlinear.yaml",
+      "start": 237057,
+      "end": 237331,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\dwdm_adjacent_-28db.yaml",
+      "start": 237357,
+      "end": 237458,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_harsher_nonlinear_extreme.yaml",
+      "start": 237484,
+      "end": 238208,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\dwdm_adjacent_-25db.yaml",
+      "start": 238234,
+      "end": 238335,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_harsher_nonlinear_ultra.yaml",
+      "start": 238361,
+      "end": 238903,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\thermal_ramp_2cph.yaml",
+      "start": 238929,
+      "end": 239013,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\emitter_cband_power_5mw.yaml",
+      "start": 239039,
+      "end": 239116,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\emitter_cband_power_40mw.yaml",
+      "start": 239142,
+      "end": 239221,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\comparator_metastable_strong.yaml",
+      "start": 239247,
+      "end": 239380,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\clock_jitter_30ps.yaml",
+      "start": 239406,
+      "end": 239476,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\connector_apc.yaml",
+      "start": 239502,
+      "end": 239597,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\connector_pc.yaml",
+      "start": 239623,
+      "end": 239717,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\fiber_pm.yaml",
+      "start": 239743,
+      "end": 239816,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\fiber_smf.yaml",
+      "start": 239842,
+      "end": 239916,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\emitter_cband_power_60mw.yaml",
+      "start": 239942,
+      "end": 240025,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\tia_bw_3000mhz_slew.yaml",
+      "start": 240051,
+      "end": 240158,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\soa_fast_tau.yaml",
+      "start": 240184,
+      "end": 240307,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\emitter_dual_wdm.yaml",
+      "start": 240333,
+      "end": 240668,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_mode_mix_dual.yaml",
+      "start": 240694,
+      "end": 242502,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\emitter_quad_wdm.yaml",
+      "start": 242528,
+      "end": 242877,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_mode_mix_quad.yaml",
+      "start": 242903,
+      "end": 245204,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_pathb_highsat.yaml",
+      "start": 245230,
+      "end": 245578,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\emitter_pathb_highpower.yaml",
+      "start": 245604,
+      "end": 245926,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_pathb_highgain.yaml",
+      "start": 245952,
+      "end": 246367,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\comparator_pathb_lowth.yaml",
+      "start": 246393,
+      "end": 246564,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\emitter_pathb_premium.yaml",
+      "start": 246590,
+      "end": 246876,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_pathb_premium.yaml",
+      "start": 246902,
+      "end": 247273,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\tia_pathb_premium.yaml",
+      "start": 247299,
+      "end": 247533,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\comparator_pathb_premium.yaml",
+      "start": 247559,
+      "end": 247756,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_pathb_extreme.yaml",
+      "start": 247782,
+      "end": 248151,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\sensor_pathb_balanced.yaml",
+      "start": 248177,
+      "end": 248291,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_pathb_soa_mzi.yaml",
+      "start": 248317,
+      "end": 249455,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_pathb_soa_mzi_clamp.yaml",
+      "start": 249481,
+      "end": 250590,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_pathb_soa_mzi_clean.yaml",
+      "start": 250616,
+      "end": 251327,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_pathb_soa_sa.yaml",
+      "start": 251353,
+      "end": 252188,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_pathb_soa_sa_ch1.yaml",
+      "start": 252214,
+      "end": 252916,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\emitter_pathb_ch1.yaml",
+      "start": 252942,
+      "end": 253253,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\comparator_pathb_ideal.yaml",
+      "start": 253279,
+      "end": 253454,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\tia_pathb_ideal.yaml",
+      "start": 253480,
+      "end": 253712,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\sensor_pathb_ideal.yaml",
+      "start": 253738,
+      "end": 253850,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_voa_2db.yaml",
+      "start": 253876,
+      "end": 253940,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_voa_4db.yaml",
+      "start": 253966,
+      "end": 254030,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\optics_voa_6db.yaml",
+      "start": 254056,
+      "end": 254120,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\tuned_comparator_pathb.yaml",
+      "start": 254146,
+      "end": 254452,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\tuned_comparator_pathb20.yaml",
+      "start": 254478,
+      "end": 254843,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\packs\\overlays\\tuned_comparator_pathb10.yaml",
+      "start": 254869,
+      "end": 255241,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\scenarios\\basic_typ.yaml",
+      "start": 255267,
+      "end": 255693,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\scenarios\\basic_optimistic.yaml",
+      "start": 255719,
+      "end": 256130,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\scenarios\\basic_pessimistic.yaml",
+      "start": 256156,
+      "end": 256571,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\scenarios\\pd_only.yaml",
+      "start": 256597,
+      "end": 256928,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\scenarios\\tdm_mvp_16ch_strongsa_k8.yaml",
+      "start": 256954,
+      "end": 257478,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\scenarios\\tdm_16_lightsa_k4.yaml",
+      "start": 257504,
+      "end": 258017,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\scenarios\\tdm_32_strongsa_k8.yaml",
+      "start": 258043,
+      "end": 258562,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\scenarios\\tdm_32_lightsa_k8.yaml",
+      "start": 258588,
+      "end": 259101,
+      "lang": "yaml"
+    },
+    {
+      "path": ".\\configs\\presets\\upper_bound_path_a_digital.json",
+      "start": 259127,
+      "end": 260690,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\practicalization_path_a_digital.json",
+      "start": 260716,
+      "end": 263141,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\cold_input_lift.json",
+      "start": 263167,
+      "end": 264289,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\path_b_analog_viability.json",
+      "start": 264315,
+      "end": 265530,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\hold_below_0p1_path_a.json",
+      "start": 265556,
+      "end": 270404,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\optics_angle_fast_path_a.json",
+      "start": 270430,
+      "end": 272049,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\sub_0p05_backoff_and_alt_chain.json",
+      "start": 272075,
+      "end": 275415,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\sub_0p065_tuned_path_a.json",
+      "start": 275441,
+      "end": 277240,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\sub_0p065_tuned_no_autotune_path_a.json",
+      "start": 277266,
+      "end": 278901,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\sub_0p05_probe_path_a.json",
+      "start": 278927,
+      "end": 280902,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\sub_0p06_comp_sweep_path_a.json",
+      "start": 280928,
+      "end": 282450,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\sub_0p06_tia_sweep_path_a.json",
+      "start": 282476,
+      "end": 283990,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\sub_0p06_optics_3deg_vs_5deg_path_a.json",
+      "start": 284016,
+      "end": 285573,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\zero_push_calibration_path_a.json",
+      "start": 285599,
+      "end": 287229,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\zero_push_adaptive_path_a.json",
+      "start": 287255,
+      "end": 288960,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\zero_push_avg_frames_path_a.json",
+      "start": 288986,
+      "end": 290620,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\zero_push_vote5_path_a.json",
+      "start": 290646,
+      "end": 292293,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\zero_push_20ns_power_boost_path_a.json",
+      "start": 292319,
+      "end": 294002,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\zero_push_repeat5_permute_path_a.json",
+      "start": 294028,
+      "end": 295786,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\zero_push_replicate2_path_a.json",
+      "start": 295812,
+      "end": 297478,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\zero_push_replicate16_permute_path_a.json",
+      "start": 297504,
+      "end": 299270,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\zero_push_phys2x_path_a.json",
+      "start": 299296,
+      "end": 300954,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\sub_0p065_tuned_32ch_path_a.json",
+      "start": 300980,
+      "end": 302666,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\sub_0p065_tuned_64ch_path_a.json",
+      "start": 302692,
+      "end": 304378,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\robust_masked_64ch_path_a.json",
+      "start": 304404,
+      "end": 306266,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\sub_0p065_tuned_masked_path_a.json",
+      "start": 306292,
+      "end": 308173,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\sub_0p065_mask_sweep_path_a.json",
+      "start": 308199,
+      "end": 309987,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\sub_0p065_optics_3deg_path_a.json",
+      "start": 310013,
+      "end": 311472,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\sub_0p065_channels_16_32_64_path_a.json",
+      "start": 311498,
+      "end": 312898,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\sub_0p065_avg11_path_a.json",
+      "start": 312924,
+      "end": 314317,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\sub_0p0625_majority_16_path_a.json",
+      "start": 314343,
+      "end": 315928,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\mvp_single_pass_led.json",
+      "start": 315954,
+      "end": 317091,
+      "lang": "json"
+    },
+    {
+      "path": ".\\configs\\presets\\tile16_wdm_dual.json",
+      "start": 317117,
+      "end": 318245,
+      "lang": "json"
+    },
+    {
+      "path": ".\\dashboard\\index.html",
+      "start": 318271,
+      "end": 376250,
+      "lang": "html"
+    },
+    {
+      "path": ".\\scripts\\run_probes.py",
+      "start": 376276,
+      "end": 378865,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\probe_queue_runner.py",
+      "start": 378891,
+      "end": 401954,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\collect_once.py",
+      "start": 401980,
+      "end": 406281,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_tuned_probes.py",
+      "start": 406307,
+      "end": 408272,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_focus19_probes.py",
+      "start": 408298,
+      "end": 410534,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_parallel_focus.py",
+      "start": 410560,
+      "end": 412771,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_sweep2.py",
+      "start": 412797,
+      "end": 415379,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_sweep3.py",
+      "start": 415405,
+      "end": 417743,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_stage_ab_probes.py",
+      "start": 417769,
+      "end": 427071,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_min_combo_hardware.py",
+      "start": 427097,
+      "end": 430339,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_hw_tuning_suite.py",
+      "start": 430365,
+      "end": 436002,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_overlayfix_batch.py",
+      "start": 436028,
+      "end": 438317,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_hw_acceptance_suite.py",
+      "start": 438343,
+      "end": 441071,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_forcecal_accept.py",
+      "start": 441097,
+      "end": 442902,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_hw_acceptance_diag.py",
+      "start": 442928,
+      "end": 445180,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_hw_compact_sweep.py",
+      "start": 445206,
+      "end": 448073,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_confirm_best.py",
+      "start": 448099,
+      "end": 452951,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_optimize_best.py",
+      "start": 452977,
+      "end": 454909,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_moe_comp_suite.py",
+      "start": 454935,
+      "end": 457901,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_drift_stress.py",
+      "start": 457927,
+      "end": 459799,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_quick_working.py",
+      "start": 459825,
+      "end": 462292,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_invalidation_stress.py",
+      "start": 462318,
+      "end": 464258,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_invalidation_stress2.py",
+      "start": 464284,
+      "end": 468010,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_invalidation_hooks.py",
+      "start": 468036,
+      "end": 469902,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_drift_schedule.py",
+      "start": 469928,
+      "end": 472566,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_drift_schedule_rerun.py",
+      "start": 472592,
+      "end": 474702,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_pathb_suite.py",
+      "start": 474728,
+      "end": 476751,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_cold_input_suite.py",
+      "start": 476777,
+      "end": 479370,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\collect_pathb.py",
+      "start": 479396,
+      "end": 480323,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_analog_runs.py",
+      "start": 480349,
+      "end": 484085,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_analog_tuned.py",
+      "start": 484111,
+      "end": 487393,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_pathb_analog_compact.py",
+      "start": 487419,
+      "end": 489797,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_pathb_amp_sa.py",
+      "start": 489823,
+      "end": 492035,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_projector_suite.py",
+      "start": 492061,
+      "end": 494658,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_projector_improve.py",
+      "start": 494684,
+      "end": 496962,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_projector_best.py",
+      "start": 496988,
+      "end": 498850,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_projector_best2.py",
+      "start": 498876,
+      "end": 500730,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_pragmatic_path.py",
+      "start": 500756,
+      "end": 505705,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_single_tuning.py",
+      "start": 505731,
+      "end": 508423,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_single_verify_and_sweeps.py",
+      "start": 508449,
+      "end": 512385,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_multich_refine.py",
+      "start": 512411,
+      "end": 514105,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_small_ch_scaling.py",
+      "start": 514131,
+      "end": 515936,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_refine_16_32_and_pathb.py",
+      "start": 515962,
+      "end": 519086,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_refine_next_batch.py",
+      "start": 519112,
+      "end": 523044,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_iteration_batch.py",
+      "start": 523070,
+      "end": 527053,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_lidar_like_suite.py",
+      "start": 527079,
+      "end": 529431,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_accept_and_calib.py",
+      "start": 529457,
+      "end": 535248,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_vthopt_and_norm.py",
+      "start": 535274,
+      "end": 537489,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_pd_bank_mvp.py",
+      "start": 537515,
+      "end": 538970,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_precision_and_boost.py",
+      "start": 538996,
+      "end": 542419,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_hysteresis_sweep.py",
+      "start": 542445,
+      "end": 544118,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_accept_upper_and_slow.py",
+      "start": 544144,
+      "end": 547205,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_accept_with_vth_import.py",
+      "start": 547231,
+      "end": 550287,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_accept_combo_plus_pathb8.py",
+      "start": 550313,
+      "end": 554118,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_dual_array_vs_single.py",
+      "start": 554144,
+      "end": 557847,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_big_batch_remaining.py",
+      "start": 557873,
+      "end": 560931,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_tier_sensitivity.py",
+      "start": 560957,
+      "end": 563207,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_gain_equalization_suite.py",
+      "start": 563233,
+      "end": 566168,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_bom_option_sims.py",
+      "start": 566194,
+      "end": 569138,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_costdown_emitters.py",
+      "start": 569164,
+      "end": 571099,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_cband_mvp_patha.py",
+      "start": 571125,
+      "end": 572607,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_cband_pathb_loops.py",
+      "start": 572633,
+      "end": 574189,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_cband_dwdm_tile.py",
+      "start": 574215,
+      "end": 575741,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_cband_realism_sweeps.py",
+      "start": 575767,
+      "end": 578190,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_cband_ghz_throughput_and_budget.py",
+      "start": 578216,
+      "end": 580585,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_cband_ghz_extreme.py",
+      "start": 580611,
+      "end": 582975,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_cband_must_fail_then_pass.py",
+      "start": 583001,
+      "end": 585715,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_cband_recover_with_cal.py",
+      "start": 585741,
+      "end": 588449,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_cband_recover_sweeps.py",
+      "start": 588475,
+      "end": 590686,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_cband_ghz_highstress.py",
+      "start": 590712,
+      "end": 593734,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_cband_harsher_micro.py",
+      "start": 593760,
+      "end": 595834,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_control_bounded_highstress.py",
+      "start": 595860,
+      "end": 598227,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_cband_extreme_burn.py",
+      "start": 598253,
+      "end": 600972,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_cband_extreme_scrambler.py",
+      "start": 600998,
+      "end": 603133,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_cband_ultra_burn.py",
+      "start": 603159,
+      "end": 605561,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_cband_power_bathtub.py",
+      "start": 605587,
+      "end": 607736,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_verbose_edfa_bath.py",
+      "start": 607762,
+      "end": 609370,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_cband_harsh_followup.py",
+      "start": 609396,
+      "end": 612175,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_cband_ultra_marginality.py",
+      "start": 612201,
+      "end": 614110,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_cband_lambda_ramp.py",
+      "start": 614136,
+      "end": 615596,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_cband_soa_burst_memory.py",
+      "start": 615622,
+      "end": 617104,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_cband_ghz_grade_stack.py",
+      "start": 617130,
+      "end": 618624,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_mvp_and_tile.py",
+      "start": 618650,
+      "end": 622453,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\append_lowcost_stress.py",
+      "start": 622479,
+      "end": 625267,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\debug_pathb.py",
+      "start": 625293,
+      "end": 627750,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\debug_pathb_compare.py",
+      "start": 627776,
+      "end": 630308,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\debug_pathb_diff.py",
+      "start": 630334,
+      "end": 631562,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\pathb_characterize.py",
+      "start": 631588,
+      "end": 636771,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\run_tdm_mvp.py",
+      "start": 636797,
+      "end": 641506,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\summarize_tdm.py",
+      "start": 641532,
+      "end": 644002,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\run_scenario_tdm.py",
+      "start": 644028,
+      "end": 647527,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\run_tdm_sweep.py",
+      "start": 647553,
+      "end": 650060,
+      "lang": "python"
+    },
+    {
+      "path": ".\\scripts\\summarize_pathb.py",
+      "start": 650086,
+      "end": 650848,
+      "lang": "python"
+    },
+    {
+      "path": ".\\tests\\test_emitter.py",
+      "start": 650874,
+      "end": 652565,
+      "lang": "python"
+    },
+    {
+      "path": ".\\tests\\test_scenario_optional_packs.py",
+      "start": 652591,
+      "end": 653466,
+      "lang": "python"
+    },
+    {
+      "path": ".\\tests\\test_tdm_flags.py",
+      "start": 653492,
+      "end": 656405,
+      "lang": "python"
+    },
+    {
+      "path": ".\\docs\\MVP_TDM_BOM.md",
+      "start": 656431,
+      "end": 659151,
+      "lang": "markdown"
+    },
+    {
+      "path": ".\\docs\\DEMO_COMMANDS.md",
+      "start": 659177,
+      "end": 665733,
+      "lang": "markdown"
+    },
+    {
+      "path": ".\\docs\\TODO\\quantum_identity_paper_ising_randomness.txt",
+      "start": 665759,
+      "end": 714939,
+      "lang": ""
+    },
+    {
+      "path": ".\\docs\\TODO\\poor_mans_quantum.txt",
+      "start": 714965,
+      "end": 717934,
+      "lang": ""
+    },
+    {
+      "path": ".\\docs\\TODO\\reservoir_tuning.txt",
+      "start": 717960,
+      "end": 730074,
+      "lang": ""
+    },
+    {
+      "path": ".\\docs\\TODO\\facebook_questions_saved.txt",
+      "start": 730100,
+      "end": 742398,
+      "lang": ""
+    },
+    {
+      "path": ".\\docs\\TODO\\handcrafting.txt",
+      "start": 742424,
+      "end": 748962,
+      "lang": ""
+    },
+    {
+      "path": ".\\docs\\TODO\\multiplexing_100_channels.txt",
+      "start": 748988,
+      "end": 760913,
+      "lang": ""
+    },
+    {
+      "path": ".\\docs\\TODO\\titans.txt",
+      "start": 760939,
+      "end": 766125,
+      "lang": ""
+    },
+    {
+      "path": ".\\docs\\TODO\\quantum_codes.txt",
+      "start": 766151,
+      "end": 771111,
+      "lang": ""
+    },
+    {
+      "path": ".\\docs\\TODO\\scaling_capex_opex_predictions2.txt",
+      "start": 771137,
+      "end": 791492,
+      "lang": ""
+    },
+    {
+      "path": ".\\docs\\TODO\\bom_and_shadow_tomo.txt",
+      "start": 791518,
+      "end": 811505,
+      "lang": ""
+    },
+    {
+      "path": ".\\docs\\TODO\\photon_budgeting.txt",
+      "start": 811531,
+      "end": 832329,
+      "lang": ""
+    }
+  ]
+}

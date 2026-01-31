@@ -1,0 +1,738 @@
+{
+  "runSettings": {
+    "temperature": 1.0,
+    "model": "models/gemini-3-pro-preview",
+    "topP": 0.95,
+    "topK": 64,
+    "maxOutputTokens": 65536,
+    "safetySettings": [{
+      "category": "HARM_CATEGORY_HARASSMENT",
+      "threshold": "OFF"
+    }, {
+      "category": "HARM_CATEGORY_HATE_SPEECH",
+      "threshold": "OFF"
+    }, {
+      "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+      "threshold": "OFF"
+    }, {
+      "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+      "threshold": "OFF"
+    }],
+    "enableCodeExecution": false,
+    "enableSearchAsATool": true,
+    "enableBrowseAsATool": false,
+    "enableAutoFunctionResponse": false,
+    "thinkingBudget": -1,
+    "googleSearch": {
+    },
+    "outputResolution": "1K",
+    "thinkingLevel": "THINKING_HIGH"
+  },
+  "systemInstruction": {
+  },
+  "chunkedPrompt": {
+    "chunks": [{
+      "driveDocument": {
+        "id": "18v7-Esc-1hRpfl7J0SUIQYAOKlhhBpYt"
+      },
+      "role": "user",
+      "tokenCount": 207282
+    }, {
+      "text": "Could you analyze this repo and give a multi-part analysis of what it\u0027s doing, if there are inconsistencies or anything particularly glaring to real physics or practical engineering,  and overall basically give a guide to the next developer of what they\u0027re working with here without needing to read every file.   Overall opinionated project map and evaluation\n\nPlease outline your overall analysis plan as part 1 of N\n",
+      "role": "user",
+      "tokenCount": 83
+    }, {
+      "text": "**Defining the Objective**\n\nOkay, I\u0027m defining the project\u0027s parameters. My primary goal is to provide a comprehensive, multi-faceted analysis of the \"Looking Glass\" repository, aiming at a new developer\u0027s understanding. I\u0027m focusing on identifying inconsistencies, performing reality checks, and mapping out the entire project. This initial stage involves structuring the guide for optimal clarity.\n\n\n**Outlining the Project**\n\nI\u0027m now zeroing in on an action plan. My initial steps are to outline the project’s scope, defining its boundaries for the \"Looking Glass\" repository. This includes a multifaceted analysis and practical, beginner-friendly explanations. I plan to identify potential stumbling blocks, sanity-check the system, and thoroughly document the entire project. This involves structuring the guide for clarity.\n\n\\n\\n\n\n**Analyzing Project Context**\n\nI\u0027ve moved on to analyzing the \u0027Looking Glass\u0027 project\u0027s context. I\u0027m noting that it is a hybrid simulator, both analog and digital, for an AI co-processor. I see two architectures, a practical digital/optical loop and a high-performance analog/optical one. I\u0027m paying close attention to the TDM component in the analog loop, especially its recent tuning efforts. The existing simulator is Python based, complete with configs and a web dashboard. Recent focus has been on the analog loop, particularly on optimizing TDM for performance.\n\n\n**Defining Analysis Scope**\n\nI\u0027m now identifying the essential parts to analyze. I\u0027ve pinpointed key areas: a high-level overview, a physics/engineering audit to check for inconsistencies, a code/architecture review, the tuning/results status, and the roadmap. I\u0027m focusing on the practical implications for a new developer, which includes what works, what is broken, and what is theoretical.\n\n\n**Mapping the Project**\n\nI am now structuring the project map and architecture, focusing on the directory structure and vital classes like `Orchestrator` and `Module` subclasses. I’m also examining the data flow through simulated time steps and the configuration system based on YAML packs. Furthermore, I am assessing the physics and engineering reality check of models like Emitter and TIA, and the shift from parallel to TDM.\n\n\n",
+      "role": "model",
+      "tokenCount": 1153,
+      "isThought": true,
+      "parts": [{
+        "text": "**Defining the Objective**\n\nOkay, I\u0027m defining the project\u0027s parameters. My primary goal is to provide a comprehensive, multi-faceted analysis of the \"Looking Glass\" repository, aiming at a new developer\u0027s understanding. I\u0027m focusing on identifying inconsistencies, performing reality checks, and mapping out the entire project. This initial stage involves structuring the guide for optimal clarity.\n\n\n",
+        "thought": true
+      }, {
+        "text": "**Outlining the Project**\n\nI\u0027m now zeroing in on an action plan. My initial steps are to outline the project’s scope, defining its boundaries for the \"Looking Glass\" repository. This includes a multifaceted analysis and practical, beginner-friendly explanations. I plan to identify potential stumbling blocks, sanity-check the system, and thoroughly document the entire project. This involves structuring the guide for clarity.\n\n\\n\\n\n\n**Analyzing Project Context**\n\nI\u0027ve moved on to analyzing the \u0027Looking Glass\u0027 project\u0027s context. I\u0027m noting that it is a hybrid simulator, both analog and digital, for an AI co-processor. I see two architectures, a practical digital/optical loop and a high-performance analog/optical one. I\u0027m paying close attention to the TDM component in the analog loop, especially its recent tuning efforts. The existing simulator is Python based, complete with configs and a web dashboard. Recent focus has been on the analog loop, particularly on optimizing TDM for performance.\n\n\n",
+        "thought": true
+      }, {
+        "text": "**Defining Analysis Scope**\n\nI\u0027m now identifying the essential parts to analyze. I\u0027ve pinpointed key areas: a high-level overview, a physics/engineering audit to check for inconsistencies, a code/architecture review, the tuning/results status, and the roadmap. I\u0027m focusing on the practical implications for a new developer, which includes what works, what is broken, and what is theoretical.\n\n\n",
+        "thought": true
+      }, {
+        "text": "**Mapping the Project**\n\nI am now structuring the project map and architecture, focusing on the directory structure and vital classes like `Orchestrator` and `Module` subclasses. I’m also examining the data flow through simulated time steps and the configuration system based on YAML packs. Furthermore, I am assessing the physics and engineering reality check of models like Emitter and TIA, and the shift from parallel to TDM.\n\n\n",
+        "thought": true
+      }]
+    }, {
+      "text": "This is a fascinating, high-velocity project. It effectively acts as a \"digital twin\" for a hardware startup trying to build an optical AI accelerator using commodity telecom and bench-top parts.\n\nThe codebase is a mix of rigorous simulation (physics-based noise models) and pragmatic \"tuning\" scripts designed to find a viable hardware operating point (BER \u003c 10⁻⁶).\n\nHere is the outline for my multi-part analysis to guide the next developer:\n\n---\n\n### **Analysis Plan: Project Looking Glass**\n\n**Part 1: The Plan (Current)**\n**Part 2: Project Map \u0026 Architecture Overview**\n*   **The \"What\":** A high-level explanation of Path A (Camera/DMD) vs. Path B (Analog TDM Loop) and how they coexist in the code.\n*   **The \"How\":** Deconstructing the simulation engine (`looking_glass/sim`), the `Orchestrator`, and the YAML configuration inheritance system (\"Packs\").\n*   **Data Flow:** Tracing a simulation tick from Emitter $\\to$ Optics $\\to$ Sensor $\\to$ TIA $\\to$ Comparator.\n\n**Part 3: Physics \u0026 Engineering Audit (The \"Red Team\" Pass)**\n*   **Simulation vs. Reality:** Are the noise models (RIN, Shot, Thermal, ASE) applied in the correct domains? Does the \"Optical W\" matrix multiplication hold up to diffraction limits?\n*   **The TDM Shift:** Analyzing the recent pivot to Time-Division Multiplexing (TDM) for Path B. Does the math regarding \"virtual channels\" vs. \"symbol rates\" check out against the hardware limits defined in `design_1550nm.md`?\n*   **Gaps:** Identifying where the sim might be \"too optimistic\" (e.g., coupling efficiency, connector losses, thermal drift time-constants).\n\n**Part 4: The Tuning Narrative \u0026 \"Golden Configs\"**\n*   **Archaeology:** Summarizing the massive `TUNING.md` history so the new dev doesn\u0027t repeat failed experiments (e.g., why parallel Path B failed vs. TDM).\n*   **Current Best State:** Identifying the specific YAML configurations and CLI flags that constitute the \"MVP\" (1-channel zero-BER) and the \"Scale Target\" (16-channel TDM).\n*   **Dead Ends:** Explicitly listing hardware combinations (e.g., specific EDFA setups) that were proven unstable in sim.\n\n**Part 5: Codebase Critique \u0026 Onboarding Guide**\n*   **Tech Debt:** Highlighting the \"script-heavy\" nature of the repo (`examples/test.py` is doing a lot of heavy lifting).\n*   **Performance:** Python/NumPy bottlenecks and where `numba` or C-extensions might be needed if the sim resolution increases (e.g., sub-nanosecond jitter).\n*   **Actionable First Steps:** A checklist for the new developer to verify their environment and run their first meaningful probe.\n\n---\n\n**Proceeding to Part 2: Project Map \u0026 Architecture Overview.**",
+      "role": "model",
+      "finishReason": "STOP",
+      "tokenCount": 661,
+      "parts": [{
+        "text": "This is a fascinating, high-velocity project. It effectively acts as a \""
+      }, {
+        "text": "digital twin\" for a hardware startup trying to build an optical AI accelerator using commodity telecom and bench-top parts.\n\nThe"
+      }, {
+        "text": " codebase is a mix of rigorous simulation (physics-based noise models) and pragmatic \"tuning\" scripts designed to find a"
+      }, {
+        "text": " viable hardware operating point (BER \u003c 10⁻⁶).\n\nHere is the outline for my multi-part analysis to guide"
+      }, {
+        "text": " the next developer:\n\n---\n\n### **Analysis Plan: Project Looking Glass**\n\n**Part 1: The Plan ("
+      }, {
+        "text": "Current)**\n**Part 2: Project Map \u0026 Architecture Overview**\n*   **The \"What\":** A high-level"
+      }, {
+        "text": " explanation of Path A (Camera/DMD) vs. Path B (Analog TDM Loop) and how they coexist"
+      }, {
+        "text": " in the code.\n*   **The \"How\":** Deconstructing the simulation engine (`looking_glass/sim`),"
+      }, {
+        "text": " the `Orchestrator`, and the YAML configuration inheritance system (\"Packs\").\n*   **Data Flow:** Tr"
+      }, {
+        "text": "acing a simulation tick from Emitter $\\to$ Optics $\\to$ Sensor $\\to$ TIA $\\to$ Comparator."
+      }, {
+        "text": "\n\n**Part 3: Physics \u0026 Engineering Audit (The \"Red Team\" Pass)**\n*   **Simulation vs. Reality:** Are"
+      }, {
+        "text": " the noise models (RIN, Shot, Thermal, ASE) applied in the correct domains? Does the \"Optical W\" matrix"
+      }, {
+        "text": " multiplication hold up to diffraction limits?\n*   **The TDM Shift:** Analyzing the recent pivot to Time-Division Multip"
+      }, {
+        "text": "lexing (TDM) for Path B. Does the math regarding \"virtual channels\" vs. \"symbol rates\" check out against"
+      }, {
+        "text": " the hardware limits defined in `design_1550nm.md`?\n*   **Gaps:**"
+      }, {
+        "text": " Identifying where the sim might be \"too optimistic\" (e.g., coupling efficiency, connector losses, thermal drift time"
+      }, {
+        "text": "-constants).\n\n**Part 4: The Tuning Narrative \u0026 \"Golden Configs\"**\n*   **Archae"
+      }, {
+        "text": "ology:** Summarizing the massive `TUNING.md` history so the new dev doesn\u0027t repeat failed experiments (e.g., why"
+      }, {
+        "text": " parallel Path B failed vs. TDM).\n*   **Current Best State:** Identifying the specific YAML configurations and CLI"
+      }, {
+        "text": " flags that constitute the \"MVP\" (1-channel zero-BER) and the \"Scale Target\" (16-channel TDM"
+      }, {
+        "text": ").\n*   **Dead Ends:** Explicitly listing hardware combinations (e.g., specific EDFA setups) that were proven"
+      }, {
+        "text": " unstable in sim.\n\n**Part 5: Codebase Critique \u0026 Onboarding Guide**\n*   **Tech Debt:** High"
+      }, {
+        "text": "lighting the \"script-heavy\" nature of the repo (`examples/test.py` is doing a lot of heavy lifting)."
+      }, {
+        "text": "\n*   **Performance:** Python/NumPy bottlenecks and where `numba` or C-extensions might be needed if"
+      }, {
+        "text": " the sim resolution increases (e.g., sub-nanosecond jitter).\n*   **Actionable First Steps:** A checklist"
+      }, {
+        "text": " for the new developer to verify their environment and run their first meaningful probe.\n\n---\n\n**Proceeding to Part 2: Project Map \u0026"
+      }, {
+        "text": " Architecture Overview.**"
+      }, {
+        "text": "",
+        "thoughtSignature": "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"
+      }]
+    }, {
+      "text": "Part 2 of N please!",
+      "role": "user",
+      "tokenCount": 8
+    }, {
+      "text": "**Defining Project Scope**\n\nOkay, I\u0027m now zeroing in on defining the scope for \"Project Map \u0026 Architecture Overview\". My focus is on clarifying the essential elements: the \"What\" (Path A versus Path B), the \"How\" (Sim engine, Orchestrator, Packs), and the Data flow. I\u0027m aiming for a clear and concise explanation that highlights the core components and their interactions.\n\n\n**Mapping Project Structure**\n\nI\u0027m now outlining the project\u0027s architecture for a new developer\u0027s mental model. I\u0027ve focused on the intended audience and core resources (`README.md`, `DESIGN.md`, file tree, and inferred code details). I\u0027ve broken down the root structure into configuration, documentation, scripts, and the core library, specifying the components of the core library (`sim/`, `orchestrator.py`, and configuration loaders). Also, I\u0027ve noted the main execution entry points and tuning procedures. I am now working on understanding \"Path A\" versus \"Path B\", the dual identity.\n\n\n**Clarifying Component Interactions**\n\nI\u0027m now diving into the architecture\u0027s \"How,\" specifically the interactions. I\u0027m focusing on the \"Packs\" system and how modular YAML configs are merged to form `SystemParams`. I\u0027m exploring the role of the orchestrator, the central class that manages the states and time steps. Also, the simulation\u0027s inherent noise generation (\"gremlins\") is also being considered.\n\n\n\n**Modeling Signal Flow**\n\nI\u0027m now outlining the signal flow for the digital-to-digital transformation. I\u0027m focusing on the steps: Emitter, Optics (with Path B\u0027s saturable absorber addition), Sensor, TIA, and Comparator. I\u0027m detailing how each stage applies noise and transformations to the signal vector, from digital to optical, through various analog stages, and back to digital form.\nI\u0027m also working on refining the clarity of how the \"gremlins\" interact at each stage.\n\n\n",
+      "role": "model",
+      "tokenCount": 1182,
+      "isThought": true,
+      "parts": [{
+        "text": "**Defining Project Scope**\n\nOkay, I\u0027m now zeroing in on defining the scope for \"Project Map \u0026 Architecture Overview\". My focus is on clarifying the essential elements: the \"What\" (Path A versus Path B), the \"How\" (Sim engine, Orchestrator, Packs), and the Data flow. I\u0027m aiming for a clear and concise explanation that highlights the core components and their interactions.\n\n\n",
+        "thought": true
+      }, {
+        "text": "**Mapping Project Structure**\n\nI\u0027m now outlining the project\u0027s architecture for a new developer\u0027s mental model. I\u0027ve focused on the intended audience and core resources (`README.md`, `DESIGN.md`, file tree, and inferred code details). I\u0027ve broken down the root structure into configuration, documentation, scripts, and the core library, specifying the components of the core library (`sim/`, `orchestrator.py`, and configuration loaders). Also, I\u0027ve noted the main execution entry points and tuning procedures. I am now working on understanding \"Path A\" versus \"Path B\", the dual identity.\n\n\n",
+        "thought": true
+      }, {
+        "text": "**Clarifying Component Interactions**\n\nI\u0027m now diving into the architecture\u0027s \"How,\" specifically the interactions. I\u0027m focusing on the \"Packs\" system and how modular YAML configs are merged to form `SystemParams`. I\u0027m exploring the role of the orchestrator, the central class that manages the states and time steps. Also, the simulation\u0027s inherent noise generation (\"gremlins\") is also being considered.\n\n\n\n",
+        "thought": true
+      }, {
+        "text": "**Modeling Signal Flow**\n\nI\u0027m now outlining the signal flow for the digital-to-digital transformation. I\u0027m focusing on the steps: Emitter, Optics (with Path B\u0027s saturable absorber addition), Sensor, TIA, and Comparator. I\u0027m detailing how each stage applies noise and transformations to the signal vector, from digital to optical, through various analog stages, and back to digital form.\nI\u0027m also working on refining the clarity of how the \"gremlins\" interact at each stage.\n\n\n",
+        "thought": true
+      }]
+    }, {
+      "text": "Here is **Part 2: Project Map \u0026 Architecture Overview**.\n\nThis section deconstructs the codebase structure, the dual-path hardware philosophy, and the simulation data flow. It is designed to orient a new developer who needs to understand *how* the simulation runs without parsing every line of Python.\n\n---\n\n## Part 2: Project Map \u0026 Architecture Overview\n\n### 1. The High-Level Concept: \"The Digital Twin\"\nAt its core, `LookingGlassSim` is a **Monte Carlo physics simulator** for a specific class of optical computing hardware. It is not a generic optical solver (like Zemax); it is a specialized, time-domain simulation of a **ternary matrix-vector multiplier**.\n\nIt is designed to model \"Gremlins\"—the specific noise sources, drifts, and non-idealities that kill optical computers in the real world—to find a \"Golden Configuration\" of hardware that yields a Bit Error Rate (BER) $\u003c 10^{-6}$.\n\n### 2. The Two Paths (A vs. B)\nThe codebase simultaneously models two divergent hardware architectures using shared components. Understanding this distinction is critical, as flags often apply to one but not the other.\n\n#### **Path A: The \"Digital\" Loop (Camera/DMD)**\n*   **Philosophy:** Low-risk, high-latency, commodity hardware.\n*   **Hardware:** A DLP/SLM (Emitter) projects into glass (Optics), read by a CMOS Camera (Sensor). The loop is closed digitally by a PC.\n*   **Sim Representation:** High resolution, frame-based averaging (`avg_frames`), \"voting\" logic.\n*   **Key Files:** `camera.py` (sensor model), `optics.py` (matrix multiplication).\n\n#### **Path B: The \"Analog\" Loop (Fast 1550nm)**\n*   **Philosophy:** High-risk, ultra-low latency, telecom hardware.\n*   **Hardware:** Lasers $\\to$ Optics $\\to$ **Saturable Absorber** (Optical Nonlinearity) $\\to$ **SOA/EDFA** (Amp) $\\to$ Photodiode $\\to$ TIA $\\to$ Comparator $\\to$ Laser (re-emit).\n*   **TDM Pivot:** As of recent updates (see `TUNING.md`), this path heavily utilizes **Time-Division Multiplexing (TDM)**. Instead of 64 parallel physical channels, it simulates 1 channel (or small banks of 4-8) running serially at nanosecond speeds to emulate a larger width.\n*   **Key Files:** `optics.py` (contains the SA/Amp logic), `comparator.py` (the thresholding logic), `test.py` (handles the TDM scheduling).\n\n---\n\n### 3. Codebase Anatomy\n\nThe project is structured as a library (`looking_glass/`) driven by heavy-duty CLI scripts (`examples/` and `scripts/`).\n\n| Directory | Purpose |\n| :--- | :--- |\n| **`looking_glass/sim/`** | **The Physics Engine.** Contains the class definitions for `Emitter`, `Optics`, `Sensor`, `TIA`, `Comparator`, etc. This is where the math lives. |\n| **`looking_glass/orchestrator.py`** | **The Motherboard.** Wires the components together, manages the simulation clock, and executes the `step()` function that pushes data through the pipeline. |\n| **`configs/packs/`** | **The Hardware Database.** YAML files defining specific components (e.g., `vendors/emitters/thorlabs_L850P200_typ.yaml`). This allows swapping simulated hardware without changing code. |\n| **`configs/scenarios/`** | **End-to-End Definitions.** High-level configs that bundle specific packs into a runnable experiment (e.g., `basic_typ.yaml`). |\n| **`examples/test.py`** | **The CLI Workhorse.** Despite the name, this is **not** a unit test. It is the primary execution script for running probes, sweeps, and generating JSON reports. It contains the TDM logic and calibration routines. |\n| **`scripts/`** | **Batch Automators.** Scripts like `probe_queue_runner.py` and `append_*.py` manage the \"queue\" system for running massive unattended sweeps. |\n\n---\n\n### 4. Data Flow: The Simulation \"Tick\"\n\nThe simulation runs in discrete time-steps (or trials). Here is how a single vector passes through the simulated hardware stack. This pipeline runs inside `Orchestrator.run_once()`.\n\n1.  **Input Generation:**\n    *   A random **Ternary Vector** $\\{-1, 0, +1\\}$ is generated.\n    *   *Path B TDM:* This vector is masked so only $K$ channels are active per tick.\n\n2.  **Emitter (`sim/emitter.py`):**\n    *   Converts Digital Ternary $\\to$ **Optical Power (mW)**.\n    *   *Gremlins Applied:* Extinction Ratio (light leakage in \u00270\u0027 state), RIN (Relative Intensity Noise), Rise/Fall time jitter.\n\n3.  **Optics (`sim/optics.py`):**\n    *   Performs the Matrix-Vector Multiplication (MVM) via a transmission matrix.\n    *   *Path B Special:* If enabled, applies **Saturable Absorption** (non-linear squashing) and **Optical Amplification** (Gain + ASE Noise).\n    *   *Gremlins Applied:* Crosstalk (neighbor/global), Stray Light (pedestal), PSF Blur.\n\n4.  **Sensor (`sim/sensor.py`):**\n    *   Converts Optical Power $\\to$ **Current (Amps)**.\n    *   *Gremlins Applied:* Responsivity limits, Dark Current, Shot Noise (Poisson statistics).\n\n5.  **TIA (`sim/tia.py`):**\n    *   Transimpedance Amplifier. Converts Current $\\to$ **Voltage (mV)**.\n    *   *Gremlins Applied:* Bandwidth filtering (signal slew), Thermal Noise (Johnson noise), Gain peaking.\n\n6.  **Comparator (`sim/comparator.py`):**\n    *   Converts Voltage $\\to$ **Digital Ternary Output**.\n    *   *Gremlins Applied:* Hysteresis, Threshold Offset Drift (thermal), Input Noise, Metastability (probability of failure near threshold).\n\n7.  **Analysis:**\n    *   The Output Vector is compared to the Input Vector to calculate **BER (Bit Error Rate)**.\n    *   Energy usage is estimated based on component power models.\n\n---\n\n### 5. Configuration Strategy: The \"Overlay\" System\n\nThe project uses a sophisticated inheritance model for configuration to allow rapid \"what-if\" testing.\n\n1.  **Base Pack:** Loads a specific vendor file (e.g., `tia_typ.yaml`).\n2.  **Overlay Pack:** Loads a modifier file (e.g., `overlays/tia_stage_b_low_noise.yaml`) which overwrites specific parameters (like bandwidth or noise floor) without changing the component class.\n3.  **CLI Overrides:** Arguments passed to `test.py` (e.g., `--window 10`) override everything else.\n\n**Why this matters:** The previous developer used this to perform \"Cost-Down\" studies—starting with expensive \"Premium\" overlays and swapping them for \"Budget\" overlays to see when the BER breaks.\n\n### 6. The \"Queue\" System\n\nInstead of running scripts interactively, the project recently pivoted to a file-based queue system (`scripts/probe_queue_runner.py`).\n*   **Input:** `queue/probes.jsonl` (Append-only commands).\n*   **Output:** `queue/completed.jsonl` and `out/*.json`.\n*   **Reason:** Allows the \"Agent\" (AI) to queue up hundreds of experiments (sensitivity sweeps, stability tests) and let them execute asynchronously without timeout issues.\n\n---\n\n**Next:** Part 3 will be the **Physics \u0026 Engineering Audit**, where I will critique whether these simulated models actually align with physical reality or if they are \"hallucinating\" performance.",
+      "role": "model",
+      "finishReason": "STOP",
+      "tokenCount": 1797,
+      "parts": [{
+        "text": "Here is **"
+      }, {
+        "text": "Part 2: Project Map \u0026 Architecture Overview**.\n\nThis section deconstructs the codebase structure, the dual-path"
+      }, {
+        "text": " hardware philosophy, and the simulation data flow. It is designed to orient a new developer who needs to understand *how* the simulation"
+      }, {
+        "text": " runs without parsing every line of Python.\n\n---\n\n## Part 2: Project Map \u0026 Architecture Overview\n\n### "
+      }, {
+        "text": "1. The High-Level Concept: \"The Digital Twin\"\nAt its core, `LookingGlassSim` is a **Monte"
+      }, {
+        "text": " Carlo physics simulator** for a specific class of optical computing hardware. It is not a generic optical solver (like Zemax);"
+      }, {
+        "text": " it is a specialized, time-domain simulation of a **ternary matrix-vector multiplier**.\n\nIt is designed to model \""
+      }, {
+        "text": "Gremlins\"—the specific noise sources, drifts, and non-idealities that kill optical computers in the real world—to find"
+      }, {
+        "text": " a \"Golden Configuration\" of hardware that yields a Bit Error Rate (BER) $\u003c 10^{-6}$.\n\n### 2. The Two"
+      }, {
+        "text": " Paths (A vs. B)\nThe codebase simultaneously models two divergent hardware architectures using shared components. Understanding this distinction is critical,"
+      }, {
+        "text": " as flags often apply to one but not the other.\n\n#### **Path A: The \"Digital\" Loop (Camera/DMD)**"
+      }, {
+        "text": "\n*   **Philosophy:** Low-risk, high-latency, commodity hardware.\n*   **Hardware:** A"
+      }, {
+        "text": " DLP/SLM (Emitter) projects into glass (Optics), read by a CMOS Camera (Sensor). The loop"
+      }, {
+        "text": " is closed digitally by a PC.\n*   **Sim Representation:** High resolution, frame-based averaging (`avg_frames`), \"voting"
+      }, {
+        "text": "\" logic.\n*   **Key Files:** `camera.py` (sensor model), `optics.py"
+      }, {
+        "text": "` (matrix multiplication).\n\n#### **Path B: The \"Analog\" Loop (Fast 1550nm)**"
+      }, {
+        "text": "\n*   **Philosophy:** High-risk, ultra-low latency, telecom hardware.\n*   **Hardware:** Las"
+      }, {
+        "text": "ers $\\to$ Optics $\\to$ **Saturable Absorber** (Optical Nonlinearity) $\\to$ **SOA"
+      }, {
+        "text": "/EDFA** (Amp) $\\to$ Photodiode $\\to$ TIA $\\to$ Comparator $\\to$ Laser"
+      }, {
+        "text": " (re-emit).\n*   **TDM Pivot:** As of recent updates (see `TUNING.md`),"
+      }, {
+        "text": " this path heavily utilizes **Time-Division Multiplexing (TDM)**. Instead of 64 parallel physical channels, it simulates"
+      }, {
+        "text": " 1 channel (or small banks of 4-8) running serially at nanosecond speeds to emulate a larger width"
+      }, {
+        "text": ".\n*   **Key Files:** `optics.py` (contains the SA/Amp logic), `comparator"
+      }, {
+        "text": ".py` (the thresholding logic), `test.py` (handles the TDM scheduling).\n\n---\n\n### 3. Code"
+      }, {
+        "text": "base Anatomy\n\nThe project is structured as a library (`looking_glass/`) driven by heavy-duty CLI scripts (`examples/` and `scripts"
+      }, {
+        "text": "/`).\n\n| Directory | Purpose |\n| :--- | :--- |\n| **`looking_glass/sim/"
+      }, {
+        "text": "`** | **The Physics Engine.** Contains the class definitions for `Emitter`, `Optics`, `Sensor`, `TIA`, `Comparator"
+      }, {
+        "text": "`, etc. This is where the math lives. |\n| **`looking_glass/orchestrator.py"
+      }, {
+        "text": "`** | **The Motherboard.** Wires the components together, manages the simulation clock, and executes the `step"
+      }, {
+        "text": "()` function that pushes data through the pipeline. |\n| **`configs/packs/`** | **The Hardware"
+      }, {
+        "text": " Database.** YAML files defining specific components (e.g., `vendors/emitters/thorlabs_L850P200_"
+      }, {
+        "text": "typ.yaml`). This allows swapping simulated hardware without changing code. |\n| **`configs/scenarios/`** | **End"
+      }, {
+        "text": "-to-End Definitions.** High-level configs that bundle specific packs into a runnable experiment (e.g., `basic"
+      }, {
+        "text": "_typ.yaml`). |\n| **`examples/test.py`** | **The CLI Workhorse.** Despite"
+      }, {
+        "text": " the name, this is **not** a unit test. It is the primary execution script for running probes, sweeps, and generating JSON"
+      }, {
+        "text": " reports. It contains the TDM logic and calibration routines. |\n| **`scripts/`** | **Batch"
+      }, {
+        "text": " Automators.** Scripts like `probe_queue_runner.py` and `append_*.py` manage the \"queue\" system"
+      }, {
+        "text": " for running massive unattended sweeps. |\n\n---\n\n### 4. Data Flow: The Simulation \"Tick\"\n\nThe simulation runs in discrete time-"
+      }, {
+        "text": "steps (or trials). Here is how a single vector passes through the simulated hardware stack. This pipeline runs inside `Orchestrator.run_"
+      }, {
+        "text": "once()`.\n\n1.  **Input Generation:**\n    *   A random **Ternary Vector** $\\"
+      }, {
+        "text": "{-1, 0, +1\\}$ is generated.\n    *   *Path B TDM:* This vector"
+      }, {
+        "text": " is masked so only $K$ channels are active per tick.\n\n2.  **Emitter (`sim/emitter.py"
+      }, {
+        "text": "`):**\n    *   Converts Digital Ternary $\\to$ **Optical Power (mW)**.\n    *   "
+      }, {
+        "text": "*Gremlins Applied:* Extinction Ratio (light leakage in \u00270\u0027 state), RIN (Relative Intensity Noise), Rise/Fall time jitter."
+      }, {
+        "text": "\n\n3.  **Optics (`sim/optics.py`):**\n    *   Performs the Matrix"
+      }, {
+        "text": "-Vector Multiplication (MVM) via a transmission matrix.\n    *   *Path B Special:* If enabled, applies **Saturable Absorption"
+      }, {
+        "text": "** (non-linear squashing) and **Optical Amplification** (Gain + ASE Noise).\n    *   *Greml"
+      }, {
+        "text": "ins Applied:* Crosstalk (neighbor/global), Stray Light (pedestal), PSF Blur.\n\n4.  **Sensor ("
+      }, {
+        "text": "`sim/sensor.py`):**\n    *   Converts Optical Power $\\to$ **Current (Amps)**.\n    *   *"
+      }, {
+        "text": "Gremlins Applied:* Responsivity limits, Dark Current, Shot Noise (Poisson statistics).\n\n5.  **TIA ("
+      }, {
+        "text": "`sim/tia.py`):**\n    *   Transimpedance Amplifier. Converts Current $\\to$ **Voltage ("
+      }, {
+        "text": "mV)**.\n    *   *Gremlins Applied:* Bandwidth filtering (signal slew), Thermal Noise (Johnson"
+      }, {
+        "text": " noise), Gain peaking.\n\n6.  **Comparator (`sim/comparator.py`):**\n    *   Converts Voltage $\\"
+      }, {
+        "text": "to$ **Digital Ternary Output**.\n    *   *Gremlins Applied:* Hysteresis, Threshold Offset Drift"
+      }, {
+        "text": " (thermal), Input Noise, Metastability (probability of failure near threshold).\n\n7.  **Analysis:**\n    *   The Output"
+      }, {
+        "text": " Vector is compared to the Input Vector to calculate **BER (Bit Error Rate)**.\n    *   Energy usage is estimated based on component power"
+      }, {
+        "text": " models.\n\n---\n\n### 5. Configuration Strategy: The \"Overlay\" System\n\nThe project uses a sophisticated inheritance model for configuration to"
+      }, {
+        "text": " allow rapid \"what-if\" testing.\n\n1.  **Base Pack:** Loads a specific vendor file (e.g., `tia"
+      }, {
+        "text": "_typ.yaml`).\n2.  **Overlay Pack:** Loads a modifier file (e.g., `overl"
+      }, {
+        "text": "ays/tia_stage_b_low_noise.yaml`) which overwrites specific parameters (like bandwidth or noise floor) without"
+      }, {
+        "text": " changing the component class.\n3.  **CLI Overrides:** Arguments passed to `test.py` (e.g.,"
+      }, {
+        "text": " `--window 10`) override everything else.\n\n**Why this matters:** The previous developer used this to perform \"Cost"
+      }, {
+        "text": "-Down\" studies—starting with expensive \"Premium\" overlays and swapping them for \"Budget\" overlays to see when the"
+      }, {
+        "text": " BER breaks.\n\n### 6. The \"Queue\" System\n\nInstead of running scripts interactively, the project recently"
+      }, {
+        "text": " pivoted to a file-based queue system (`scripts/probe_queue_runner.py`).\n*   **Input"
+      }, {
+        "text": ":** `queue/probes.jsonl` (Append-only commands).\n*   **Output:** `queue/completed.jsonl` and"
+      }, {
+        "text": " `out/*.json`.\n*   **Reason:** Allows the \"Agent\" (AI) to queue up hundreds of experiments ("
+      }, {
+        "text": "sensitivity sweeps, stability tests) and let them execute asynchronously without timeout issues.\n\n---\n\n**Next:** Part 3 will"
+      }, {
+        "text": " be the **Physics \u0026 Engineering Audit**, where I will critique whether these simulated models actually align with physical reality or if they are \"hall"
+      }, {
+        "text": "ucinating\" performance."
+      }, {
+        "text": "",
+        "thoughtSignature": "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"
+      }]
+    }, {
+      "text": "Part 3 of N",
+      "role": "user",
+      "tokenCount": 6
+    }, {
+      "text": "**Initiating the Audit**\n\nI\u0027m now starting the \"Red Team\" audit phase, focusing on the physics and engineering aspects as requested. I\u0027ll need to dissect these areas thoroughly to ensure they meet the criteria, as laid out in the request. The focus now is on identifying any potential vulnerabilities.\n\n\n**Analyzing the Components**\n\nI\u0027m now examining the codebase and documentation, creating a mental model and retrieving specific files. The emitter uses RIN, and I\u0027m verifying the unit consistency of its dB/Hz scaling. The optics simulate stray light and crosstalk with matrix operations. Path B components like SOA/EDFA include gain and ASE noise, with a saturable absorber model. The diffraction uses a PSF convolution, a reasonable approximation. I\u0027m checking the sensor for shot noise, dark current, and the TIA for thermal noise density.\n\n\n**Evaluating the Details**\n\nI\u0027m now zeroing in on the fine details. I see shot and thermal noise in the sensor and TIA. The comparator includes hysteresis, but I\u0027m investigating its noise and drift parameters. The TDM logic seems to assume linear scaling, which I need to check.\n\n\\n\\n\n\nI\u0027m now identifying critical critique points for the \"Red Team.\" The simulation uses intensity addition, which could be problematic with coherent light due to speckle, unless engineered diffusers are used. I need to verify Path B TDM latency against hardware switching speeds, especially for WSS components. The thermal modeling as random walk may not capture directional drift. I\u0027m also examining the ASE considerations.\n\n\n**Assessing the Accumulation**\n\nI\u0027m now diving into the specifics. I\u0027ve noted ASE accumulation in deep loops, handled in `_run_pathb_stage_pass`. I\u0027m also scrutinizing the insertion loss in the model. The fixed transmittance seems simplistic, and I\u0027ll focus on the impact of fiber coupling instability. I\u0027m taking a close look at the comparator\u0027s DAC trims and evaluating the cost and complexity implications. My plan is to start drafting the content, covering noise models, the optical physics approximations, TDM feasibility, and identifying the \"optimism gaps.\" I\u0027ve confirmed RIN and shot noise are modeled correctly and TDM\u0027s success hinges on the optics\u0027 time independence.\n\n\n",
+      "role": "model",
+      "tokenCount": 1114,
+      "isThought": true,
+      "parts": [{
+        "text": "**Initiating the Audit**\n\nI\u0027m now starting the \"Red Team\" audit phase, focusing on the physics and engineering aspects as requested. I\u0027ll need to dissect these areas thoroughly to ensure they meet the criteria, as laid out in the request. The focus now is on identifying any potential vulnerabilities.\n\n\n",
+        "thought": true
+      }, {
+        "text": "**Analyzing the Components**\n\nI\u0027m now examining the codebase and documentation, creating a mental model and retrieving specific files. The emitter uses RIN, and I\u0027m verifying the unit consistency of its dB/Hz scaling. The optics simulate stray light and crosstalk with matrix operations. Path B components like SOA/EDFA include gain and ASE noise, with a saturable absorber model. The diffraction uses a PSF convolution, a reasonable approximation. I\u0027m checking the sensor for shot noise, dark current, and the TIA for thermal noise density.\n\n\n",
+        "thought": true
+      }, {
+        "text": "**Evaluating the Details**\n\nI\u0027m now zeroing in on the fine details. I see shot and thermal noise in the sensor and TIA. The comparator includes hysteresis, but I\u0027m investigating its noise and drift parameters. The TDM logic seems to assume linear scaling, which I need to check.\n\n\\n\\n\n\nI\u0027m now identifying critical critique points for the \"Red Team.\" The simulation uses intensity addition, which could be problematic with coherent light due to speckle, unless engineered diffusers are used. I need to verify Path B TDM latency against hardware switching speeds, especially for WSS components. The thermal modeling as random walk may not capture directional drift. I\u0027m also examining the ASE considerations.\n\n\n",
+        "thought": true
+      }, {
+        "text": "**Assessing the Accumulation**\n\nI\u0027m now diving into the specifics. I\u0027ve noted ASE accumulation in deep loops, handled in `_run_pathb_stage_pass`. I\u0027m also scrutinizing the insertion loss in the model. The fixed transmittance seems simplistic, and I\u0027ll focus on the impact of fiber coupling instability. I\u0027m taking a close look at the comparator\u0027s DAC trims and evaluating the cost and complexity implications. My plan is to start drafting the content, covering noise models, the optical physics approximations, TDM feasibility, and identifying the \"optimism gaps.\" I\u0027ve confirmed RIN and shot noise are modeled correctly and TDM\u0027s success hinges on the optics\u0027 time independence.\n\n\n",
+        "thought": true
+      }]
+    }, {
+      "text": "Here is **Part 3: Physics \u0026 Engineering Audit**.\n\nThis section applies a \"Red Team\" engineering critique to the simulator. We evaluate whether the Python code represents physical reality or if it simplifies away the problems that typically kill optical computers (coherence, alignment stability, and noise accumulation).\n\n---\n\n## Part 3: Physics \u0026 Engineering Audit (The \"Red Team\" Pass)\n\n### 1. The Noise Models: Are they Real?\nThe simulator\u0027s greatest strength is its rigorous noise hierarchy. It does not simply add Gaussian noise at the end; it injects noise at the source of the physics.\n\n*   **RIN (Relative Intensity Noise):**\n    *   *Implementation:* `sim/emitter.py`. Scaled by $\\sqrt{BW}$, where $BW \\approx 1/dt$.\n    *   *Verdict:* **Valid.** This correctly models how faster clocks (shorter $dt$) admit more noise from the laser cavity.\n*   **Shot Noise:**\n    *   *Implementation:* `sim/sensor.py`. Modeled as Poisson statistics $\\sigma \\approx \\sqrt{2qIB}$.\n    *   *Verdict:* **Valid.** Crucial for low-light/high-speed regimes where photon counts drop.\n*   **Thermal (Johnson) Noise:**\n    *   *Implementation:* `sim/tia.py`. Input-referred noise density ($pA/\\sqrt{Hz}$) is converted to voltage noise based on TIA gain.\n    *   *Verdict:* **Valid.** Properly captures the trade-off that high-gain TIAs are slower or noisier.\n*   **ASE (Amplified Spontaneous Emission):**\n    *   *Implementation:* `sim/optics.py` (Path B). Added when `amp_on` is true.\n    *   *Verdict:* **Simplistic but Functional.** Real EDFA/SOA noise is spectrally shaped. The sim treats it as broadband additive noise within the detector window. Sufficient for BER simulation if the Noise Figure (NF) parameter is realistic (5-7 dB).\n\n### 2. Optical Physics: Approximations \u0026 Risks\nThe simulation makes several \"lumped element\" approximations to avoid full ray-tracing or Maxwell solvers.\n\n*   **Diffraction \u0026 Crosstalk:**\n    *   *Model:* Convolution with a Point Spread Function (PSF) kernel (`lorentzian` or `gaussian`) + a uniform \"stray light\" pedestal.\n    *   *Critique:* **Optimistic for Coherent Light.** If using lasers (coherent), diffraction creates **speckle patterns**, not smooth blurs. Speckle noise is multiplicative and highly sensitive to motion.\n    *   *Mitigation:* The \"Engineered Diffuser\" packs (in `configs/packs/optics/`) imply the use of components specifically designed to destroy coherence and smooth out speckle. **Crucial:** If hardware uses raw lasers without diffusers, the sim will underestimate BER significantly.\n*   **The Saturable Absorber (SA):**\n    *   *Model:* $I_{out} \u003d I_{in} / (1 + \\alpha \\cdot I_{in}/I_{sat})$.\n    *   *Critique:* **Valid Steady-State.** This models the curve correctly. However, real SAs (especially semiconductor ones) have **recovery times** (carrier relaxation). If the symbol rate $\u003e 1/\\tau_{recovery}$, pattern-dependent errors will occur (ISI). The sim currently treats the SA as instantaneous in most modes.\n\n### 3. The TDM Pivot: Engineering Feasibility\nThe project recently pivoted Path B from \"Massive Parallelism\" to \"Time-Division Multiplexing\" (TDM) to save cost. Does this hold water?\n\n*   **The Claim:** Use 1 physical channel to emulate 16 virtual channels by serializing them in time (6ns slots).\n*   **The Physics:**\n    *   **Bandwidth:** 6ns \u003d 166 MHz. Standard telecom optics (DFBs, modulators, PDs) are rated for 10-40 *GHz*. Running them at MHz speeds is \"DC\" for them. **Verdict: Easy.**\n    *   **Switching:** How do we select the active channel?\n        *   *Method A (Source switching):* Turn lasers on/off. Direct modulation lasers (DML) can do this in sub-nanoseconds. **Verdict: Easy.**\n        *   *Method B (Routing):* Wavelength Selective Switches (WSS) are slow ($\\mu s$ to $ms$). EOMs (Electro-Optic Modulators) are fast ($ns$) but lossy.\n    *   **The \"Memory\" Problem:** In a recurrent loop, channel $i$ at time $t$ needs to talk to channel $j$ at time $t+1$. If they are serialized, you need to store the value.\n    *   **The Sim\u0027s Assumption:** It assumes a \"Digital Guard\" or host-side aggregation for TDM. Effectively, the optical loop computes one vector element, the PC stores it, and feeds it back. This is valid for **Hybrid** computing, but it means the loop latency is dominated by the PC\u0027s I/O, not the speed of light.\n\n### 4. The \"Optimism Gaps\" (Where Reality Will Bite)\nThese are the factors the simulation likely underestimates:\n\n1.  **Connector Losses \u0026 Etalon Effects:**\n    *   Every FC/APC connector adds ~0.25dB loss.\n    *   Worse, pairs of connectors create Fabry-Perot cavities (Etalons) that cause wavelength-dependent power ripples. The sim models \"PDL random walk\" (Polarization Dependent Loss), which is a good proxy, but back-reflections are nasty in Path B loops.\n2.  **Thermal Drift Time-Constants:**\n    *   The `ThermalMechEnv` (`sim/thermal.py`) uses a random walk. Real thermal drift is often **correlated and oscillatory** (AC/HVAC cycles, PID controller hunting). This might make \"re-centering\" calibration harder than simulated.\n3.  **Comparator Offset DACs:**\n    *   The \"Tuned Comparator\" packs assume we can trim the threshold voltage ($V_{th}$) per channel with high precision. Real comparators have finite DAC resolution (e.g., 8-bit or 12-bit). If the trim step size is larger than the noise floor, we cannot perfectly cancel offsets.\n\n### 5. Summary of the Audit\n*   **Physics Grade:** **B+**. The noise hierarchy is excellent. The TIA/Comparator models are surprisingly detailed (hysteresis, metastability).\n*   **Optical Grade:** **B-**. It ignores coherence/speckle effects, assuming \"Engineered Diffusers\" solve everything. It models diffraction simply.\n*   **Feasibility:** **High.** The move to TDM (serializing the problem) moves the bottleneck from \"impossible optical alignment\" to \"standard high-speed electronics,\" which is a solvable engineering problem.\n\n---\n\n**Next:** Part 4 will cover the **Tuning Narrative \u0026 \"Golden Configs\"**, decoding the massive `TUNING.md` log to show exactly which hardware settings actually worked.",
+      "role": "model",
+      "finishReason": "STOP",
+      "tokenCount": 1558,
+      "parts": [{
+        "text": "Here is **Part 3"
+      }, {
+        "text": ": Physics \u0026 Engineering Audit**.\n\nThis section applies a \"Red Team\" engineering critique to the simulator. We evaluate whether"
+      }, {
+        "text": " the Python code represents physical reality or if it simplifies away the problems that typically kill optical computers (coherence, alignment stability"
+      }, {
+        "text": ", and noise accumulation).\n\n---\n\n## Part 3: Physics \u0026 Engineering Audit (The \"Red Team\" Pass"
+      }, {
+        "text": ")\n\n### 1. The Noise Models: Are they Real?\nThe simulator\u0027s greatest strength is its rigorous"
+      }, {
+        "text": " noise hierarchy. It does not simply add Gaussian noise at the end; it injects noise at the source of the physics"
+      }, {
+        "text": ".\n\n*   **RIN (Relative Intensity Noise):**\n    *   *Implementation:* `sim/emitter.py"
+      }, {
+        "text": "`. Scaled by $\\sqrt{BW}$, where $BW \\approx 1/dt$.\n    *   *Verdict"
+      }, {
+        "text": ":* **Valid.** This correctly models how faster clocks (shorter $dt$) admit more noise from the laser cavity.\n"
+      }, {
+        "text": "*   **Shot Noise:**\n    *   *Implementation:* `sim/sensor.py`. Modeled as Poisson"
+      }, {
+        "text": " statistics $\\sigma \\approx \\sqrt{2qIB}$.\n    *   *Verdict:* **Valid.** Crucial"
+      }, {
+        "text": " for low-light/high-speed regimes where photon counts drop.\n*   **Thermal (Johnson) Noise:**\n    *   "
+      }, {
+        "text": "*Implementation:* `sim/tia.py`. Input-referred noise density ($pA/\\sqrt{Hz}$) is"
+      }, {
+        "text": " converted to voltage noise based on TIA gain.\n    *   *Verdict:* **Valid.** Properly captures the trade"
+      }, {
+        "text": "-off that high-gain TIAs are slower or noisier.\n*   **ASE (Amplified Spontaneous Emission):"
+      }, {
+        "text": "**\n    *   *Implementation:* `sim/optics.py` (Path B). Added when `amp_on` is true"
+      }, {
+        "text": ".\n    *   *Verdict:* **Simplistic but Functional.** Real EDFA/SOA noise is spectrally shaped"
+      }, {
+        "text": ". The sim treats it as broadband additive noise within the detector window. Sufficient for BER simulation if the Noise Figure (NF) parameter is realistic ("
+      }, {
+        "text": "5-7 dB).\n\n### 2. Optical Physics: Approximations \u0026 Risks\nThe simulation makes several \"lumped element"
+      }, {
+        "text": "\" approximations to avoid full ray-tracing or Maxwell solvers.\n\n*   **Diffraction \u0026 Crosstalk:**\n    *   *Model"
+      }, {
+        "text": ":* Convolution with a Point Spread Function (PSF) kernel (`lorentzian` or `gaussian`) + a uniform"
+      }, {
+        "text": " \"stray light\" pedestal.\n    *   *Critique:* **Optimistic for Coherent Light.** If"
+      }, {
+        "text": " using lasers (coherent), diffraction creates **speckle patterns**, not smooth blurs. Speckle noise is multiplicative and"
+      }, {
+        "text": " highly sensitive to motion.\n    *   *Mitigation:* The \"Engineered Diffuser\" packs (in `configs/packs/optics/"
+      }, {
+        "text": "`) imply the use of components specifically designed to destroy coherence and smooth out speckle. **Crucial:** If hardware uses raw"
+      }, {
+        "text": " lasers without diffusers, the sim will underestimate BER significantly.\n*   **The Saturable Absorber (SA):"
+      }, {
+        "text": "**\n    *   *Model:* $I_{out} \u003d I_{in} / (1 + \\alpha"
+      }, {
+        "text": " \\cdot I_{in}/I_{sat})$.\n    *   *Critique:* **Valid Steady-State.**"
+      }, {
+        "text": " This models the curve correctly. However, real SAs (especially semiconductor ones) have **recovery times** (carrier relaxation). If the symbol"
+      }, {
+        "text": " rate $\u003e 1/\\tau_{recovery}$, pattern-dependent errors will occur (ISI). The sim currently treats the SA as instantaneous"
+      }, {
+        "text": " in most modes.\n\n### 3. The TDM Pivot: Engineering Feasibility\nThe project recently pivoted Path B from \""
+      }, {
+        "text": "Massive Parallelism\" to \"Time-Division Multiplexing\" (TDM) to save cost. Does this hold"
+      }, {
+        "text": " water?\n\n*   **The Claim:** Use 1 physical channel to emulate 16 virtual channels by serializing them"
+      }, {
+        "text": " in time (6ns slots).\n*   **The Physics:**\n    *   **Bandwidth:** 6ns \u003d"
+      }, {
+        "text": " 166 MHz. Standard telecom optics (DFBs, modulators, PDs) are rated for 10-4"
+      }, {
+        "text": "0 *GHz*. Running them at MHz speeds is \"DC\" for them. **Verdict: Easy.**\n    *   **Switch"
+      }, {
+        "text": "ing:** How do we select the active channel?\n        *   *Method A (Source switching):* Turn lasers on/off. Direct"
+      }, {
+        "text": " modulation lasers (DML) can do this in sub-nanoseconds. **Verdict: Easy.**\n        *   *Method B (Routing"
+      }, {
+        "text": "):* Wavelength Selective Switches (WSS) are slow ($\\mu s$ to $ms$). EOMs ("
+      }, {
+        "text": "Electro-Optic Modulators) are fast ($ns$) but lossy.\n    *   **The \"Memory\" Problem"
+      }, {
+        "text": ":** In a recurrent loop, channel $i$ at time $t$ needs to talk to channel $j$ at time $t+1$."
+      }, {
+        "text": " If they are serialized, you need to store the value.\n    *   **The Sim\u0027s Assumption:** It assumes a"
+      }, {
+        "text": " \"Digital Guard\" or host-side aggregation for TDM. Effectively, the optical loop computes one vector element, the"
+      }, {
+        "text": " PC stores it, and feeds it back. This is valid for **Hybrid** computing, but it means the loop latency is dominated"
+      }, {
+        "text": " by the PC\u0027s I/O, not the speed of light.\n\n### 4. The \"Optimism G"
+      }, {
+        "text": "aps\" (Where Reality Will Bite)\nThese are the factors the simulation likely underestimates:\n\n1.  **Connector Losses \u0026"
+      }, {
+        "text": " Etalon Effects:**\n    *   Every FC/APC connector adds ~0.25dB loss.\n    *   W"
+      }, {
+        "text": "orse, pairs of connectors create Fabry-Perot cavities (Etalons) that cause wavelength-dependent power ripples"
+      }, {
+        "text": ". The sim models \"PDL random walk\" (Polarization Dependent Loss), which is a good proxy, but back"
+      }, {
+        "text": "-reflections are nasty in Path B loops.\n2.  **Thermal Drift Time-Constants:**\n    *   The"
+      }, {
+        "text": " `ThermalMechEnv` (`sim/thermal.py`) uses a random walk. Real thermal drift is often **correlated"
+      }, {
+        "text": " and oscillatory** (AC/HVAC cycles, PID controller hunting). This might make \"re-centering\" calibration harder than"
+      }, {
+        "text": " simulated.\n3.  **Comparator Offset DACs:**\n    *   The \"Tuned Comparator\" packs assume"
+      }, {
+        "text": " we can trim the threshold voltage ($V_{th}$) per channel with high precision. Real comparators have finite DAC resolution ("
+      }, {
+        "text": "e.g., 8-bit or 12-bit). If the trim step size is larger than the noise floor, we"
+      }, {
+        "text": " cannot perfectly cancel offsets.\n\n### 5. Summary of the Audit\n*   **Physics Grade:** **B+**."
+      }, {
+        "text": " The noise hierarchy is excellent. The TIA/Comparator models are surprisingly detailed (hysteresis, metastability).\n*   **"
+      }, {
+        "text": "Optical Grade:** **B-**. It ignores coherence/speckle effects, assuming \"Engineered Diffusers\" solve everything"
+      }, {
+        "text": ". It models diffraction simply.\n*   **Feasibility:** **High.** The move to TDM (serializing the"
+      }, {
+        "text": " problem) moves the bottleneck from \"impossible optical alignment\" to \"standard high-speed electronics,\" which is a solvable engineering"
+      }, {
+        "text": " problem.\n\n---\n\n**Next:** Part 4 will cover the **Tuning Narrative \u0026 \"Golden Configs\"**, decoding"
+      }, {
+        "text": " the massive `TUNING.md` log to show exactly which hardware settings actually worked."
+      }, {
+        "text": "",
+        "thoughtSignature": "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"
+      }]
+    }, {
+      "text": "Part 4 of N",
+      "role": "user",
+      "tokenCount": 6
+    }, {
+      "text": "**Reviewing the Request**\n\nI\u0027m now zeroing in on the specifics of the user\u0027s request: it\u0027s part four of a larger analysis. I need to figure out exactly what was covered in the preceding parts. I\u0027ll focus on what the user needs from this segment.\n\n\n**Analyzing the Experiments**\n\nI\u0027m now deep-diving into the tuning history. I\u0027ve mapped out the key narrative: initial struggles, the \"Margin Limited\" revelation, the shifts to Path B and its eventual failure, and the ultimate TDM success. My focus is now on extracting the \"Golden Configs\" - MVP-Cheap, MVP-Fast, and the 1-Channel MVP - from the provided sources. I\u0027m aiming to craft a compelling explanation of *how* these configurations were found.\n\n\n**Detailing the Configurations**\n\nI\u0027m now zeroed in on detailing the Golden Configurations. I\u0027m structuring this for maximum clarity, using headers and code snippets. I\u0027m referencing the specific YAML files, like tmp_codex_optics_medium_voa2_soa_strongsa.yaml, so that these configurations are easily reproducible. It\u0027s key to include the \"K\" factor. I am aiming to emphasize *why* TDM was the breakthrough, and how it fixed the crosstalk and bias, for complete reproduction by another developer.\n\n\n",
+      "role": "model",
+      "tokenCount": 766,
+      "isThought": true,
+      "parts": [{
+        "text": "**Reviewing the Request**\n\nI\u0027m now zeroing in on the specifics of the user\u0027s request: it\u0027s part four of a larger analysis. I need to figure out exactly what was covered in the preceding parts. I\u0027ll focus on what the user needs from this segment.\n\n\n",
+        "thought": true
+      }, {
+        "text": "**Analyzing the Experiments**\n\nI\u0027m now deep-diving into the tuning history. I\u0027ve mapped out the key narrative: initial struggles, the \"Margin Limited\" revelation, the shifts to Path B and its eventual failure, and the ultimate TDM success. My focus is now on extracting the \"Golden Configs\" - MVP-Cheap, MVP-Fast, and the 1-Channel MVP - from the provided sources. I\u0027m aiming to craft a compelling explanation of *how* these configurations were found.\n\n\n",
+        "thought": true
+      }, {
+        "text": "**Detailing the Configurations**\n\nI\u0027m now zeroed in on detailing the Golden Configurations. I\u0027m structuring this for maximum clarity, using headers and code snippets. I\u0027m referencing the specific YAML files, like tmp_codex_optics_medium_voa2_soa_strongsa.yaml, so that these configurations are easily reproducible. It\u0027s key to include the \"K\" factor. I am aiming to emphasize *why* TDM was the breakthrough, and how it fixed the crosstalk and bias, for complete reproduction by another developer.\n\n\n",
+        "thought": true
+      }]
+    }, {
+      "text": "Here is **Part 4: The Tuning Narrative \u0026 \"Golden Configs\"**.\n\nThis section decodes the massive `TUNING.md` log. It explains the trial-and-error history that led to the current design, separating dead ends from the working \"Golden Configurations\" you should use immediately.\n\n---\n\n## Part 4: The Tuning Narrative \u0026 \"Golden Configs\"\n\n### 1. The Narrative Arc: From \"Parallel Failure\" to \"TDM Success\"\n\nThe tuning history reveals a critical pivot in the project\u0027s engineering strategy. Understanding this saves you from repeating weeks of failed experiments.\n\n#### **Phase 1: The Path A Struggles (Digital Loop)**\n*   **Goal:** Use a camera and DMD to do matrix multiplication.\n*   **The Problem:** High BER (~0.3). The system was \"Margin Limited.\" Noise from the camera and stray light in the optics overwhelmed the signal.\n*   **The Fix:** Aggressive averaging (`avg_frames\u003d2` or `3`) and \"Lite Gating\" (discarding weak signals). This worked to lower BER but killed throughput.\n*   **Verdict:** Path A is viable for *slow, robust* proofs, but hit a speed ceiling.\n\n#### **Phase 2: The Path B Parallel Failure (Analog Loop)**\n*   **Goal:** Switch to 1550nm telecom parts (Lasers/SOAs) running 16 channels in parallel for speed.\n*   **The Experiment:** Cascading multiple analog stages (Depth 5) to see if ternary values ($\\pm 1$) would propagate or decay.\n*   **The Failure:** BER stuck at **0.25 – 0.375**.\n*   **The Root Cause:** **\"Stage-1 Deadzone.\"** Small biases in the first optical stage caused signals to drift into the comparator\u0027s deadband (the \"0\" state) or flip rails. Crosstalk between parallel channels was too high for the analog margins.\n*   **Failed Fixes:** Digital guards, simple servos, and global threshold tweaks could not fix the fundamental SNR issue of 16 parallel analog channels.\n\n#### **Phase 3: The TDM Pivot (The Breakthrough)**\n*   **The Insight:** Instead of running 16 channels *simultaneously* (high crosstalk), run them *sequentially* (Time-Division Multiplexing) using the same hardware.\n*   **The Mechanism:**\n    *   **K-Sparse Activation:** Only turn on $K$ channels per time-step (e.g., 4 or 8).\n    *   **Rotation:** Cycle through subsets to compute the full vector.\n*   **The Result:** **BER dropped to 0.0.**\n    *   By reducing active channels, crosstalk vanished.\n    *   By serializing, calibration (auto-zeroing) became effective per-slot.\n*   **Current Status:** This is the baseline for all future development.\n\n---\n\n### 2. The \"Golden Configs\" (Run These First)\n\nThese are the proven, reproducible configurations extracted from `TUNING.md`. Do not invent new params until you verify these.\n\n#### **A. The \"MVP-Fast\" (Performance Target)**\n*   **Use Case:** High-speed demo, investor proof.\n*   **Specs:** 16 Channels, **0.0 BER**, ~10 Msym/s.\n*   **Hardware:** \"Strong SA\" (Expensive Optics), Tuned Comparator.\n*   **TDM Setting:** $K\u003d8$ (8 active channels per frame).\n*   **Command Pattern:**\n    ```bash\n    python examples/test.py ... --optics-pack configs/packs/tmp_codex_optics_medium_voa2_soa_strongsa.yaml --path-b-sparse-active-k 8 --path-b-eval-active-only\n    ```\n\n#### **B. The \"MVP-Cheap\" (Cost-Down Target)**\n*   **Use Case:** Budget hardware build, scaling studies.\n*   **Specs:** 16 Channels, **0.0 BER**, ~5 Msym/s.\n*   **Hardware:** \"Light SA\" (Cheaper Optics).\n*   **TDM Setting:** $K\u003d4$ (Must run fewer channels to maintain zero error).\n*   **Command Pattern:**\n    ```bash\n    python examples/test.py ... --optics-pack configs/packs/tmp_codex_optics_medium_voa2_lightSA.yaml --path-b-sparse-active-k 4\n    ```\n\n#### **C. The \"1-Channel Bench\" (Hardware Bring-up)**\n*   **Use Case:** First physical hardware loop.\n*   **Specs:** 1 Channel, **0.0 BER** @ 6ns window.\n*   **Hardware:** Balanced Photodiodes (Critical).\n*   **Key Flags:** `--path-b-balanced --path-b-calibrate-vth`.\n\n---\n\n### 3. Confirmed Dead Ends (Do Not Resurrect)\n\nThe logs are full of things that *didn\u0027t* work. Flag these as \"Do Not Touch\" unless you have a radically new approach.\n\n1.  **Pure EDFA Loops:**\n    *   *Why:* EDFAs introduce ASE (Amplified Spontaneous Emission) noise and gain tilt. Without complex filtering (OBPF) and gain flattening, the loop explodes or collapses.\n    *   *Status:* Use SOAs (Semiconductor Optical Amplifiers) for now; they provide the necessary non-linearity and pattern stability.\n2.  **Static Servos (Simple Drift Compensation):**\n    *   *Why:* Simple proportional feedback loops drifted the thresholds toward zero, increasing errors.\n    *   *Status:* Use \"Periodic Re-centering\" (stop, calibrate, resume) instead of live continuous servos.\n3.  **Parallel 16-Channel (No TDM):**\n    *   *Why:* Crosstalk floor is too high for the current analog link budget (~10dB SNR).\n    *   *Status:* TDM is mandatory for \u003e8 channels until optics improve significantly.\n\n---\n\n### 4. Tuning Levers (How to tweak)\n\nIf you need to adjust performance, turn these specific knobs in this order. Do not touch random files.\n\n1.  **`--path-b-sparse-active-k [Int]`**: The \"Speed vs. Accuracy\" slider.\n    *   Lower $K$ \u003d Lower Crosstalk/BER, Slower Speed.\n    *   Higher $K$ \u003d Higher Speed, Higher Risk of Error.\n2.  **`--base-window-ns [Float]`**: The \"SNR\" slider.\n    *   Increase (e.g., 6ns $\\to$ 10ns) to reduce noise/jitter impact.\n3.  **`configs/packs/...`**: Swap \"Strong SA\" for \"Light SA\" to simulate cost reduction.\n\n---\n\n**Next:** Part 5 will be the **Codebase Critique \u0026 Onboarding Guide**, covering the technical debt, performance bottlenecks, and the \"Hello World\" checklist for a new dev.",
+      "role": "model",
+      "finishReason": "STOP",
+      "tokenCount": 1560,
+      "parts": [{
+        "text": "Here is **Part 4:"
+      }, {
+        "text": " The Tuning Narrative \u0026 \"Golden Configs\"**.\n\nThis section decodes the massive `TUNING.md` log."
+      }, {
+        "text": " It explains the trial-and-error history that led to the current design, separating dead ends from the working \"Golden Configurations\" you"
+      }, {
+        "text": " should use immediately.\n\n---\n\n## Part 4: The Tuning Narrative \u0026 \"Golden Configs\"\n\n### "
+      }, {
+        "text": "1. The Narrative Arc: From \"Parallel Failure\" to \"TDM Success\"\n\nThe tuning history reveals a critical"
+      }, {
+        "text": " pivot in the project\u0027s engineering strategy. Understanding this saves you from repeating weeks of failed experiments.\n\n#### **Phase"
+      }, {
+        "text": " 1: The Path A Struggles (Digital Loop)**\n*   **Goal:** Use a camera and DMD to do"
+      }, {
+        "text": " matrix multiplication.\n*   **The Problem:** High BER (~0.3). The system was \"Margin Limited.\" Noise"
+      }, {
+        "text": " from the camera and stray light in the optics overwhelmed the signal.\n*   **The Fix:** Aggressive averaging (`avg_frames\u003d"
+      }, {
+        "text": "2` or `3`) and \"Lite Gating\" (discarding weak signals). This worked to lower BER but"
+      }, {
+        "text": " killed throughput.\n*   **Verdict:** Path A is viable for *slow, robust* proofs, but hit a speed"
+      }, {
+        "text": " ceiling.\n\n#### **Phase 2: The Path B Parallel Failure (Analog Loop)**\n*   **Goal:** Switch to "
+      }, {
+        "text": "1550nm telecom parts (Lasers/SOAs) running 16 channels in parallel for speed.\n*   **The Experiment"
+      }, {
+        "text": ":** Cascading multiple analog stages (Depth 5) to see if ternary values ($\\pm 1$) would propagate or"
+      }, {
+        "text": " decay.\n*   **The Failure:** BER stuck at **0.25 – 0.375**.\n"
+      }, {
+        "text": "*   **The Root Cause:** **\"Stage-1 Deadzone.\"** Small biases in the first optical stage caused"
+      }, {
+        "text": " signals to drift into the comparator\u0027s deadband (the \"0\" state) or flip rails. Crosstalk between"
+      }, {
+        "text": " parallel channels was too high for the analog margins.\n*   **Failed Fixes:** Digital guards, simple servos, and global"
+      }, {
+        "text": " threshold tweaks could not fix the fundamental SNR issue of 16 parallel analog channels.\n\n#### **Phase 3: The TDM Pivot (The Breakthrough"
+      }, {
+        "text": ")**\n*   **The Insight:** Instead of running 16 channels *simultaneously* (high crosstalk), run them *sequentially*"
+      }, {
+        "text": " (Time-Division Multiplexing) using the same hardware.\n*   **The Mechanism:**\n    *   **K-"
+      }, {
+        "text": "Sparse Activation:** Only turn on $K$ channels per time-step (e.g., 4 or 8)."
+      }, {
+        "text": "\n    *   **Rotation:** Cycle through subsets to compute the full vector.\n*   **The Result:** **"
+      }, {
+        "text": "BER dropped to 0.0.**\n    *   By reducing active channels, crosstalk vanished.\n    *   By serial"
+      }, {
+        "text": "izing, calibration (auto-zeroing) became effective per-slot.\n*   **Current Status:** This is the baseline"
+      }, {
+        "text": " for all future development.\n\n---\n\n### 2. The \"Golden Configs\" (Run These First)\n\nThese are the proven"
+      }, {
+        "text": ", reproducible configurations extracted from `TUNING.md`. Do not invent new params until you verify these.\n\n#### **A. The \"MVP"
+      }, {
+        "text": "-Fast\" (Performance Target)**\n*   **Use Case:** High-speed demo, investor proof.\n*   **Specs"
+      }, {
+        "text": ":** 16 Channels, **0.0 BER**, ~10 Msym/s.\n*   **Hardware:** \""
+      }, {
+        "text": "Strong SA\" (Expensive Optics), Tuned Comparator.\n*   **TDM Setting:** $K\u003d8$"
+      }, {
+        "text": " (8 active channels per frame).\n*   **Command Pattern:**\n    ```bash\n    python examples/test.py ..."
+      }, {
+        "text": " --optics-pack configs/packs/tmp_codex_optics_medium_voa2_soa_strong"
+      }, {
+        "text": "sa.yaml --path-b-sparse-active-k 8 --path-b-eval-active-only\n    "
+      }, {
+        "text": "```\n\n#### **B. The \"MVP-Cheap\" (Cost-Down Target)**\n*   **Use Case:** Budget"
+      }, {
+        "text": " hardware build, scaling studies.\n*   **Specs:** 16 Channels, **0.0 BER**, ~5 Msym/s"
+      }, {
+        "text": ".\n*   **Hardware:** \"Light SA\" (Cheaper Optics).\n*   **TDM Setting:**"
+      }, {
+        "text": " $K\u003d4$ (Must run fewer channels to maintain zero error).\n*   **Command Pattern:**\n    ```bash\n    python"
+      }, {
+        "text": " examples/test.py ... --optics-pack configs/packs/tmp_codex_optics_medium"
+      }, {
+        "text": "_voa2_lightSA.yaml --path-b-sparse-active-k 4\n    ```\n\n#### **C. The"
+      }, {
+        "text": " \"1-Channel Bench\" (Hardware Bring-up)**\n*   **Use Case:** First physical hardware loop."
+      }, {
+        "text": "\n*   **Specs:** 1 Channel, **0.0 BER** @ 6ns window.\n*   "
+      }, {
+        "text": "**Hardware:** Balanced Photodiodes (Critical).\n*   **Key Flags:** `--path-b-balanced --"
+      }, {
+        "text": "path-b-calibrate-vth`.\n\n---\n\n### 3. Confirmed Dead Ends (Do Not Res"
+      }, {
+        "text": "urrect)\n\nThe logs are full of things that *didn\u0027t* work. Flag these as \"Do Not Touch"
+      }, {
+        "text": "\" unless you have a radically new approach.\n\n1.  **Pure EDFA Loops:**\n    *   *"
+      }, {
+        "text": "Why:* EDFAs introduce ASE (Amplified Spontaneous Emission) noise and gain tilt. Without complex filtering (OBPF)"
+      }, {
+        "text": " and gain flattening, the loop explodes or collapses.\n    *   *Status:* Use SOAs (Semiconductor Optical Amplifiers)"
+      }, {
+        "text": " for now; they provide the necessary non-linearity and pattern stability.\n2.  **Static Servos (Simple"
+      }, {
+        "text": " Drift Compensation):**\n    *   *Why:* Simple proportional feedback loops drifted the thresholds toward zero, increasing errors.\n    *   *Status"
+      }, {
+        "text": ":* Use \"Periodic Re-centering\" (stop, calibrate, resume) instead of live continuous servos.\n3.  **Parallel "
+      }, {
+        "text": "16-Channel (No TDM):**\n    *   *Why:* Crosstalk floor is too high for the current analog"
+      }, {
+        "text": " link budget (~10dB SNR).\n    *   *Status:* TDM is mandatory for \u003e8 channels until optics"
+      }, {
+        "text": " improve significantly.\n\n---\n\n### 4. Tuning Levers (How to tweak)\n\nIf you need to adjust"
+      }, {
+        "text": " performance, turn these specific knobs in this order. Do not touch random files.\n\n1.  **`--path-b-sparse-active"
+      }, {
+        "text": "-k [Int]`**: The \"Speed vs. Accuracy\" slider.\n    *   Lower $K$ \u003d Lower"
+      }, {
+        "text": " Crosstalk/BER, Slower Speed.\n    *   Higher $K$ \u003d Higher Speed, Higher Risk of Error"
+      }, {
+        "text": ".\n2.  **`--base-window-ns [Float]`**: The \"SNR\" slider.\n    *   Increase"
+      }, {
+        "text": " (e.g., 6ns $\\to$ 10ns) to reduce noise/jitter impact.\n3"
+      }, {
+        "text": ".  **`configs/packs/...`**: Swap \"Strong SA\" for \"Light SA\" to simulate cost reduction"
+      }, {
+        "text": ".\n\n---\n\n**Next:** Part 5 will be the **Codebase Critique \u0026 Onboarding Guide**, covering the technical"
+      }, {
+        "text": " debt, performance bottlenecks, and the \"Hello World\" checklist for a new dev."
+      }, {
+        "text": "",
+        "thoughtSignature": "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"
+      }]
+    }, {
+      "text": "part 5 of N",
+      "role": "user",
+      "tokenCount": 6
+    }, {
+      "text": "**Defining the Scope**\n\nI\u0027m now zeroing in on defining the scope for the \"Codebase Critique \u0026 Onboarding Guide\" (Part 5). Essentially, I\u0027m working through the user\u0027s request, which is for a specific section of a larger ongoing multi-part analysis. I\u0027ve re-examined the initial outline (Part 1) to refresh my memory on the overall structure.\n\n\n**Analyzing Section Contents**\n\nI\u0027ve outlined Part 5, now focused on technical critiques and onboarding. I\u0027ve broken it into two sections: Code Quality/Tech Debt (the \"God Script\", hardcoded elements, parsing issues, type hints) and Performance Bottlenecks. The \"examples/test.py\" needs refactoring. Also, I\u0027ve noted that we rely too heavily on parsing JSON output.\n\n\n",
+      "role": "model",
+      "tokenCount": 705,
+      "isThought": true,
+      "parts": [{
+        "text": "**Defining the Scope**\n\nI\u0027m now zeroing in on defining the scope for the \"Codebase Critique \u0026 Onboarding Guide\" (Part 5). Essentially, I\u0027m working through the user\u0027s request, which is for a specific section of a larger ongoing multi-part analysis. I\u0027ve re-examined the initial outline (Part 1) to refresh my memory on the overall structure.\n\n\n",
+        "thought": true
+      }, {
+        "text": "**Analyzing Section Contents**\n\nI\u0027ve outlined Part 5, now focused on technical critiques and onboarding. I\u0027ve broken it into two sections: Code Quality/Tech Debt (the \"God Script\", hardcoded elements, parsing issues, type hints) and Performance Bottlenecks. The \"examples/test.py\" needs refactoring. Also, I\u0027ve noted that we rely too heavily on parsing JSON output.\n\n\n",
+        "thought": true
+      }]
+    }, {
+      "text": "Here is **Part 5: Codebase Critique \u0026 Onboarding Guide**.\n\nThis final section analyzes the software quality itself. It highlights technical debt, performance bottlenecks, and provides a concrete checklist for a new developer to get up and running immediately.\n\n---\n\n## Part 5: Codebase Critique \u0026 Onboarding Guide\n\n### 1. Codebase Critique: The \"God Script\" Problem\nThe biggest software engineering risk in this repo is the accumulation of logic inside `examples/test.py`.\n\n*   **The Issue:** Despite its name, `test.py` is not a unit test. It is the production CLI entry point. It currently handles:\n    *   Argument parsing (hundreds of flags).\n    *   Hardware parameter overrides.\n    *   Calibration logic (auto-zeroing comparators).\n    *   **TDM Control Logic:** The complex loop that slices inputs into subsets and rotates them (`_run_pathb_stage_pass`) lives here, effectively outside the core library.\n*   **The Risk:** If you want to deploy this logic to real hardware drivers later, you will have to disentangle it from the simulation harness in `test.py`.\n*   **Recommendation:** Move the TDM scheduling and Calibration loops into `looking_glass/orchestrator.py` or a new `looking_glass/control/` module. Treat `test.py` only as a configuration loader.\n\n### 2. Performance Analysis\nThe simulator is written in **Pure Python + NumPy**.\n\n*   **The Good:** It utilizes vectorization well for the linear optics math ($y \u003d Wx$). The heavy lifting (matrix multiplication) happens in C (via NumPy).\n*   **The Bad:** The main simulation loop (`Orchestrator.run_once` called inside a Python `for` loop) incurs significant interpreter overhead.\n    *   *Current Speed:* ~1,000 trials per second (depending on depth).\n    *   *Required Speed for $10^{-9}$ BER:* We need millions of trials.\n*   **The Bottleneck:** Random number generation calls inside the inner loop (`rng.normal`) and object attribute lookups.\n*   **Fix:** For massive sweeps, the inner loop should be JIT-compiled using **Numba** or vectorized over the *trial* dimension (simulating 10,000 trials in parallel rather than serially), though vectorizing trials complicates stateful drift modeling.\n\n### 3. Technical Debt \u0026 Gotchas\n*   **Type Hinting:** The code uses Python 3.10+ types (`int | None`), but coverage is spotty in the `sim/` modules. NumPy array shapes are not strictly typed, leading to potential dimension mismatch errors if you change channel counts manually.\n*   **Hardcoded Strings:** The \"Packs\" system relies on string paths. Moving files in `configs/packs/` will break many presets instantly.\n*   **Windows CMD:** The repo is heavily optimized for Windows (paths, `.bat` files). Linux/Mac users might need to adjust slash directions or shell escaping in the `queue/` scripts.\n\n---\n\n### 4. The Onboarding Checklist (\"Hello World\")\n\nIf you are the new developer, do **not** start by reading every file. Follow this sequence to verify your environment and understanding.\n\n#### **Step 1: Environment Sanity**\nEnsure you are on Python 3.10+ (crucial for type syntax).\n```bat\npython -m venv .venv\n.venv\\Scripts\\activate\npip install -r requirements.txt\npip install flask matplotlib  :: Optional but recommended\n```\n\n#### **Step 2: The Smoke Test**\nRun the minimal sanity check. If this fails, your environment is broken.\n```bat\npython examples/run_smoke.py\n```\n*   *Success Criterion:* Prints a JSON summary with non-zero BER and Energy. Returns exit code 0.\n\n#### **Step 3: Reproduce the \"Golden Config\" (MVP-Fast)**\nVerify you can hit the 0.0 BER baseline.\n```bat\npython examples/test.py --trials 200 --channels 16 --base-window-ns 10 ^\n  --optics-pack configs/packs/tmp_codex_optics_medium_voa2_soa_strongsa.yaml ^\n  --path-b-sparse-active-k 8 --path-b-eval-active-only ^\n  --path-b-depth 5 --path-b-analog-depth 5 ^\n  --apply-calibration --normalize-dv --quiet\n```\n*   *Success Criterion:* Output JSON shows `path_b.analog_p50_ber: 0.0`.\n\n#### **Step 4: Break the Physics (The Learning Step)**\nIntentionally break the sim to prove it\u0027s measuring reality.\n*   **Task:** Rerun the command above but change `--path-b-sparse-active-k 8` to `16` (turning off TDM).\n*   *Expected Result:* BER should jump to ~0.3 or higher due to crosstalk.\n*   *Lesson:* This proves why TDM is necessary.\n\n#### **Step 5: Inspect the Queue**\nLook at `queue/probes.jsonl` (if it exists) to see the format of batch jobs.\n*   *Format:* One JSON object per line.\n*   *Action:* Use `scripts/probe_queue_runner.py` to run pending jobs.\n\n---\n\n### 5. Final Assessment\n\n**Project Looking Glass** is a serious engineering feasibility tool masquerading as a prototype.\n\n*   **It works.** The physics are sound enough to make purchasing decisions ($10k vs $50k).\n*   **It is optimistic.** It assumes you can build perfectly balanced photodiodes and perfectly linear TIAs.\n*   **It is scalable.** The TDM architecture (Path B) provides a clear path to scaling without needing science-fiction manufacturing.\n\n**Your mandate:** Stop tuning for 0.001 improvements. Build the 1-channel hardware bench, feed the *real* measured noise back into `configs/packs/`, and let the simulator tell you how to scale to 16 channels.\n\n*End of Analysis.*",
+      "role": "model",
+      "finishReason": "STOP",
+      "tokenCount": 1364,
+      "parts": [{
+        "text": "Here is **Part 5: Codebase Critique \u0026 Onboarding Guide**.\n\n"
+      }, {
+        "text": "This final section analyzes the software quality itself. It highlights technical debt, performance bottlenecks, and provides a concrete checklist for a new developer to get up and"
+      }, {
+        "text": " running immediately.\n\n---\n\n## Part 5: Codebase Critique \u0026 Onboarding Guide\n\n### 1. Code"
+      }, {
+        "text": "base Critique: The \"God Script\" Problem\nThe biggest software engineering risk in this repo is the accumulation of logic inside"
+      }, {
+        "text": " `examples/test.py`.\n\n*   **The Issue:** Despite its name, `test.py` is not a unit test. It is"
+      }, {
+        "text": " the production CLI entry point. It currently handles:\n    *   Argument parsing (hundreds of flags).\n    *   "
+      }, {
+        "text": "Hardware parameter overrides.\n    *   Calibration logic (auto-zeroing comparators).\n    *   **T"
+      }, {
+        "text": "DM Control Logic:** The complex loop that slices inputs into subsets and rotates them (`_run_pathb_stage_"
+      }, {
+        "text": "pass`) lives here, effectively outside the core library.\n*   **The Risk:** If you want to deploy this logic"
+      }, {
+        "text": " to real hardware drivers later, you will have to disentangle it from the simulation harness in `test.py`.\n*"
+      }, {
+        "text": "   **Recommendation:** Move the TDM scheduling and Calibration loops into `looking_glass/orchestrator.py` or a new `looking"
+      }, {
+        "text": "_glass/control/` module. Treat `test.py` only as a configuration loader.\n\n### 2. Performance Analysis"
+      }, {
+        "text": "\nThe simulator is written in **Pure Python + NumPy**.\n\n*   **The Good:** It utilizes vectorization well for the linear"
+      }, {
+        "text": " optics math ($y \u003d Wx$). The heavy lifting (matrix multiplication) happens in C (via NumPy).\n*   **The"
+      }, {
+        "text": " Bad:** The main simulation loop (`Orchestrator.run_once` called inside a Python `for` loop) incurs"
+      }, {
+        "text": " significant interpreter overhead.\n    *   *Current Speed:* ~1,000 trials per second (depending on depth"
+      }, {
+        "text": ").\n    *   *Required Speed for $10^{-9}$ BER:* We need millions of trials.\n"
+      }, {
+        "text": "*   **The Bottleneck:** Random number generation calls inside the inner loop (`rng.normal`) and object attribute lookups.\n*   **Fix"
+      }, {
+        "text": ":** For massive sweeps, the inner loop should be JIT-compiled using **Numba** or vectorized over the *"
+      }, {
+        "text": "trial* dimension (simulating 10,000 trials in parallel rather than serially), though vectorizing"
+      }, {
+        "text": " trials complicates stateful drift modeling.\n\n### 3. Technical Debt \u0026 Gotchas\n*   **Type Hinting"
+      }, {
+        "text": ":** The code uses Python 3.10+ types (`int | None`), but coverage is spotty in the `sim/` modules. NumPy"
+      }, {
+        "text": " array shapes are not strictly typed, leading to potential dimension mismatch errors if you change channel counts manually.\n*   **"
+      }, {
+        "text": "Hardcoded Strings:** The \"Packs\" system relies on string paths. Moving files in `configs/packs/` will break"
+      }, {
+        "text": " many presets instantly.\n*   **Windows CMD:** The repo is heavily optimized for Windows (paths, `.bat` files). Linux"
+      }, {
+        "text": "/Mac users might need to adjust slash directions or shell escaping in the `queue/` scripts.\n\n---\n\n### 4. The On"
+      }, {
+        "text": "boarding Checklist (\"Hello World\")\n\nIf you are the new developer, do **not** start by reading every file. Follow this sequence"
+      }, {
+        "text": " to verify your environment and understanding.\n\n#### **Step 1: Environment Sanity**\nEnsure you are on Python 3.10+"
+      }, {
+        "text": " (crucial for type syntax).\n```bat\npython -m venv .venv\n.venv\\Scripts\\activate\n"
+      }, {
+        "text": "pip install -r requirements.txt\npip install flask matplotlib  :: Optional but recommended\n```\n\n#### **Step "
+      }, {
+        "text": "2: The Smoke Test**\nRun the minimal sanity check. If this fails, your environment is broken.\n```bat\n"
+      }, {
+        "text": "python examples/run_smoke.py\n```\n*   *Success Criterion:* Prints a JSON summary with non-zero BER and Energy"
+      }, {
+        "text": ". Returns exit code 0.\n\n#### **Step 3: Reproduce the \"Golden Config\" (MVP-Fast)**\nVerify"
+      }, {
+        "text": " you can hit the 0.0 BER baseline.\n```bat\npython examples/test.py --trials 200 --channels "
+      }, {
+        "text": "16 --base-window-ns 10 ^\n  --optics-pack configs/packs/tmp"
+      }, {
+        "text": "_codex_optics_medium_voa2_soa_strongsa.yaml ^\n  --path"
+      }, {
+        "text": "-b-sparse-active-k 8 --path-b-eval-active-only ^\n  --"
+      }, {
+        "text": "path-b-depth 5 --path-b-analog-depth 5 ^\n  --apply-calibration"
+      }, {
+        "text": " --normalize-dv --quiet\n```\n*   *Success Criterion:* Output JSON shows `path_b.analog_p50"
+      }, {
+        "text": "_ber: 0.0`.\n\n#### **Step 4: Break the Physics (The Learning Step)**\nInt"
+      }, {
+        "text": "entionally break the sim to prove it\u0027s measuring reality.\n*   **Task:** Rerun the command above but"
+      }, {
+        "text": " change `--path-b-sparse-active-k 8` to `16` (turning off TDM).\n*   *"
+      }, {
+        "text": "Expected Result:* BER should jump to ~0.3 or higher due to crosstalk.\n*   *Lesson:* This"
+      }, {
+        "text": " proves why TDM is necessary.\n\n#### **Step 5: Inspect the Queue**\nLook at `queue/probes.json"
+      }, {
+        "text": "l` (if it exists) to see the format of batch jobs.\n*   *Format:* One JSON object per line.\n*   *"
+      }, {
+        "text": "Action:* Use `scripts/probe_queue_runner.py` to run pending jobs.\n\n---\n\n### 5. Final"
+      }, {
+        "text": " Assessment\n\n**Project Looking Glass** is a serious engineering feasibility tool masquerading as a prototype.\n\n*   **It"
+      }, {
+        "text": " works.** The physics are sound enough to make purchasing decisions ($10k vs $50k).\n*   **It"
+      }, {
+        "text": " is optimistic.** It assumes you can build perfectly balanced photodiodes and perfectly linear TIAs.\n*   **It is"
+      }, {
+        "text": " scalable.** The TDM architecture (Path B) provides a clear path to scaling without needing science-fiction manufacturing.\n\n**Your mandate"
+      }, {
+        "text": ":** Stop tuning for 0.001 improvements. Build the 1-channel hardware bench, feed the *"
+      }, {
+        "text": "real* measured noise back into `configs/packs/`, and let the simulator tell you how to scale to 16 channels.\n\n*"
+      }, {
+        "text": "End of Analysis.*"
+      }, {
+        "text": "",
+        "thoughtSignature": "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"
+      }]
+    }],
+    "pendingInputs": [{
+      "text": "",
+      "role": "user"
+    }]
+  }
+}

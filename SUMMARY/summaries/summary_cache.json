@@ -1,0 +1,2157 @@
+{
+  ".\\README.md": {
+    "mtime": 1758246862.0,
+    "size": 12305,
+    "hash": "65cd2082e886a5c2e138c7b7cee11bd3"
+  },
+  ".\\context.md": {
+    "mtime": 1755324196.0,
+    "size": 413199,
+    "hash": "1075685bd36e919de11c15fb93cb5ad3"
+  },
+  ".\\DESIGN.md": {
+    "mtime": 1755324364.0,
+    "size": 17707,
+    "hash": "1047175d45ea733fb44987436729c561"
+  },
+  ".\\requirements.txt": {
+    "mtime": 1755325246.0,
+    "size": 49,
+    "hash": "cc8feff96b43ba03729ca7c7c0b97d66"
+  },
+  ".\\.gitignore": {
+    "mtime": 1758173402.0,
+    "size": 576,
+    "hash": "321369b688259a5f0e0574256bc2040c"
+  },
+  ".\\tuning_assessment.md": {
+    "mtime": 1755743828.0,
+    "size": 11750,
+    "hash": "f7eb3c7bc145dc4818aff801cd57fc7f"
+  },
+  ".\\INIT.md": {
+    "mtime": 1756071012.0,
+    "size": 1225,
+    "hash": "c53b05cb9f7bbe9698f3bcd0ab5a5087"
+  },
+  ".\\TUNING.md": {
+    "mtime": 1758412614.0,
+    "size": 63199,
+    "hash": "eaf9fc03eda0d3d82acb578131351409"
+  },
+  ".\\design_1550nm.md": {
+    "mtime": 1758166416.0,
+    "size": 18263,
+    "hash": "182cf7f2366893c5ba27d153e378c3fe"
+  },
+  ".\\tmp_patch2.py": {
+    "mtime": 1758173248.0,
+    "size": 747,
+    "hash": "8202ffcf31a0b1cddf73e1350448be1b"
+  },
+  ".\\tmp_patch3.py": {
+    "mtime": 1758173260.0,
+    "size": 926,
+    "hash": "79104b5f246577bd54cd8deafb40c266"
+  },
+  ".\\tmp_patch4.py": {
+    "mtime": 1758173272.0,
+    "size": 1332,
+    "hash": "2a3f2b25706bcee8b4a9cdbf639cfdfe"
+  },
+  ".\\AGENTS.md": {
+    "mtime": 1758270908.0,
+    "size": 3069,
+    "hash": "93d5d9407898dbeba9331418b9031f77"
+  },
+  ".\\tmp_script.py": {
+    "mtime": 1758223330.0,
+    "size": 604,
+    "hash": "950d989a7cf8cc288a34833f997fac7f"
+  },
+  ".\\FEEDBACK.md": {
+    "mtime": 1758247606.0,
+    "size": 2097,
+    "hash": "e4fe4721dc148c006de5201299b3d7e6"
+  },
+  ".\\REPORT.md": {
+    "mtime": 1758271506.0,
+    "size": 40882,
+    "hash": "69b83970b07831e52b55dbf6445a81cc"
+  },
+  ".\\TASKS.md": {
+    "mtime": 1758251726.0,
+    "size": 1696,
+    "hash": "e4805743cf339458f47a239bea2ddf56"
+  },
+  ".\\deeploop_advice.md": {
+    "mtime": 1758270696.0,
+    "size": 61838,
+    "hash": "389eba9edc3901a0ff23e4f08ed29067"
+  },
+  ".\\context2.md": {
+    "mtime": 1763959624.0,
+    "size": 804521,
+    "hash": "da4cdedfb5f712565fbb8c1a69d8a32b"
+  },
+  ".\\looking_glass\\__init__.py": {
+    "mtime": 1755349254.0,
+    "size": 29,
+    "hash": "e9e7fe21f1bc3b91d73a52885846a2d7"
+  },
+  ".\\looking_glass\\orchestrator.py": {
+    "mtime": 1758251688.0,
+    "size": 8750,
+    "hash": "a5092ddf22592bac77ced200a05451c4"
+  },
+  ".\\looking_glass\\params.py": {
+    "mtime": 1755349254.0,
+    "size": 53,
+    "hash": "ce749a65e74fbb1fdde823bfe7d28ba8"
+  },
+  ".\\looking_glass\\utils.py": {
+    "mtime": 1755349254.0,
+    "size": 85,
+    "hash": "0594f47c92c1cd649565e98e6f807db9"
+  },
+  ".\\looking_glass\\plotting.py": {
+    "mtime": 1755330558.0,
+    "size": 2051,
+    "hash": "4f6984e3b7e5c381a0c82255518d8133"
+  },
+  ".\\looking_glass\\tuner.py": {
+    "mtime": 1755720318.0,
+    "size": 7701,
+    "hash": "75d4c6f08c52784249d5ee613e7448d9"
+  },
+  ".\\looking_glass\\dashboard_server.py": {
+    "mtime": 1755943200.0,
+    "size": 53125,
+    "hash": "57fc7c36889db02c7ad036bf337833d3"
+  },
+  ".\\looking_glass\\preflight.py": {
+    "mtime": 1755720030.0,
+    "size": 4693,
+    "hash": "72f98da3b085ed01fbf1d1bc3ad9a47b"
+  },
+  ".\\looking_glass\\scenario.py": {
+    "mtime": 1758247178.0,
+    "size": 14957,
+    "hash": "710ceee95b2a6a5f2dc3ea7733dd199f"
+  },
+  ".\\looking_glass\\sim\\__init__.py": {
+    "mtime": 1755349254.0,
+    "size": 22,
+    "hash": "98f0c19ef8a4af4febefe484119ccaaa"
+  },
+  ".\\looking_glass\\sim\\sensor.py": {
+    "mtime": 1755349254.0,
+    "size": 792,
+    "hash": "5a775d6781e2c193cdf4994d6d42388e"
+  },
+  ".\\looking_glass\\sim\\tia.py": {
+    "mtime": 1757062212.0,
+    "size": 2733,
+    "hash": "b80b1366aaceae46b4fceb290649e26f"
+  },
+  ".\\looking_glass\\sim\\comparator.py": {
+    "mtime": 1758224564.0,
+    "size": 4327,
+    "hash": "f1ede149353bf3d53efc6316d7fc8bbf"
+  },
+  ".\\looking_glass\\sim\\clock.py": {
+    "mtime": 1755349254.0,
+    "size": 465,
+    "hash": "47a3ce259267e3702cfe9cff3418821e"
+  },
+  ".\\looking_glass\\sim\\mitigations.py": {
+    "mtime": 1755349254.0,
+    "size": 71,
+    "hash": "e5e49968af56f1fca4dd291750b71b48"
+  },
+  ".\\looking_glass\\sim\\thermal.py": {
+    "mtime": 1755329346.0,
+    "size": 1254,
+    "hash": "773623a9cc3dda7f9c1e76293b39024e"
+  },
+  ".\\looking_glass\\sim\\camera.py": {
+    "mtime": 1755332256.0,
+    "size": 2285,
+    "hash": "fe209b695b97b60b4020714c79d007be"
+  },
+  ".\\looking_glass\\sim\\cold_storage.py": {
+    "mtime": 1755554142.0,
+    "size": 2542,
+    "hash": "96ccef4005b667296de7362e4b3ec901"
+  },
+  ".\\looking_glass\\sim\\optics.py": {
+    "mtime": 1758171546.0,
+    "size": 15740,
+    "hash": "82f6a1bff42f0fd4414987e8a1f6ab6c"
+  },
+  ".\\looking_glass\\sim\\emitter.py": {
+    "mtime": 1758175216.0,
+    "size": 4301,
+    "hash": "775a2a0bf4c76647ff7a6be0f16f0c9f"
+  },
+  ".\\examples\\run_smoke.py": {
+    "mtime": 1755325344.0,
+    "size": 855,
+    "hash": "2c87f6523968f7d34245b7b693010fa5"
+  },
+  ".\\examples\\run_sanity.py": {
+    "mtime": 1755326538.0,
+    "size": 4816,
+    "hash": "c49258f5d0ffaa4270fa9eba050e64c8"
+  },
+  ".\\examples\\test.py": {
+    "mtime": 1758255736.0,
+    "size": 159940,
+    "hash": "a3ee2f9701cc6d786f961fb32e5a924a"
+  },
+  ".\\configs\\packs\\emitter_typ.yaml": {
+    "mtime": 1755349254.0,
+    "size": 142,
+    "hash": "df4b21e365cb798ce43ea5371aa97615"
+  },
+  ".\\configs\\packs\\optics_typ.yaml": {
+    "mtime": 1755349254.0,
+    "size": 235,
+    "hash": "5f59d4de321e6a83469dde47fe175387"
+  },
+  ".\\configs\\packs\\sensor_typ.yaml": {
+    "mtime": 1755349254.0,
+    "size": 60,
+    "hash": "1f356452ac9ec43c97a651c12cf18fd9"
+  },
+  ".\\configs\\packs\\tia_typ.yaml": {
+    "mtime": 1755349254.0,
+    "size": 81,
+    "hash": "bfeb33affb8596116cdc154602c225e9"
+  },
+  ".\\configs\\packs\\comparator_typ.yaml": {
+    "mtime": 1755349254.0,
+    "size": 95,
+    "hash": "19c0063ee1f4950398a1c2110f433113"
+  },
+  ".\\configs\\packs\\clock_typ.yaml": {
+    "mtime": 1755349254.0,
+    "size": 36,
+    "hash": "6167d4f0526ee92c445feb3c7104389e"
+  },
+  ".\\configs\\packs\\thermal_typ.yaml": {
+    "mtime": 1755349254.0,
+    "size": 33,
+    "hash": "2466ba421e3337b2c51bdc73b01f25f2"
+  },
+  ".\\configs\\packs\\emitter_optimistic.yaml": {
+    "mtime": 1755326970.0,
+    "size": 150,
+    "hash": "bd8ab1375cfd8c101427c783929a39a2"
+  },
+  ".\\configs\\packs\\emitter_pessimistic.yaml": {
+    "mtime": 1755326970.0,
+    "size": 149,
+    "hash": "da7206f0afaafc8e2b639967dc7be120"
+  },
+  ".\\configs\\packs\\optics_optimistic.yaml": {
+    "mtime": 1755326970.0,
+    "size": 244,
+    "hash": "f11bbcf7e751d1155739c927332581b0"
+  },
+  ".\\configs\\packs\\optics_pessimistic.yaml": {
+    "mtime": 1755326970.0,
+    "size": 246,
+    "hash": "a397cbff13fca655788dee3e85265bca"
+  },
+  ".\\configs\\packs\\camera_typ.yaml": {
+    "mtime": 1755332256.0,
+    "size": 159,
+    "hash": "54b57fb66a66c1560a438a9b3cc6a5d0"
+  },
+  ".\\configs\\packs\\tmp_codex_emitter.yaml": {
+    "mtime": 1758067638.0,
+    "size": 744,
+    "hash": "073d6fb3107fc5cac9d2966b35d58770"
+  },
+  ".\\configs\\packs\\tmp_codex_tia.yaml": {
+    "mtime": 1758067638.0,
+    "size": 771,
+    "hash": "3b33a7c26ff21a93ffa0b6c9f9775b5d"
+  },
+  ".\\configs\\packs\\tmp_codex_comparator.yaml": {
+    "mtime": 1758067638.0,
+    "size": 607,
+    "hash": "f10a2cf4f9fdb638ee85b55ceca3123a"
+  },
+  ".\\configs\\packs\\tmp_codex_optics.yaml": {
+    "mtime": 1758067638.0,
+    "size": 542,
+    "hash": "a6f2a78fdff5bf6fd40295f81d9052fc"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_harsh.yaml": {
+    "mtime": 1758073298.0,
+    "size": 706,
+    "hash": "218384afeed0bc184bd03ee85cbeb3e0"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_medium.yaml": {
+    "mtime": 1758073356.0,
+    "size": 531,
+    "hash": "58b80d6e7c0d4108eca839f9c5f58ac8"
+  },
+  ".\\configs\\packs\\tmp_lowcost_emitter.yaml": {
+    "mtime": 1758075916.0,
+    "size": 208,
+    "hash": "ca83462f7c2b6990e8e6b70ff96a805a"
+  },
+  ".\\configs\\packs\\tmp_lowcost_optics.yaml": {
+    "mtime": 1758075916.0,
+    "size": 312,
+    "hash": "433e51ea6e0885484d507049b10aec1b"
+  },
+  ".\\configs\\packs\\tmp_lowcost_tia.yaml": {
+    "mtime": 1758075916.0,
+    "size": 124,
+    "hash": "1de685b57ac7d7de63ffa8137ebc3727"
+  },
+  ".\\configs\\packs\\tmp_lowcost_comparator.yaml": {
+    "mtime": 1758075916.0,
+    "size": 98,
+    "hash": "3d249ad4e512e2dd60ee78f3ada9a626"
+  },
+  ".\\configs\\packs\\tmp_lowcost_emitter_boost.yaml": {
+    "mtime": 1758076814.0,
+    "size": 209,
+    "hash": "726041a43c270d7073065c5285272874"
+  },
+  ".\\configs\\packs\\tmp_lowcost_emitter_boost_13p5.yaml": {
+    "mtime": 1758086514.0,
+    "size": 209,
+    "hash": "d9719dedf06b2859ece982f0ed1e6832"
+  },
+  ".\\configs\\packs\\tmp_lowcost_emitter_boost_15.yaml": {
+    "mtime": 1758086522.0,
+    "size": 209,
+    "hash": "f51bb24ad34de0ef4e76ccd1d232c111"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_lowct.yaml": {
+    "mtime": 1758086936.0,
+    "size": 509,
+    "hash": "e2854553933f676637229a450818fc4e"
+  },
+  ".\\configs\\packs\\tmp_led_array.yaml": {
+    "mtime": 1758087936.0,
+    "size": 385,
+    "hash": "85239aa32be2b606bca3f5aa5cd67394"
+  },
+  ".\\configs\\packs\\tmp_budget_sensor.yaml": {
+    "mtime": 1758088766.0,
+    "size": 330,
+    "hash": "141845f364ca067ab628332a12abbe19"
+  },
+  ".\\configs\\packs\\tmp_led_array_stress.yaml": {
+    "mtime": 1758088772.0,
+    "size": 352,
+    "hash": "ccaa5bb41126290543e951e6bf93b494"
+  },
+  ".\\configs\\packs\\tmp_budget_tia.yaml": {
+    "mtime": 1758089020.0,
+    "size": 321,
+    "hash": "135117331febdcf305c017695f767012"
+  },
+  ".\\configs\\packs\\tmp_budget_comparator.yaml": {
+    "mtime": 1758089026.0,
+    "size": 313,
+    "hash": "71c611116971df2bdf878878b556d407"
+  },
+  ".\\configs\\packs\\tmp_budget_clock.yaml": {
+    "mtime": 1758100012.0,
+    "size": 37,
+    "hash": "78ba802a9960a5d35d104de9ded487cb"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_highct.yaml": {
+    "mtime": 1758090566.0,
+    "size": 181,
+    "hash": "59d7d5b5d1308a4808551037dc5e00f3"
+  },
+  ".\\configs\\packs\\tmp_thermal_drift_heavy.yaml": {
+    "mtime": 1758090572.0,
+    "size": 95,
+    "hash": "466d007ff3cb4e7cb2995b65c72c7ff9"
+  },
+  ".\\configs\\packs\\tmp_budget_clock_heavy.yaml": {
+    "mtime": 1758090578.0,
+    "size": 99,
+    "hash": "b165eb41309d690a09e728530c83afff"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_medium_voa2.yaml": {
+    "mtime": 1758171842.0,
+    "size": 549,
+    "hash": "41b7780b44ddd3ffaa95298931490ea5"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_medium_voa4.yaml": {
+    "mtime": 1758171846.0,
+    "size": 549,
+    "hash": "cc33b7e2f86edbf2746c9ecc8fff85b4"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_medium_voa6.yaml": {
+    "mtime": 1758171852.0,
+    "size": 549,
+    "hash": "d96982a3b5967a19c9ffb1d84c89537e"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_medium_voa2_gate.yaml": {
+    "mtime": 1758171896.0,
+    "size": 669,
+    "hash": "5958854ec615e0ec028d9b64d9746e54"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_medium_voa2_edfa.yaml": {
+    "mtime": 1758255204.0,
+    "size": 709,
+    "hash": "f2c6b191cc4fcd810554b68c69582b7f"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_medium_voa2_clip.yaml": {
+    "mtime": 1758172438.0,
+    "size": 669,
+    "hash": "4af3b51c29fc0bce8d9c60034b1d4502"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_medium_voa2_clipsoft.yaml": {
+    "mtime": 1758172474.0,
+    "size": 636,
+    "hash": "191da576c51318099c2b5fdbf3676f97"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_medium_voa2_clip_nosa.yaml": {
+    "mtime": 1758172544.0,
+    "size": 655,
+    "hash": "ffb04347c8c285c53a8d762117e23aaa"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_medium_voa1.yaml": {
+    "mtime": 1758172562.0,
+    "size": 549,
+    "hash": "7fd62d578497535e1b4bde29c06c2e6e"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_medium_voa2_lightSA.yaml": {
+    "mtime": 1758172734.0,
+    "size": 581,
+    "hash": "ec94123cc1f3d603bce4ad5bcc093a34"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_medium_amp6_voa35.yaml": {
+    "mtime": 1758172768.0,
+    "size": 567,
+    "hash": "bf2171b68739568f1f54cf9ac51ad8cf"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_medium_voa2_nosa.yaml": {
+    "mtime": 1758173008.0,
+    "size": 568,
+    "hash": "588aa3ab3853e7827d47320bfc75406a"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_medium_voa2_amp0.yaml": {
+    "mtime": 1758173028.0,
+    "size": 564,
+    "hash": "9680376175926468ee949ba017dcfc1d"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_medium_voa1p5_amp1.yaml": {
+    "mtime": 1758173046.0,
+    "size": 567,
+    "hash": "03d1f710eee8062b1658b5d874c23b40"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_medium_voa2_SAstrong.yaml": {
+    "mtime": 1758173082.0,
+    "size": 581,
+    "hash": "736b591f3d247f0ea9f888bd5a5e8680"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_medium_voa2_contrast.yaml": {
+    "mtime": 1758173128.0,
+    "size": 596,
+    "hash": "fdf8a53a6051a5bc59bbe0675f8351d3"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_medium_voa2_highcontrast.yaml": {
+    "mtime": 1758173158.0,
+    "size": 596,
+    "hash": "e3f03650bc526163deff6f1f59dbe7e6"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_medium_voa2_satlin.yaml": {
+    "mtime": 1758173208.0,
+    "size": 565,
+    "hash": "e361c8e4c1144aef4514ace7bdc3cf28"
+  },
+  ".\\configs\\packs\\tmp_emitter_highpower.yaml": {
+    "mtime": 1758173368.0,
+    "size": 231,
+    "hash": "8d64a2de5f9110711f57166b75a65169"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_medium_voa2_satHigh.yaml": {
+    "mtime": 1758173414.0,
+    "size": 566,
+    "hash": "7056b096db2f9148f99d91c19b197178"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_medium_voa2_soa_tuned.yaml": {
+    "mtime": 1758173440.0,
+    "size": 617,
+    "hash": "5e5c98d05dd63dbdde152d637c19d8d6"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_medium_voa2_soa_strongsa.yaml": {
+    "mtime": 1758189432.0,
+    "size": 588,
+    "hash": "3a5f1c56e75b001271e5261f7dc2baf3"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_medium_voa2_soa_strongsa_single.yaml": {
+    "mtime": 1758222418.0,
+    "size": 278,
+    "hash": "fec3f16391f01adc718e596a1557b43a"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_medium_voa2_soa_strongsa_ch4.yaml": {
+    "mtime": 1758222842.0,
+    "size": 301,
+    "hash": "f0198a3edc2034b06efb0f5b83fa120b"
+  },
+  ".\\configs\\packs\\tmp_codex_optics_medium_voa2_soa_strongsa_ch8.yaml": {
+    "mtime": 1758225632.0,
+    "size": 301,
+    "hash": "835388c3764da1f54c2d8c0abb07bef5"
+  },
+  ".\\configs\\packs\\vendors\\emitters\\thorlabs_L850P200_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 694,
+    "hash": "ab44f5ab6a127a79a93f98b4376865ef"
+  },
+  ".\\configs\\packs\\vendors\\emitters\\ushio_HL8518MG_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 638,
+    "hash": "4885bf6632ee2dd7f1281aa5bd74e54d"
+  },
+  ".\\configs\\packs\\vendors\\emitters\\coherent_OBIS-850-nm_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 584,
+    "hash": "a2bd6d52e179ad6e174888574d52d0a6"
+  },
+  ".\\configs\\packs\\vendors\\emitters\\ams_osram_SPL-PL85_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 514,
+    "hash": "e3bbe4a9c39a062a049661a4a1dd1a60"
+  },
+  ".\\configs\\packs\\vendors\\emitters\\broadcom_VCSEL-12-ch-850-nm-array_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 587,
+    "hash": "086c50dcb8e7ea283f80bf221ebf751c"
+  },
+  ".\\configs\\packs\\vendors\\modulators\\texas_instruments_DLPLCR4500EVM_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 487,
+    "hash": "19a91b01c1f1c6a6a8051e938dfe6cca"
+  },
+  ".\\configs\\packs\\vendors\\modulators\\texas_instruments_DLP2010NIR-EVM_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 425,
+    "hash": "17f91ed6476f771c37d477f44d16903e"
+  },
+  ".\\configs\\packs\\vendors\\modulators\\vialux_V-7000-(DLP7000)_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 434,
+    "hash": "1333ec168b71844334cd5898ff5e39e1"
+  },
+  ".\\configs\\packs\\vendors\\modulators\\holoeye_LETO-3_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 454,
+    "hash": "eb01c0bb376a721a1815dc8b73ba76db"
+  },
+  ".\\configs\\packs\\vendors\\modulators\\meadowlark_optics_1920x1152-SLM-(VIS)_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 471,
+    "hash": "d9ee4d3a5ac3460aab2f07d049bc5b89"
+  },
+  ".\\configs\\packs\\vendors\\cameras\\teledyne_flir_BFS-U3-51S5M-C_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 693,
+    "hash": "3ee3f68009a376fb4f47318504dcd59d"
+  },
+  ".\\configs\\packs\\vendors\\cameras\\basler_acA1920-155um_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 609,
+    "hash": "0f5a721ca12a52c23f323b964d07522c"
+  },
+  ".\\configs\\packs\\vendors\\cameras\\allied_vision_Alvium-1800-U-2040_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 621,
+    "hash": "d8444a8ad1404a12ff897cc467b229ab"
+  },
+  ".\\configs\\packs\\vendors\\cameras\\ids_UI-3280CP-Rev.2_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 591,
+    "hash": "f0fc9fd65c307bc180ea1ace710089f7"
+  },
+  ".\\configs\\packs\\vendors\\cameras\\the_imaging_source_DMK-33UX264_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 611,
+    "hash": "3bb83cd792cf575091cc3e8235dab15c"
+  },
+  ".\\configs\\packs\\vendors\\cameras\\teledyne_flir_BFS-U3-51S5M-C_optimistic.yaml": {
+    "mtime": 1755362072.0,
+    "size": 718,
+    "hash": "c0ba26a55d3c5cab5cefff753d7dba84"
+  },
+  ".\\configs\\packs\\vendors\\cameras\\teledyne_flir_BFS-U3-51S5M-C_pessimistic.yaml": {
+    "mtime": 1755362072.0,
+    "size": 719,
+    "hash": "e6f33cef70189e7a00921caf4d77185a"
+  },
+  ".\\configs\\packs\\vendors\\sensors\\thorlabs_FDS1010_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 542,
+    "hash": "4451d2b27768bd0e0fde494d11982938"
+  },
+  ".\\configs\\packs\\vendors\\sensors\\hamamatsu_S5973_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 430,
+    "hash": "9466a5415e11ec03bd679a01b291d102"
+  },
+  ".\\configs\\packs\\vendors\\sensors\\osi_optoelectronics_PIN-10D_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 477,
+    "hash": "64504bcc5e7286512a946e0241f2b0f9"
+  },
+  ".\\configs\\packs\\vendors\\sensors\\vishay_BPW34_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 418,
+    "hash": "07d16215132599fb74c9d9f416c40b5e"
+  },
+  ".\\configs\\packs\\vendors\\sensors\\thorlabs_PDA20CS2_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 522,
+    "hash": "2ae0383b45ad6c48db1a550af25c4926"
+  },
+  ".\\configs\\packs\\vendors\\tias\\femto_DLPCA-200_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 727,
+    "hash": "a0f04846718b623a278a55034898a085"
+  },
+  ".\\configs\\packs\\vendors\\tias\\femto_DHPCA-100_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 542,
+    "hash": "67d1af5cfb37fd25d6dfd5aad761aee2"
+  },
+  ".\\configs\\packs\\vendors\\tias\\texas_instruments_OPA857EVM_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 555,
+    "hash": "ecd7181060e0a7122844bdd7c3bbdb2c"
+  },
+  ".\\configs\\packs\\vendors\\tias\\thorlabs_TIA60_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 491,
+    "hash": "7253c646b698b9cf3eb1594a9690fba2"
+  },
+  ".\\configs\\packs\\vendors\\tias\\analog_devices_AD8015_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 465,
+    "hash": "e2d46ddb14016024acf6ea7581c18faf"
+  },
+  ".\\configs\\packs\\vendors\\comparators\\analog_devices_LTC6752_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 480,
+    "hash": "95862d02713a4fc13de13171463c9891"
+  },
+  ".\\configs\\packs\\vendors\\comparators\\texas_instruments_TLV3501_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 408,
+    "hash": "88bbf5e0a8a56e219042f2cb90bf4a6e"
+  },
+  ".\\configs\\packs\\vendors\\comparators\\analog_devices_ADCMP607_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 362,
+    "hash": "ed2d8c0565289a438adbd27fa508158c"
+  },
+  ".\\configs\\packs\\vendors\\comparators\\texas_instruments_LMH7220_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 387,
+    "hash": "1c85b0fce8a89086a6de8448e332e9b7"
+  },
+  ".\\configs\\packs\\vendors\\comparators\\maxim_integrated_MAX9601_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 370,
+    "hash": "3cba418dba5a4672b633766ec3805ba4"
+  },
+  ".\\configs\\packs\\vendors\\optics\\thorlabs_Engineered-Diffuser-5°_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 413,
+    "hash": "5ca558e7782a378aef90cca892fd0826"
+  },
+  ".\\configs\\packs\\vendors\\optics\\thorlabs_Engineered-Diffuser-20°_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 410,
+    "hash": "8c3c6db60dcdb7fcff9ce937de7bbc67"
+  },
+  ".\\configs\\packs\\vendors\\optics\\edmund_optics_Ground-Glass-Diffuser-120-grit_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 396,
+    "hash": "af2917e7c9885a8de00a983222ac5b10"
+  },
+  ".\\configs\\packs\\vendors\\optics\\edmund_optics_Light-Shaping-Diffuser-10°_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 433,
+    "hash": "cb1ab70b49c63bcf46353f9320f42003"
+  },
+  ".\\configs\\packs\\vendors\\optics\\generic_K9-glass-cube-25mm_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 415,
+    "hash": "b4cabfcf4ae2129054fc21eaa05afc5c"
+  },
+  ".\\configs\\packs\\vendors\\optics\\thorlabs_Engineered-Diffuser-10°_typ.yaml": {
+    "mtime": 1755768576.0,
+    "size": 460,
+    "hash": "34c78baf934012eead039979f8e8e401"
+  },
+  ".\\configs\\packs\\vendors\\optics\\thorlabs_Engineered-Diffuser-15°_typ.yaml": {
+    "mtime": 1755768576.0,
+    "size": 459,
+    "hash": "20f5e8df6a6d1ad289dd6dbf88e7170c"
+  },
+  ".\\configs\\packs\\vendors\\optics\\thorlabs_Engineered-Diffuser-3°_typ.yaml": {
+    "mtime": 1755774896.0,
+    "size": 471,
+    "hash": "5b76fabb5228bcf56e61ce2b74473b42"
+  },
+  ".\\configs\\packs\\vendors\\aoms\\gooch_&_housego_3080-197_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 412,
+    "hash": "2889b691ca90ef75fe7051acc022adb2"
+  },
+  ".\\configs\\packs\\vendors\\aoms\\isomet_1205C-1_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 361,
+    "hash": "c4c4dd6be4a384f0b9c6764440faf4c7"
+  },
+  ".\\configs\\packs\\vendors\\aoms\\g&h_AODRIVER-F-80_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 228,
+    "hash": "75c3beb1cd0a7795fd55dc3de2ebd2eb"
+  },
+  ".\\configs\\packs\\vendors\\aoms\\isomet_232A-2_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 209,
+    "hash": "819f3bc34d7973fe17242fc6affee21e"
+  },
+  ".\\configs\\packs\\vendors\\aoms\\aa_opto-electronic_MT80-A1_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 393,
+    "hash": "d9d81bdae096ba93a9032758d771fc46"
+  },
+  ".\\configs\\packs\\vendors\\amplifiers\\thorlabs_BOA780_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 434,
+    "hash": "ca751d7a786aacd3a6aec1ff916b5887"
+  },
+  ".\\configs\\packs\\vendors\\amplifiers\\thorlabs_SOA1013S-(C-band)_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 359,
+    "hash": "b4023e91544044ff2fbf8e84ca80cfa9"
+  },
+  ".\\configs\\packs\\vendors\\amplifiers\\thorlabs_EDFA100P_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 305,
+    "hash": "19bd20b79ea551ce81a5457cdbb08670"
+  },
+  ".\\configs\\packs\\vendors\\amplifiers\\amonics_AEDFA-23-B-FA_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 298,
+    "hash": "eb3a9396e8a4a63ba6a683e2ae8b7d13"
+  },
+  ".\\configs\\packs\\vendors\\amplifiers\\batop_SESAM-@-850-nm-(custom)_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 437,
+    "hash": "3e9f5290b85475b8c642a1564c30c829"
+  },
+  ".\\configs\\packs\\vendors\\fiber\\thorlabs_SMF-28-Ultra-5km_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 354,
+    "hash": "98fd4e25a622a9625e7774dd79055095"
+  },
+  ".\\configs\\packs\\vendors\\fiber\\thorlabs_SMF-28-Ultra-1000m_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 320,
+    "hash": "a1fdff4b8ed260413d651173ab8da025"
+  },
+  ".\\configs\\packs\\vendors\\fiber\\generic_OM3-MMF-300m_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 376,
+    "hash": "fce7b1bec9e53406b413383974d6f4e6"
+  },
+  ".\\configs\\packs\\vendors\\fiber\\corning_SMF-28e+-1km_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 344,
+    "hash": "9b9eb8053d1d3ffe06eccb49563d7492"
+  },
+  ".\\configs\\packs\\vendors\\fiber\\thorlabs_PM1550-500m_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 366,
+    "hash": "845a35396337e33400e252ac27c45be4"
+  },
+  ".\\configs\\packs\\vendors\\thermal\\wavelength_electronics_LFI-3751_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 408,
+    "hash": "e4d5953469310b77581d5989f019f35f"
+  },
+  ".\\configs\\packs\\vendors\\thermal\\thorlabs_TED200C_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 348,
+    "hash": "df6492d2aca2897a4e9d43c51c09f3f5"
+  },
+  ".\\configs\\packs\\vendors\\thermal\\arroyo_5305-TECSource_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 344,
+    "hash": "2d194ffac323431ea7e6be76eea0306e"
+  },
+  ".\\configs\\packs\\vendors\\thermal\\meerstetter_TEC-1091_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 324,
+    "hash": "50d2cf5b5ce9412b428ba545be8f1679"
+  },
+  ".\\configs\\packs\\vendors\\thermal\\analog_technologies_TEC-A1-5V_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 410,
+    "hash": "e54217b841c8b2462325c1082a3bee3f"
+  },
+  ".\\configs\\packs\\vendors\\clocks\\pjrc_Teensy-4.1_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 291,
+    "hash": "450fe81fc0ff5bf05b026f1321f60276"
+  },
+  ".\\configs\\packs\\vendors\\clocks\\spincore_PulseBlasterPB24-100-32k_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 294,
+    "hash": "f8a981fe92fd654447b2d92ebf2e2d34"
+  },
+  ".\\configs\\packs\\vendors\\clocks\\national_instruments_USB-6341_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 297,
+    "hash": "cac27fbf056523fa0989a541be64871c"
+  },
+  ".\\configs\\packs\\vendors\\clocks\\pico_technology_PicoScope-5444D-(AWG)_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 276,
+    "hash": "67cf3d5ef90b48378f9e2dd438e23221"
+  },
+  ".\\configs\\packs\\vendors\\clocks\\analog_devices_AD9910-DDS-Eval-Board_typ.yaml": {
+    "mtime": 1755362072.0,
+    "size": 309,
+    "hash": "71632176983120278bc2602e75b00f1e"
+  },
+  ".\\configs\\packs\\overlays\\comparator_sweep.yaml": {
+    "mtime": 1755936560.0,
+    "size": 409,
+    "hash": "4fbc7c28e4e4c5ae944ff4db994541ed"
+  },
+  ".\\configs\\packs\\overlays\\tia_sweep.yaml": {
+    "mtime": 1755936560.0,
+    "size": 441,
+    "hash": "b15bd3f93e74a3f8511df3591b045cc4"
+  },
+  ".\\configs\\packs\\overlays\\tuned_tia.yaml": {
+    "mtime": 1755937278.0,
+    "size": 316,
+    "hash": "211584dc43b290e1525fd85fdc9f43da"
+  },
+  ".\\configs\\packs\\overlays\\tuned_comparator.yaml": {
+    "mtime": 1755937278.0,
+    "size": 204,
+    "hash": "fced1055304fbb9fe1c9918778acf44f"
+  },
+  ".\\configs\\packs\\overlays\\tuned_emitter_boost.yaml": {
+    "mtime": 1755938894.0,
+    "size": 213,
+    "hash": "7e71765f27f545ae585691d07faa9253"
+  },
+  ".\\configs\\packs\\overlays\\tia_12k_65.yaml": {
+    "mtime": 1755981010.0,
+    "size": 70,
+    "hash": "89910c4eac83d3215e0fd447caf8f160"
+  },
+  ".\\configs\\packs\\overlays\\optics_low_ct.yaml": {
+    "mtime": 1755981010.0,
+    "size": 116,
+    "hash": "9966a8b092147b672d2c7dba7ee35936"
+  },
+  ".\\configs\\packs\\overlays\\optics_stage_a_hygiene.yaml": {
+    "mtime": 1756789468.0,
+    "size": 295,
+    "hash": "700ef482ddb75cd8a08fd974d68ecde0"
+  },
+  ".\\configs\\packs\\overlays\\tia_stage_b_low_noise.yaml": {
+    "mtime": 1756789468.0,
+    "size": 266,
+    "hash": "652304f6eafe8f01fc1c0d08b94a8723"
+  },
+  ".\\configs\\packs\\overlays\\comparator_stage_c_trims.yaml": {
+    "mtime": 1756791230.0,
+    "size": 177,
+    "hash": "e7058e8eb62b0d3c26c4805a13fc6fac"
+  },
+  ".\\configs\\packs\\overlays\\optics_stage_e_power_mod.yaml": {
+    "mtime": 1756792752.0,
+    "size": 249,
+    "hash": "d5f7783d137b9ffa8f3013553e53bf1b"
+  },
+  ".\\configs\\packs\\overlays\\tia_stage_b2_low_noise.yaml": {
+    "mtime": 1756791740.0,
+    "size": 195,
+    "hash": "4c34d73366254e92b7e82e559a30c71a"
+  },
+  ".\\configs\\packs\\overlays\\optics_stage_e2_power_mod.yaml": {
+    "mtime": 1756792752.0,
+    "size": 250,
+    "hash": "735c9895045382da578d37c20647f7fc"
+  },
+  ".\\configs\\packs\\overlays\\comparator_stage_c2_trims.yaml": {
+    "mtime": 1756791740.0,
+    "size": 126,
+    "hash": "a22e9e3c9ebe6f7e27368229dadfc8b9"
+  },
+  ".\\configs\\packs\\overlays\\optics_stage_f_amp.yaml": {
+    "mtime": 1756793140.0,
+    "size": 262,
+    "hash": "d3e8b42f97171b56e1952dae1a7d78cf"
+  },
+  ".\\configs\\packs\\overlays\\optics_stage_g_saturable.yaml": {
+    "mtime": 1756793140.0,
+    "size": 258,
+    "hash": "c1a09681f06f90cefdd9b2685eafe43e"
+  },
+  ".\\configs\\packs\\overlays\\comparator_stage_c3_precision.yaml": {
+    "mtime": 1756793140.0,
+    "size": 126,
+    "hash": "1b909e0549cdd84dace2910196cfa5e2"
+  },
+  ".\\configs\\packs\\overlays\\tia_stage_b3_precision.yaml": {
+    "mtime": 1756793140.0,
+    "size": 196,
+    "hash": "2f1ede8f6eefe0f4dbe1a6b570c4defa"
+  },
+  ".\\configs\\packs\\overlays\\optics_stress_ct_stray.yaml": {
+    "mtime": 1756796474.0,
+    "size": 208,
+    "hash": "82019ae22b42868e492a7b2701c2773e"
+  },
+  ".\\configs\\packs\\overlays\\comparator_stress_sigma.yaml": {
+    "mtime": 1756796474.0,
+    "size": 125,
+    "hash": "8d976d8cb2d16f29977a46db5f16ed66"
+  },
+  ".\\configs\\packs\\overlays\\tia_stress_gainvar.yaml": {
+    "mtime": 1756796474.0,
+    "size": 195,
+    "hash": "3f8f65e41a994bd1d4b5043d0e436132"
+  },
+  ".\\configs\\packs\\overlays\\optics_speckle_stress.yaml": {
+    "mtime": 1756797696.0,
+    "size": 64,
+    "hash": "9d9683c7e42f3fbb316bce71352a1b30"
+  },
+  ".\\configs\\packs\\overlays\\comparator_metastable_stress.yaml": {
+    "mtime": 1756797696.0,
+    "size": 79,
+    "hash": "d5be1a2298148cbde07a477389aa8961"
+  },
+  ".\\configs\\packs\\overlays\\optics_stage_fg_amp_sat.yaml": {
+    "mtime": 1756834812.0,
+    "size": 315,
+    "hash": "4c2bbfb85374e0191c44da82ff6bdf04"
+  },
+  ".\\configs\\packs\\overlays\\optics_projector_low.yaml": {
+    "mtime": 1756841986.0,
+    "size": 228,
+    "hash": "05007758143d4e07f06dfaa438cb9836"
+  },
+  ".\\configs\\packs\\overlays\\optics_projector_mid.yaml": {
+    "mtime": 1756841992.0,
+    "size": 229,
+    "hash": "0658144ed8b337c631d170ece4de3c8d"
+  },
+  ".\\configs\\packs\\overlays\\optics_projector_strong.yaml": {
+    "mtime": 1756842000.0,
+    "size": 227,
+    "hash": "65825bb88266864ca42ef3ec4449875f"
+  },
+  ".\\configs\\packs\\overlays\\camera_projector_typ.yaml": {
+    "mtime": 1756842014.0,
+    "size": 114,
+    "hash": "9f439dfd917d920d1346ccaf48fff5e2"
+  },
+  ".\\configs\\packs\\overlays\\optics_projector_isolated.yaml": {
+    "mtime": 1756946832.0,
+    "size": 241,
+    "hash": "4a7f97ec4d4239a961dfff4a406a21d0"
+  },
+  ".\\configs\\packs\\overlays\\optics_projector_iso_strong.yaml": {
+    "mtime": 1756946832.0,
+    "size": 262,
+    "hash": "04a7afeac1f28939915bda9be0442cb7"
+  },
+  ".\\configs\\packs\\overlays\\optics_projector_dmd_strong.yaml": {
+    "mtime": 1756946832.0,
+    "size": 262,
+    "hash": "9b8454afa72142187a65fcbbc373f185"
+  },
+  ".\\configs\\packs\\overlays\\optics_stage_f_amp_g4.yaml": {
+    "mtime": 1756957764.0,
+    "size": 262,
+    "hash": "7cf43a789128da70899d6ae9ad0fd336"
+  },
+  ".\\configs\\packs\\overlays\\optics_stage_g_saturable_soft.yaml": {
+    "mtime": 1756957764.0,
+    "size": 259,
+    "hash": "b510aea4e01007ae34c2e8025ae720cc"
+  },
+  ".\\configs\\packs\\overlays\\optics_stage_fg_amp_sat_soft.yaml": {
+    "mtime": 1756958564.0,
+    "size": 314,
+    "hash": "0f388b38d751b6ef9012e8d18fe7f210"
+  },
+  ".\\configs\\packs\\overlays\\optics_projector_iso_stronger.yaml": {
+    "mtime": 1756959662.0,
+    "size": 242,
+    "hash": "1b8c73a32c3ed99a659dc6d6cb2a9777"
+  },
+  ".\\configs\\packs\\overlays\\optics_projector_iso_extreme.yaml": {
+    "mtime": 1756961870.0,
+    "size": 243,
+    "hash": "ec2a8a49af9112ead8961614547e8a24"
+  },
+  ".\\configs\\packs\\overlays\\optics_iso_boost.yaml": {
+    "mtime": 1756962788.0,
+    "size": 263,
+    "hash": "25a6ce19b0d777abb89ed1c8acb238da"
+  },
+  ".\\configs\\packs\\overlays\\optics_ambient_stress.yaml": {
+    "mtime": 1756963348.0,
+    "size": 243,
+    "hash": "3074feae1cd77ba029c0a09f22c216b4"
+  },
+  ".\\configs\\packs\\overlays\\optics_iso_boost2.yaml": {
+    "mtime": 1756965052.0,
+    "size": 181,
+    "hash": "d1267fcbc7537795dd7a96db30be1c13"
+  },
+  ".\\configs\\packs\\overlays\\optics_upper_bound.yaml": {
+    "mtime": 1756966460.0,
+    "size": 181,
+    "hash": "de9c8c2d6122c12c13d33fa4195a5fad"
+  },
+  ".\\configs\\packs\\overlays\\optics_accept_grid256.yaml": {
+    "mtime": 1756966602.0,
+    "size": 137,
+    "hash": "d497099e65109479337ac0bb5aed6c70"
+  },
+  ".\\configs\\packs\\overlays\\optics_accept_grid512.yaml": {
+    "mtime": 1756966770.0,
+    "size": 137,
+    "hash": "355d9810ce703bfd2650441503437b4d"
+  },
+  ".\\configs\\packs\\overlays\\emitter_budget_noisy.yaml": {
+    "mtime": 1757036350.0,
+    "size": 138,
+    "hash": "0ce869d0cf6c4dd0b5798f44bf7d1edb"
+  },
+  ".\\configs\\packs\\overlays\\emitter_vcsel_array_8ch.yaml": {
+    "mtime": 1757036350.0,
+    "size": 136,
+    "hash": "6c0bfb5a0b9724d490504750cd273b0f"
+  },
+  ".\\configs\\packs\\overlays\\emitter_cband_dfb_typ.yaml": {
+    "mtime": 1757055656.0,
+    "size": 138,
+    "hash": "01ec8ec9e41652c44d86bfa08736f754"
+  },
+  ".\\configs\\packs\\overlays\\fiber_cband_loop_typ.yaml": {
+    "mtime": 1757063384.0,
+    "size": 646,
+    "hash": "24c7dfb368f3b93e0dc59deea6049caf"
+  },
+  ".\\configs\\packs\\overlays\\edfa_chain_typ.yaml": {
+    "mtime": 1757055656.0,
+    "size": 262,
+    "hash": "6588830b11615384072747b2cbbbcc47"
+  },
+  ".\\configs\\packs\\overlays\\soa_chain_soft.yaml": {
+    "mtime": 1757055656.0,
+    "size": 240,
+    "hash": "08bd14a06737e197dfce4314431a3c05"
+  },
+  ".\\configs\\packs\\overlays\\receiver_ingaas_typ.yaml": {
+    "mtime": 1757055656.0,
+    "size": 181,
+    "hash": "df18287ee3145f0968049f3061592c0f"
+  },
+  ".\\configs\\packs\\overlays\\edfa_chain_stress.yaml": {
+    "mtime": 1757056872.0,
+    "size": 118,
+    "hash": "b8e4de89842860e078ffccb604d14051"
+  },
+  ".\\configs\\packs\\overlays\\soa_chain_stress.yaml": {
+    "mtime": 1757056872.0,
+    "size": 169,
+    "hash": "162fe00108dd35485d393ca152e57576"
+  },
+  ".\\configs\\packs\\overlays\\dwdm_crosstalk_ripple.yaml": {
+    "mtime": 1757056872.0,
+    "size": 149,
+    "hash": "80732ca12ba2aea5b9a8d8bf777c7c22"
+  },
+  ".\\configs\\packs\\overlays\\receiver_ingaas_lowbw.yaml": {
+    "mtime": 1757056872.0,
+    "size": 121,
+    "hash": "40d7e33b8c4201b4277f5460f5c171a2"
+  },
+  ".\\configs\\packs\\overlays\\edfa_chain_budget.yaml": {
+    "mtime": 1757060928.0,
+    "size": 118,
+    "hash": "38b685b5ac4dcd87176c9a1c6a42bea9"
+  },
+  ".\\configs\\packs\\overlays\\soa_chain_budget.yaml": {
+    "mtime": 1757060928.0,
+    "size": 168,
+    "hash": "a0be2a3efd776a7bd32a4546f6e5a7e6"
+  },
+  ".\\configs\\packs\\overlays\\fiber_cband_loop_stress.yaml": {
+    "mtime": 1757063636.0,
+    "size": 609,
+    "hash": "8819024c26aef2035d8a6f7e7644e020"
+  },
+  ".\\configs\\packs\\overlays\\comparator_jitter_5ps.yaml": {
+    "mtime": 1757064416.0,
+    "size": 25,
+    "hash": "b81279b54b7a5c6261d1cbe84f9e9f93"
+  },
+  ".\\configs\\packs\\overlays\\comparator_jitter_15ps.yaml": {
+    "mtime": 1757064416.0,
+    "size": 26,
+    "hash": "ed5e847dec3f75cf4ac71106e9f70968"
+  },
+  ".\\configs\\packs\\overlays\\clock_jitter_8ps.yaml": {
+    "mtime": 1757064416.0,
+    "size": 20,
+    "hash": "e4fea9e0153f61b0cdce8d48ba3ceafc"
+  },
+  ".\\configs\\packs\\overlays\\clock_jitter_20ps.yaml": {
+    "mtime": 1757064416.0,
+    "size": 21,
+    "hash": "66ca55a8ffab319b1357df661aa3d4b7"
+  },
+  ".\\configs\\packs\\overlays\\tia_bw_100mhz_slew.yaml": {
+    "mtime": 1757064416.0,
+    "size": 51,
+    "hash": "0275a9311d33e9624ce183a561443a27"
+  },
+  ".\\configs\\packs\\overlays\\tia_bw_300mhz_slew.yaml": {
+    "mtime": 1757064416.0,
+    "size": 51,
+    "hash": "fe5767d2efcd86963a8589e4e3bbf52d"
+  },
+  ".\\configs\\packs\\overlays\\edfa_ase_tight_obpf.yaml": {
+    "mtime": 1757064416.0,
+    "size": 79,
+    "hash": "8ee76d62d23aad1cb70f5be667c419ea"
+  },
+  ".\\configs\\packs\\overlays\\edfa_ase_high_tight_obpf.yaml": {
+    "mtime": 1757064416.0,
+    "size": 80,
+    "hash": "775fd7dc5b8335a6d9cd84630b64408b"
+  },
+  ".\\configs\\packs\\overlays\\soa_gain1p5_sat_strong.yaml": {
+    "mtime": 1757064416.0,
+    "size": 103,
+    "hash": "14da52eca4065bb188ad4f79d049aafd"
+  },
+  ".\\configs\\packs\\overlays\\soa_gain3p0_sat_strong.yaml": {
+    "mtime": 1757064416.0,
+    "size": 104,
+    "hash": "01a2654b67ec3049f09072438c6c775c"
+  },
+  ".\\configs\\packs\\overlays\\optics_hyperstress_dwdm.yaml": {
+    "mtime": 1757064416.0,
+    "size": 51,
+    "hash": "73689ceba29f78e58a82395d4b64baf3"
+  },
+  ".\\configs\\packs\\overlays\\optics_harsher_nonlinear.yaml": {
+    "mtime": 1757065382.0,
+    "size": 227,
+    "hash": "076890939d3584fb951b2864ed8d5e91"
+  },
+  ".\\configs\\packs\\overlays\\dwdm_adjacent_-28db.yaml": {
+    "mtime": 1757065738.0,
+    "size": 51,
+    "hash": "7957f0b0bf33250c94a5e8df9f46f685"
+  },
+  ".\\configs\\packs\\overlays\\optics_harsher_nonlinear_extreme.yaml": {
+    "mtime": 1757066752.0,
+    "size": 687,
+    "hash": "3ba03da4c669cb8aafa98e7b5d44fae5"
+  },
+  ".\\configs\\packs\\overlays\\dwdm_adjacent_-25db.yaml": {
+    "mtime": 1757066256.0,
+    "size": 51,
+    "hash": "847006bb8eec2de1550a9581d9bc4a39"
+  },
+  ".\\configs\\packs\\overlays\\optics_harsher_nonlinear_ultra.yaml": {
+    "mtime": 1757066946.0,
+    "size": 502,
+    "hash": "72f12a43f8ae93350b2e45f1d6b67966"
+  },
+  ".\\configs\\packs\\overlays\\thermal_ramp_2cph.yaml": {
+    "mtime": 1757066946.0,
+    "size": 36,
+    "hash": "14e3e54fa8b13b02daf53abcbd7422ab"
+  },
+  ".\\configs\\packs\\overlays\\emitter_cband_power_5mw.yaml": {
+    "mtime": 1757067266.0,
+    "size": 22,
+    "hash": "95854316542da3b5305dbfc701711fda"
+  },
+  ".\\configs\\packs\\overlays\\emitter_cband_power_40mw.yaml": {
+    "mtime": 1757069286.0,
+    "size": 23,
+    "hash": "ceb9b299c66f93c6b31bb3b3de36ac71"
+  },
+  ".\\configs\\packs\\overlays\\comparator_metastable_strong.yaml": {
+    "mtime": 1757069542.0,
+    "size": 75,
+    "hash": "955fe510aad332f9c4e1885996a0f9bc"
+  },
+  ".\\configs\\packs\\overlays\\clock_jitter_30ps.yaml": {
+    "mtime": 1757069556.0,
+    "size": 21,
+    "hash": "d3627c092eb8a8af8ca09e9c6be4dea9"
+  },
+  ".\\configs\\packs\\overlays\\connector_apc.yaml": {
+    "mtime": 1757387274.0,
+    "size": 52,
+    "hash": "bb8ca558cb0038117a663f68bfd1002f"
+  },
+  ".\\configs\\packs\\overlays\\connector_pc.yaml": {
+    "mtime": 1757387274.0,
+    "size": 52,
+    "hash": "f1f7b6f5b1ece39266dc6f5f70278236"
+  },
+  ".\\configs\\packs\\overlays\\fiber_pm.yaml": {
+    "mtime": 1757387274.0,
+    "size": 35,
+    "hash": "175fe1107ee1c8ba88607f5505e51669"
+  },
+  ".\\configs\\packs\\overlays\\fiber_smf.yaml": {
+    "mtime": 1757387276.0,
+    "size": 35,
+    "hash": "888068cfc44669297698674d448fbf75"
+  },
+  ".\\configs\\packs\\overlays\\emitter_cband_power_60mw.yaml": {
+    "mtime": 1758059838.0,
+    "size": 31,
+    "hash": "83ea2110a0a304c0f591eba26963464e"
+  },
+  ".\\configs\\packs\\overlays\\tia_bw_3000mhz_slew.yaml": {
+    "mtime": 1758066540.0,
+    "size": 63,
+    "hash": "45bcf7d67eab23f39f3d30dee07d25d4"
+  },
+  ".\\configs\\packs\\overlays\\soa_fast_tau.yaml": {
+    "mtime": 1758066540.0,
+    "size": 87,
+    "hash": "01ec9ba4ec8f17bb13c5647a1246d855"
+  },
+  ".\\configs\\packs\\overlays\\emitter_dual_wdm.yaml": {
+    "mtime": 1758093696.0,
+    "size": 287,
+    "hash": "51dfd717a8be4691bb1fbd79ded8074a"
+  },
+  ".\\configs\\packs\\overlays\\optics_mode_mix_dual.yaml": {
+    "mtime": 1758093606.0,
+    "size": 1758,
+    "hash": "0f307557a71f4301fd3d0c4a85fae6e7"
+  },
+  ".\\configs\\packs\\overlays\\emitter_quad_wdm.yaml": {
+    "mtime": 1758095316.0,
+    "size": 301,
+    "hash": "cd33d543277dd9d98711104788c17495"
+  },
+  ".\\configs\\packs\\overlays\\optics_mode_mix_quad.yaml": {
+    "mtime": 1758095394.0,
+    "size": 2250,
+    "hash": "f9159862a0512754a8f58de4a86b4f8d"
+  },
+  ".\\configs\\packs\\overlays\\optics_pathb_highsat.yaml": {
+    "mtime": 1758097002.0,
+    "size": 296,
+    "hash": "c49d03bfe2a7171190b08e76509eb50b"
+  },
+  ".\\configs\\packs\\overlays\\emitter_pathb_highpower.yaml": {
+    "mtime": 1758097592.0,
+    "size": 277,
+    "hash": "c0710fd50c8d87cf83890352eff60836"
+  },
+  ".\\configs\\packs\\overlays\\optics_pathb_highgain.yaml": {
+    "mtime": 1758097558.0,
+    "size": 362,
+    "hash": "1bfe5407b6df084bfc816a0bb2e49a58"
+  },
+  ".\\configs\\packs\\overlays\\comparator_pathb_lowth.yaml": {
+    "mtime": 1758097882.0,
+    "size": 117,
+    "hash": "ed3a9708d58f70d4f73ad021fc6246c1"
+  },
+  ".\\configs\\packs\\overlays\\emitter_pathb_premium.yaml": {
+    "mtime": 1758100042.0,
+    "size": 233,
+    "hash": "280485fe1d6bbff8171d6f038aacbc40"
+  },
+  ".\\configs\\packs\\overlays\\optics_pathb_premium.yaml": {
+    "mtime": 1758098056.0,
+    "size": 319,
+    "hash": "be6e3e915ed1b64e970f52b16927b007"
+  },
+  ".\\configs\\packs\\overlays\\tia_pathb_premium.yaml": {
+    "mtime": 1758098064.0,
+    "size": 185,
+    "hash": "85563dc2a2ec85a245f9fef98db49da3"
+  },
+  ".\\configs\\packs\\overlays\\comparator_pathb_premium.yaml": {
+    "mtime": 1758098072.0,
+    "size": 141,
+    "hash": "35c6438cd100ac3f6cfd3c8c584e19b8"
+  },
+  ".\\configs\\packs\\overlays\\optics_pathb_extreme.yaml": {
+    "mtime": 1758098202.0,
+    "size": 317,
+    "hash": "2bf652bc1ba911b617096e593771f7b5"
+  },
+  ".\\configs\\packs\\overlays\\sensor_pathb_balanced.yaml": {
+    "mtime": 1758099968.0,
+    "size": 61,
+    "hash": "f811e6281ff3ee56798cedcc266ec246"
+  },
+  ".\\configs\\packs\\overlays\\optics_pathb_soa_mzi.yaml": {
+    "mtime": 1758102544.0,
+    "size": 1123,
+    "hash": "87dc092b6af1b842229dabc536462422"
+  },
+  ".\\configs\\packs\\overlays\\optics_pathb_soa_mzi_clamp.yaml": {
+    "mtime": 1758102550.0,
+    "size": 1052,
+    "hash": "fc467a6c37f23e208d3adc675bfd927b"
+  },
+  ".\\configs\\packs\\overlays\\optics_pathb_soa_mzi_clean.yaml": {
+    "mtime": 1758102556.0,
+    "size": 654,
+    "hash": "f05124f102108b9a732a2fd22ec8e275"
+  },
+  ".\\configs\\packs\\overlays\\optics_pathb_soa_sa.yaml": {
+    "mtime": 1758165458.0,
+    "size": 824,
+    "hash": "47b89b10289d077ce95aa088ca8a33a3"
+  },
+  ".\\configs\\packs\\overlays\\optics_pathb_soa_sa_ch1.yaml": {
+    "mtime": 1758104916.0,
+    "size": 647,
+    "hash": "f9993723a72f9aa98e90ee0bedffbb1c"
+  },
+  ".\\configs\\packs\\overlays\\emitter_pathb_ch1.yaml": {
+    "mtime": 1758104942.0,
+    "size": 262,
+    "hash": "2591640bac5016edddc2876b2aa77e1b"
+  },
+  ".\\configs\\packs\\overlays\\comparator_pathb_ideal.yaml": {
+    "mtime": 1758105142.0,
+    "size": 121,
+    "hash": "e7065a44a73a4afb377cbe42704d9c54"
+  },
+  ".\\configs\\packs\\overlays\\tia_pathb_ideal.yaml": {
+    "mtime": 1758105150.0,
+    "size": 185,
+    "hash": "a744adb6912e73e014041eff5d8b5e34"
+  },
+  ".\\configs\\packs\\overlays\\sensor_pathb_ideal.yaml": {
+    "mtime": 1758105158.0,
+    "size": 62,
+    "hash": "bef62339f497e8d4c4bc79bd72a66720"
+  },
+  ".\\configs\\packs\\overlays\\optics_voa_2db.yaml": {
+    "mtime": 1758171820.0,
+    "size": 18,
+    "hash": "3081e7ec6c9270f93b40e3c95a910b1a"
+  },
+  ".\\configs\\packs\\overlays\\optics_voa_4db.yaml": {
+    "mtime": 1758171822.0,
+    "size": 18,
+    "hash": "f21181bc3e8c0c788ea0e07c75f7fa5a"
+  },
+  ".\\configs\\packs\\overlays\\optics_voa_6db.yaml": {
+    "mtime": 1758171826.0,
+    "size": 18,
+    "hash": "ea1b1f1b9c4708c0f08d1021285d7e56"
+  },
+  ".\\configs\\packs\\overlays\\tuned_comparator_pathb.yaml": {
+    "mtime": 1758173762.0,
+    "size": 263,
+    "hash": "c43a837c2cbb7d7662e8632584c881a3"
+  },
+  ".\\configs\\packs\\overlays\\tuned_comparator_pathb20.yaml": {
+    "mtime": 1758173940.0,
+    "size": 323,
+    "hash": "5a9090bdfbbb36895ea0b1d0f05cc016"
+  },
+  ".\\configs\\packs\\overlays\\tuned_comparator_pathb10.yaml": {
+    "mtime": 1758173888.0,
+    "size": 331,
+    "hash": "da8c84ada38e16a59557eb7325f0cf12"
+  },
+  ".\\configs\\scenarios\\basic_typ.yaml": {
+    "mtime": 1755332256.0,
+    "size": 389,
+    "hash": "34e86dd003015b62e63981a879b58463"
+  },
+  ".\\configs\\scenarios\\basic_optimistic.yaml": {
+    "mtime": 1755326970.0,
+    "size": 377,
+    "hash": "3d5f784367a15084dfa532ba35c46d64"
+  },
+  ".\\configs\\scenarios\\basic_pessimistic.yaml": {
+    "mtime": 1755326970.0,
+    "size": 380,
+    "hash": "42d31e364de271b901c26e68f85f0223"
+  },
+  ".\\configs\\scenarios\\pd_only.yaml": {
+    "mtime": 1758176934.0,
+    "size": 305,
+    "hash": "75e36a2a659d0c280eb1e4ce27ea5e53"
+  },
+  ".\\configs\\scenarios\\tdm_mvp_16ch_strongsa_k8.yaml": {
+    "mtime": 1758246800.0,
+    "size": 472,
+    "hash": "b9b21d7e8b8b8ab51bc9022df608677b"
+  },
+  ".\\configs\\scenarios\\tdm_16_lightsa_k4.yaml": {
+    "mtime": 1758247252.0,
+    "size": 468,
+    "hash": "21a8c524ddee3618889df06ae8249e43"
+  },
+  ".\\configs\\scenarios\\tdm_32_strongsa_k8.yaml": {
+    "mtime": 1758247264.0,
+    "size": 473,
+    "hash": "a096f35e724036d993923b0da1dcecbd"
+  },
+  ".\\configs\\scenarios\\tdm_32_lightsa_k8.yaml": {
+    "mtime": 1758247346.0,
+    "size": 468,
+    "hash": "6dd554477c87ff7328fe1e3130fc970c"
+  },
+  ".\\configs\\presets\\upper_bound_path_a_digital.json": {
+    "mtime": 1755760044.0,
+    "size": 1558,
+    "hash": "65e724f5d20d07201a50bf4bc827e919"
+  },
+  ".\\configs\\presets\\practicalization_path_a_digital.json": {
+    "mtime": 1755760044.0,
+    "size": 2442,
+    "hash": "4304071cd8a15cac92783d567ddc97b8"
+  },
+  ".\\configs\\presets\\cold_input_lift.json": {
+    "mtime": 1755753306.0,
+    "size": 1112,
+    "hash": "7400c41be1b9125c7c1e60f664f866df"
+  },
+  ".\\configs\\presets\\path_b_analog_viability.json": {
+    "mtime": 1755753306.0,
+    "size": 1200,
+    "hash": "1889202669738113c10ac5684e24a87c"
+  },
+  ".\\configs\\presets\\hold_below_0p1_path_a.json": {
+    "mtime": 1755771160.0,
+    "size": 4955,
+    "hash": "5f2a2634c6dbdf0f98eae48f7b6e2e59"
+  },
+  ".\\configs\\presets\\optics_angle_fast_path_a.json": {
+    "mtime": 1755769306.0,
+    "size": 1619,
+    "hash": "c1801b234698d27082e2f0672701edbf"
+  },
+  ".\\configs\\presets\\sub_0p05_backoff_and_alt_chain.json": {
+    "mtime": 1755892402.0,
+    "size": 3398,
+    "hash": "7fe9eb3a986d1fc7b8e57241e741964a"
+  },
+  ".\\configs\\presets\\sub_0p065_tuned_path_a.json": {
+    "mtime": 1755937722.0,
+    "size": 1821,
+    "hash": "12c036a7fa1eba5ee76ec28eaf881131"
+  },
+  ".\\configs\\presets\\sub_0p065_tuned_no_autotune_path_a.json": {
+    "mtime": 1755937860.0,
+    "size": 1639,
+    "hash": "b0ecd6ded2681fe8cfbfa5ecf2f9745e"
+  },
+  ".\\configs\\presets\\sub_0p05_probe_path_a.json": {
+    "mtime": 1755937722.0,
+    "size": 1994,
+    "hash": "e4215d5abb90bf693fccae9133f7419e"
+  },
+  ".\\configs\\presets\\sub_0p06_comp_sweep_path_a.json": {
+    "mtime": 1755936560.0,
+    "size": 1520,
+    "hash": "e66135bba0b4011659df08fa21d42fc5"
+  },
+  ".\\configs\\presets\\sub_0p06_tia_sweep_path_a.json": {
+    "mtime": 1755936560.0,
+    "size": 1513,
+    "hash": "01ecf9664979c78dd415b840505d2260"
+  },
+  ".\\configs\\presets\\sub_0p06_optics_3deg_vs_5deg_path_a.json": {
+    "mtime": 1755936560.0,
+    "size": 1546,
+    "hash": "92a5e497e91be5decb24e2b76cb69b70"
+  },
+  ".\\configs\\presets\\zero_push_calibration_path_a.json": {
+    "mtime": 1755938522.0,
+    "size": 1640,
+    "hash": "6a2111c81b29d638ea9393a5044d4b1c"
+  },
+  ".\\configs\\presets\\zero_push_adaptive_path_a.json": {
+    "mtime": 1755938522.0,
+    "size": 1720,
+    "hash": "1424d060f0e5a28d6f68aa827a70a5e4"
+  },
+  ".\\configs\\presets\\zero_push_avg_frames_path_a.json": {
+    "mtime": 1755938522.0,
+    "size": 1645,
+    "hash": "807a0d7d0df4dffd58eeba35159a58cd"
+  },
+  ".\\configs\\presets\\zero_push_vote5_path_a.json": {
+    "mtime": 1755938894.0,
+    "size": 1664,
+    "hash": "e9b1217ea9bd146888c56e87ff52ce3a"
+  },
+  ".\\configs\\presets\\zero_push_20ns_power_boost_path_a.json": {
+    "mtime": 1755938894.0,
+    "size": 1689,
+    "hash": "fd3464724865dd2f818495e1f7b658b8"
+  },
+  ".\\configs\\presets\\zero_push_repeat5_permute_path_a.json": {
+    "mtime": 1755939956.0,
+    "size": 1769,
+    "hash": "0915cf6fc8f00f4c092ea35e67ba2551"
+  },
+  ".\\configs\\presets\\zero_push_replicate2_path_a.json": {
+    "mtime": 1755940210.0,
+    "size": 1679,
+    "hash": "ad5e31e3cc3d548ff2a802f495573ebd"
+  },
+  ".\\configs\\presets\\zero_push_replicate16_permute_path_a.json": {
+    "mtime": 1755940554.0,
+    "size": 1773,
+    "hash": "dbada2610bd7daf9b976495ad20baf40"
+  },
+  ".\\configs\\presets\\zero_push_phys2x_path_a.json": {
+    "mtime": 1755940806.0,
+    "size": 1675,
+    "hash": "701c7ed5098e86088d1a6ea0d64e46de"
+  },
+  ".\\configs\\presets\\sub_0p065_tuned_32ch_path_a.json": {
+    "mtime": 1755941392.0,
+    "size": 1700,
+    "hash": "ccecaab25644aa2a894baa8bf441f292"
+  },
+  ".\\configs\\presets\\sub_0p065_tuned_64ch_path_a.json": {
+    "mtime": 1755941392.0,
+    "size": 1700,
+    "hash": "70cea6a891c6eb4b8d2f4f23cec4f28f"
+  },
+  ".\\configs\\presets\\robust_masked_64ch_path_a.json": {
+    "mtime": 1755943200.0,
+    "size": 1884,
+    "hash": "a8363b50d0d88294e4bb9b5ca7a504f6"
+  },
+  ".\\configs\\presets\\sub_0p065_tuned_masked_path_a.json": {
+    "mtime": 1755947064.0,
+    "size": 1900,
+    "hash": "bda6c0745c4dc3c67a47dde2cb592c39"
+  },
+  ".\\configs\\presets\\sub_0p065_mask_sweep_path_a.json": {
+    "mtime": 1755977282.0,
+    "size": 1807,
+    "hash": "5d9977ef4833c1b38e17832eb81f22ac"
+  },
+  ".\\configs\\presets\\sub_0p065_optics_3deg_path_a.json": {
+    "mtime": 1755977282.0,
+    "size": 1463,
+    "hash": "e8c8e192b3df34c0163708d30ef31e5c"
+  },
+  ".\\configs\\presets\\sub_0p065_channels_16_32_64_path_a.json": {
+    "mtime": 1755977282.0,
+    "size": 1394,
+    "hash": "1b97bf906e711f5b4e0f1f6fdaf38e86"
+  },
+  ".\\configs\\presets\\sub_0p065_avg11_path_a.json": {
+    "mtime": 1755977282.0,
+    "size": 1400,
+    "hash": "80935f8fb3d54afc18342952979c1579"
+  },
+  ".\\configs\\presets\\sub_0p0625_majority_16_path_a.json": {
+    "mtime": 1755982048.0,
+    "size": 1591,
+    "hash": "1bb141ffc8a9231700c2d3f67fd55fae"
+  },
+  ".\\configs\\presets\\mvp_single_pass_led.json": {
+    "mtime": 1758093468.0,
+    "size": 1093,
+    "hash": "4f2460129fef4dab5575fa88fb96c833"
+  },
+  ".\\configs\\presets\\tile16_wdm_dual.json": {
+    "mtime": 1758093484.0,
+    "size": 1088,
+    "hash": "108fd10c424063e5877d310d28e8b20e"
+  },
+  ".\\dashboard\\index.html": {
+    "mtime": 1755760060.0,
+    "size": 57954,
+    "hash": "474e8224e74367921e3fd37f22f1240c"
+  },
+  ".\\scripts\\run_probes.py": {
+    "mtime": 1756069800.0,
+    "size": 2641,
+    "hash": "b604f9fedec59e3ca8f032ea036c72c2"
+  },
+  ".\\scripts\\probe_queue_runner.py": {
+    "mtime": 1758090662.0,
+    "size": 23030,
+    "hash": "2b29f315b4cc9c40445961a19327fc27"
+  },
+  ".\\scripts\\collect_once.py": {
+    "mtime": 1756788900.0,
+    "size": 4273,
+    "hash": "f62bcb02f3ca97895a854b1a7f0878cb"
+  },
+  ".\\scripts\\append_tuned_probes.py": {
+    "mtime": 1756442652.0,
+    "size": 1983,
+    "hash": "db79032cda683a6c7d2ce9993e3e5d78"
+  },
+  ".\\scripts\\append_focus19_probes.py": {
+    "mtime": 1756442652.0,
+    "size": 2244,
+    "hash": "5577fd0ab42cccacfb9ab7744f3f4401"
+  },
+  ".\\scripts\\append_parallel_focus.py": {
+    "mtime": 1756442652.0,
+    "size": 2237,
+    "hash": "a9bb6e05df3a09a8cc26c31e9055285a"
+  },
+  ".\\scripts\\append_sweep2.py": {
+    "mtime": 1756788902.0,
+    "size": 2626,
+    "hash": "a817efc5cfc0b1989b3cb1f610c5d09f"
+  },
+  ".\\scripts\\append_sweep3.py": {
+    "mtime": 1756788904.0,
+    "size": 2374,
+    "hash": "9341dbb2695708e1d5ba640e88e42c6a"
+  },
+  ".\\scripts\\append_stage_ab_probes.py": {
+    "mtime": 1756791230.0,
+    "size": 9453,
+    "hash": "05a1e8cb43e12f3a605070f20d353d6c"
+  },
+  ".\\scripts\\append_min_combo_hardware.py": {
+    "mtime": 1756793140.0,
+    "size": 3279,
+    "hash": "4476b5514694d071fee9fa813db130dd"
+  },
+  ".\\scripts\\append_hw_tuning_suite.py": {
+    "mtime": 1756792226.0,
+    "size": 5694,
+    "hash": "d82cb1e5cd9bcbf13c9bd5959fa909b4"
+  },
+  ".\\scripts\\append_overlayfix_batch.py": {
+    "mtime": 1756792876.0,
+    "size": 2310,
+    "hash": "850e42ef7cad9bcfa4a0ed4f42948e94"
+  },
+  ".\\scripts\\append_hw_acceptance_suite.py": {
+    "mtime": 1756792466.0,
+    "size": 2750,
+    "hash": "710718063274d4dcfdbae10edefe6e96"
+  },
+  ".\\scripts\\append_forcecal_accept.py": {
+    "mtime": 1756792550.0,
+    "size": 1817,
+    "hash": "125553466f6de764f0fd1a4e37f9a684"
+  },
+  ".\\scripts\\append_hw_acceptance_diag.py": {
+    "mtime": 1756792648.0,
+    "size": 2268,
+    "hash": "9ce9730c8954edc23816bd94ce428cbf"
+  },
+  ".\\scripts\\append_hw_compact_sweep.py": {
+    "mtime": 1756793326.0,
+    "size": 2908,
+    "hash": "aa8459c52fd91043fee6a306b14dccb7"
+  },
+  ".\\scripts\\append_confirm_best.py": {
+    "mtime": 1756794206.0,
+    "size": 4886,
+    "hash": "9d71e5aed83e8aa32950f087446dcd6a"
+  },
+  ".\\scripts\\append_optimize_best.py": {
+    "mtime": 1756794282.0,
+    "size": 1938,
+    "hash": "1ba6927d4291aa6ab9919079093f06c5"
+  },
+  ".\\scripts\\append_moe_comp_suite.py": {
+    "mtime": 1756795216.0,
+    "size": 2985,
+    "hash": "74c60348420486e57578722a9e8c2b8f"
+  },
+  ".\\scripts\\append_drift_stress.py": {
+    "mtime": 1756797534.0,
+    "size": 1886,
+    "hash": "3a1bf6dc682d1b6689ef40a150ffe849"
+  },
+  ".\\scripts\\append_quick_working.py": {
+    "mtime": 1756796308.0,
+    "size": 2486,
+    "hash": "999c218e790e5073f7b2e08ac9afadea"
+  },
+  ".\\scripts\\append_invalidation_stress.py": {
+    "mtime": 1756796474.0,
+    "size": 1945,
+    "hash": "ee29ff9b6135b9f3677af973b0844d48"
+  },
+  ".\\scripts\\append_invalidation_stress2.py": {
+    "mtime": 1756796648.0,
+    "size": 3772,
+    "hash": "aedd9f6c09b0d92514dbb3a838d89989"
+  },
+  ".\\scripts\\append_invalidation_hooks.py": {
+    "mtime": 1756797696.0,
+    "size": 1876,
+    "hash": "b12e3f39790f416523f8a9b29e4cfaaf"
+  },
+  ".\\scripts\\append_drift_schedule.py": {
+    "mtime": 1756798102.0,
+    "size": 2671,
+    "hash": "d9f4129293372caf14913a0ed53c7b8b"
+  },
+  ".\\scripts\\append_drift_schedule_rerun.py": {
+    "mtime": 1756798568.0,
+    "size": 2126,
+    "hash": "7dd7a1df9c96748f25f486ae5f94b40b"
+  },
+  ".\\scripts\\append_pathb_suite.py": {
+    "mtime": 1756799772.0,
+    "size": 2036,
+    "hash": "9b8672f00a1626ea080771d9dce4b3e1"
+  },
+  ".\\scripts\\append_cold_input_suite.py": {
+    "mtime": 1756799772.0,
+    "size": 2604,
+    "hash": "2e39b1486407f3b5fbe4c636b7d0ce24"
+  },
+  ".\\scripts\\collect_pathb.py": {
+    "mtime": 1756800362.0,
+    "size": 929,
+    "hash": "60ba138fe87ddaee1b05b94cb6855dcb"
+  },
+  ".\\scripts\\append_analog_runs.py": {
+    "mtime": 1756801292.0,
+    "size": 3776,
+    "hash": "21a153c284add637445e669527b64cf2"
+  },
+  ".\\scripts\\append_analog_tuned.py": {
+    "mtime": 1756801500.0,
+    "size": 3319,
+    "hash": "aafae694af729b053a2a2f7c51666ce8"
+  },
+  ".\\scripts\\append_pathb_analog_compact.py": {
+    "mtime": 1756801806.0,
+    "size": 2398,
+    "hash": "048d25e54b60fb8727095b9d29eaf809"
+  },
+  ".\\scripts\\append_pathb_amp_sa.py": {
+    "mtime": 1756834812.0,
+    "size": 2238,
+    "hash": "4d6d0e8f7f8ddd2a5190e5287ab5b9c9"
+  },
+  ".\\scripts\\append_projector_suite.py": {
+    "mtime": 1756842036.0,
+    "size": 2627,
+    "hash": "e59555c64d63933a6f99280a957469ac"
+  },
+  ".\\scripts\\append_projector_improve.py": {
+    "mtime": 1756843844.0,
+    "size": 2299,
+    "hash": "13597d83fffe56ab3607402b2d76f8b1"
+  },
+  ".\\scripts\\append_projector_best.py": {
+    "mtime": 1756946832.0,
+    "size": 1876,
+    "hash": "de9390ef53ebcef6864c239a5d7c52ef"
+  },
+  ".\\scripts\\append_projector_best2.py": {
+    "mtime": 1756946832.0,
+    "size": 1869,
+    "hash": "fd154f9e7b9c4d1b6fecce08118b3b7e"
+  },
+  ".\\scripts\\append_pragmatic_path.py": {
+    "mtime": 1756952900.0,
+    "size": 5003,
+    "hash": "766f271d12dfc7342e75ac86eabb526f"
+  },
+  ".\\scripts\\append_single_tuning.py": {
+    "mtime": 1756957764.0,
+    "size": 2711,
+    "hash": "38f3597eab1e84757b821076d91c88dd"
+  },
+  ".\\scripts\\append_single_verify_and_sweeps.py": {
+    "mtime": 1756958564.0,
+    "size": 3960,
+    "hash": "d084bd0ebb833763ddf0c7174b9765c2"
+  },
+  ".\\scripts\\append_multich_refine.py": {
+    "mtime": 1756959662.0,
+    "size": 1696,
+    "hash": "87fef8f190a87f1a8d2d394782a91977"
+  },
+  ".\\scripts\\append_small_ch_scaling.py": {
+    "mtime": 1756960606.0,
+    "size": 1816,
+    "hash": "2454700859dfbfc2e406e48731c9f4e8"
+  },
+  ".\\scripts\\append_refine_16_32_and_pathb.py": {
+    "mtime": 1756960970.0,
+    "size": 3143,
+    "hash": "06983457b46ea9481233e80751becaa9"
+  },
+  ".\\scripts\\append_refine_next_batch.py": {
+    "mtime": 1756961870.0,
+    "size": 3959,
+    "hash": "7b4ca064a19062696e7ba901c576eeaa"
+  },
+  ".\\scripts\\append_iteration_batch.py": {
+    "mtime": 1756962788.0,
+    "size": 4011,
+    "hash": "2d854a7c8542b3260f55f80d8f103d3e"
+  },
+  ".\\scripts\\append_lidar_like_suite.py": {
+    "mtime": 1756963348.0,
+    "size": 2364,
+    "hash": "eb079866caed03c95db942432cf8585a"
+  },
+  ".\\scripts\\append_accept_and_calib.py": {
+    "mtime": 1756964430.0,
+    "size": 5855,
+    "hash": "db805def44af049ebe006858eb00268f"
+  },
+  ".\\scripts\\append_vthopt_and_norm.py": {
+    "mtime": 1756964724.0,
+    "size": 2227,
+    "hash": "efe6202433ff5bc9f4be6c433b02ef4e"
+  },
+  ".\\scripts\\append_pd_bank_mvp.py": {
+    "mtime": 1756964724.0,
+    "size": 1457,
+    "hash": "3e8b448c8ba604a59ff882b1157e3022"
+  },
+  ".\\scripts\\append_precision_and_boost.py": {
+    "mtime": 1756965052.0,
+    "size": 3444,
+    "hash": "982c465bf5fe20ec8775e3c7681509b7"
+  },
+  ".\\scripts\\append_hysteresis_sweep.py": {
+    "mtime": 1756965462.0,
+    "size": 1676,
+    "hash": "b3b7864e17eebdec98d155d7b66acf74"
+  },
+  ".\\scripts\\append_accept_upper_and_slow.py": {
+    "mtime": 1756966460.0,
+    "size": 3078,
+    "hash": "d63b9a37f5b23f429e86dae10725b00d"
+  },
+  ".\\scripts\\append_accept_with_vth_import.py": {
+    "mtime": 1756966602.0,
+    "size": 3068,
+    "hash": "89911666ac96809d529ad96f85261ad9"
+  },
+  ".\\scripts\\append_accept_combo_plus_pathb8.py": {
+    "mtime": 1756966770.0,
+    "size": 3815,
+    "hash": "93de3b998cd0ba0d7b62765ca11d6992"
+  },
+  ".\\scripts\\append_dual_array_vs_single.py": {
+    "mtime": 1756968154.0,
+    "size": 3714,
+    "hash": "d854f5b5368fdad1ed38d3593e07a852"
+  },
+  ".\\scripts\\append_big_batch_remaining.py": {
+    "mtime": 1756968210.0,
+    "size": 3067,
+    "hash": "a2762f4c78283675582ade844f1f1771"
+  },
+  ".\\scripts\\append_tier_sensitivity.py": {
+    "mtime": 1756969542.0,
+    "size": 2264,
+    "hash": "0ba2d6d33af416d52c080f266008ab2b"
+  },
+  ".\\scripts\\append_gain_equalization_suite.py": {
+    "mtime": 1756969542.0,
+    "size": 2933,
+    "hash": "46f57e6621e0d60d5becab80472c5f35"
+  },
+  ".\\scripts\\append_bom_option_sims.py": {
+    "mtime": 1757008368.0,
+    "size": 2977,
+    "hash": "667e6efaa1c6fecf3614ff4602507817"
+  },
+  ".\\scripts\\append_costdown_emitters.py": {
+    "mtime": 1757036350.0,
+    "size": 1946,
+    "hash": "cef8531e2c626b381c1e348aa65ddcb7"
+  },
+  ".\\scripts\\append_cband_mvp_patha.py": {
+    "mtime": 1757055656.0,
+    "size": 1480,
+    "hash": "ee3538a57fc0f5ea4f8b124823cac0ab"
+  },
+  ".\\scripts\\append_cband_pathb_loops.py": {
+    "mtime": 1757055656.0,
+    "size": 1559,
+    "hash": "8edf7a14c66da6dfb714bf4e465906d7"
+  },
+  ".\\scripts\\append_cband_dwdm_tile.py": {
+    "mtime": 1757055656.0,
+    "size": 1526,
+    "hash": "16e366944ef97421f53acab1a1a20a8a"
+  },
+  ".\\scripts\\append_cband_realism_sweeps.py": {
+    "mtime": 1757056872.0,
+    "size": 2426,
+    "hash": "98fbde3d90dc22c43289e567510c5e50"
+  },
+  ".\\scripts\\append_cband_ghz_throughput_and_budget.py": {
+    "mtime": 1757060928.0,
+    "size": 2359,
+    "hash": "d8c5562dd833907cf3de8e868adbe17f"
+  },
+  ".\\scripts\\append_cband_ghz_extreme.py": {
+    "mtime": 1757062806.0,
+    "size": 2374,
+    "hash": "de05e3caa1a353a27e94c7ea43ab8fae"
+  },
+  ".\\scripts\\append_cband_must_fail_then_pass.py": {
+    "mtime": 1757063384.0,
+    "size": 2710,
+    "hash": "080f11622a92a2fbe5a13fbb6190cbf7"
+  },
+  ".\\scripts\\append_cband_recover_with_cal.py": {
+    "mtime": 1757063956.0,
+    "size": 2715,
+    "hash": "5fdf861dcb9924efa6ede7a1e2a322fb"
+  },
+  ".\\scripts\\append_cband_recover_sweeps.py": {
+    "mtime": 1757064078.0,
+    "size": 2215,
+    "hash": "cd399e1fe24c35e066ac79abb435f43f"
+  },
+  ".\\scripts\\append_cband_ghz_highstress.py": {
+    "mtime": 1757064416.0,
+    "size": 3033,
+    "hash": "46c0d8d7af5b40a7a42678e7a2a0a7ed"
+  },
+  ".\\scripts\\append_cband_harsher_micro.py": {
+    "mtime": 1757065382.0,
+    "size": 2069,
+    "hash": "43941a02ceca7c22891f6528a1ef2cca"
+  },
+  ".\\scripts\\append_control_bounded_highstress.py": {
+    "mtime": 1757065842.0,
+    "size": 2365,
+    "hash": "2bd2f8f07b4b40faaba7278994c9cfd2"
+  },
+  ".\\scripts\\append_cband_extreme_burn.py": {
+    "mtime": 1757066256.0,
+    "size": 2727,
+    "hash": "f3b6f02186f679c3b6149b516543c433"
+  },
+  ".\\scripts\\append_cband_extreme_scrambler.py": {
+    "mtime": 1757066752.0,
+    "size": 2131,
+    "hash": "0eb07239909c317a3692cd8502584b0a"
+  },
+  ".\\scripts\\append_cband_ultra_burn.py": {
+    "mtime": 1757066946.0,
+    "size": 2407,
+    "hash": "eb63aad241fdc0ff79050da1a1ab3ef4"
+  },
+  ".\\scripts\\append_cband_power_bathtub.py": {
+    "mtime": 1757067266.0,
+    "size": 2151,
+    "hash": "976d64b64e4f53a12888f862727b972c"
+  },
+  ".\\scripts\\append_verbose_edfa_bath.py": {
+    "mtime": 1757067980.0,
+    "size": 1613,
+    "hash": "930b4779e932e8a89dca3d228d310476"
+  },
+  ".\\scripts\\append_cband_harsh_followup.py": {
+    "mtime": 1757069286.0,
+    "size": 2786,
+    "hash": "96798b365aaa2d7482fc5d35c8034f4d"
+  },
+  ".\\scripts\\append_cband_ultra_marginality.py": {
+    "mtime": 1757069566.0,
+    "size": 1902,
+    "hash": "45cdd80d8a34c00cb841c0034a0d8897"
+  },
+  ".\\scripts\\append_cband_lambda_ramp.py": {
+    "mtime": 1758059836.0,
+    "size": 1452,
+    "hash": "7b634be2321b9d29d7710f0f2592dea1"
+  },
+  ".\\scripts\\append_cband_soa_burst_memory.py": {
+    "mtime": 1758059836.0,
+    "size": 1475,
+    "hash": "034b0cb844d763775a782c7017d9f705"
+  },
+  ".\\scripts\\append_cband_ghz_grade_stack.py": {
+    "mtime": 1758066540.0,
+    "size": 1488,
+    "hash": "c0ad35333f7ebd5a630bc9a3c2bf6dbe"
+  },
+  ".\\scripts\\append_mvp_and_tile.py": {
+    "mtime": 1758093542.0,
+    "size": 3769,
+    "hash": "af8c581877e4b7784ff102e30b314c45"
+  },
+  ".\\scripts\\append_lowcost_stress.py": {
+    "mtime": 1758090630.0,
+    "size": 2752,
+    "hash": "c910b472f8947cc49489744818bb3693"
+  },
+  ".\\scripts\\debug_pathb.py": {
+    "mtime": 1758101594.0,
+    "size": 2431,
+    "hash": "aec995304371781e5cac619cfe0ed912"
+  },
+  ".\\scripts\\debug_pathb_compare.py": {
+    "mtime": 1758101500.0,
+    "size": 2498,
+    "hash": "4d83d5f55e1dde1183a8caa0a0e8fc9a"
+  },
+  ".\\scripts\\debug_pathb_diff.py": {
+    "mtime": 1758101676.0,
+    "size": 1197,
+    "hash": "33369a340b6e1f7e7c61364f973bd456"
+  },
+  ".\\scripts\\pathb_characterize.py": {
+    "mtime": 1758102506.0,
+    "size": 5150,
+    "hash": "47e3de821fe1cf613ca08724abe2da82"
+  },
+  ".\\scripts\\run_tdm_mvp.py": {
+    "mtime": 1758246998.0,
+    "size": 4682,
+    "hash": "563fdf740ff969ede93f4bf228fbf3f9"
+  },
+  ".\\scripts\\summarize_tdm.py": {
+    "mtime": 1758256054.0,
+    "size": 2441,
+    "hash": "1611f7debe20e7807bf5c63e7fe76706"
+  },
+  ".\\scripts\\run_scenario_tdm.py": {
+    "mtime": 1758247132.0,
+    "size": 3467,
+    "hash": "9390fccbc09534294522c1c2f15fcb2e"
+  },
+  ".\\scripts\\run_tdm_sweep.py": {
+    "mtime": 1758254754.0,
+    "size": 2478,
+    "hash": "8959df638ecbccf5dc5f8d761b364f79"
+  },
+  ".\\scripts\\summarize_pathb.py": {
+    "mtime": 1758269296.0,
+    "size": 732,
+    "hash": "94ce51f286e585990db564610ffbdb82"
+  },
+  ".\\tests\\test_emitter.py": {
+    "mtime": 1758175216.0,
+    "size": 1720,
+    "hash": "fa5c580b3012a35aa3011764e80de69d"
+  },
+  ".\\tests\\test_scenario_optional_packs.py": {
+    "mtime": 1758176934.0,
+    "size": 860,
+    "hash": "9947f81d0f68dd0608e3aa442ac2c389"
+  },
+  ".\\tests\\test_tdm_flags.py": {
+    "mtime": 1758247322.0,
+    "size": 2885,
+    "hash": "86a3530f60d2a1548c286fb42ccad15b"
+  },
+  ".\\docs\\MVP_TDM_BOM.md": {
+    "mtime": 1758247096.0,
+    "size": 2696,
+    "hash": "22d996204b1dcadcc72a4fdccbec855c"
+  },
+  ".\\docs\\DEMO_COMMANDS.md": {
+    "mtime": 1758269296.0,
+    "size": 6531,
+    "hash": "84e3835d171b17164f4e298c90602f09"
+  },
+  ".\\docs\\TODO\\quantum_identity_paper_ising_randomness.txt": {
+    "mtime": 1762647414.0,
+    "size": 50113,
+    "hash": "7280b1570c9fc4eb7a61225fb33438f4"
+  },
+  ".\\docs\\TODO\\poor_mans_quantum.txt": {
+    "mtime": 1768637924.0,
+    "size": 2950,
+    "hash": "597463d397b459bc334a089657cee0be"
+  },
+  ".\\docs\\TODO\\reservoir_tuning.txt": {
+    "mtime": 1766635200.0,
+    "size": 12298,
+    "hash": "6ffe6353b3193b17ea8a6d06c76f5b17"
+  },
+  ".\\docs\\TODO\\facebook_questions_saved.txt": {
+    "mtime": 1766489642.0,
+    "size": 12782,
+    "hash": "5fd8b08fa04a2ebabcba2aa2f6b05d99"
+  },
+  ".\\docs\\TODO\\handcrafting.txt": {
+    "mtime": 1766489372.0,
+    "size": 6633,
+    "hash": "62ad3daa6c03139a97870497c3ec9374"
+  },
+  ".\\docs\\TODO\\multiplexing_100_channels.txt": {
+    "mtime": 1765963492.0,
+    "size": 12112,
+    "hash": "3e48e2c1c0ea0ab7536c57f942a45e87"
+  },
+  ".\\docs\\TODO\\titans.txt": {
+    "mtime": 1765161418.0,
+    "size": 5276,
+    "hash": "8352379efad30df7b508edab7351824a"
+  },
+  ".\\docs\\TODO\\quantum_codes.txt": {
+    "mtime": 1764638250.0,
+    "size": 5028,
+    "hash": "f5d9afcbe730de465680e6f1f034bde9"
+  },
+  ".\\docs\\TODO\\scaling_capex_opex_predictions2.txt": {
+    "mtime": 1763961284.0,
+    "size": 20681,
+    "hash": "6ad662719d9bd4b9339a23c6fad7b6fa"
+  },
+  ".\\docs\\TODO\\bom_and_shadow_tomo.txt": {
+    "mtime": 1763010262.0,
+    "size": 20651,
+    "hash": "20590355544d4ad0ded80bfa49d077fb"
+  },
+  ".\\docs\\TODO\\photon_budgeting.txt": {
+    "mtime": 1762662458.0,
+    "size": 21629,
+    "hash": "ad8a3da3938b1fa4c49c1f3e2a489f2d"
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "output": "G:\\LOKI\\LOCUS\\SENSUS\\looking_glass\\SUMMARY\\summaries\\2026-01-30_17-40-26.965_summary_part1.txt",
+  "files": [
+    {
+      "path": ".\\README.md",
+      "start": 23686,
+      "end": 36005,
+      "lang": "markdown"
+    },
+    {
+      "path": ".\\context.md",
+      "start": 36031,
+      "end": 441732,
+      "lang": "markdown"
+    },
+    {
+      "path": ".\\DESIGN.md",
+      "start": 441758,
+      "end": 459479,
+      "lang": "markdown"
+    },
+    {
+      "path": ".\\requirements.txt",
+      "start": 459505,
+      "end": 459573,
+      "lang": ""
+    },
+    {
+      "path": ".\\.gitignore",
+      "start": 459599,
+      "end": 460144,
+      "lang": ""
+    },
+    {
+      "path": ".\\tuning_assessment.md",
+      "start": 460170,
+      "end": 471763,
+      "lang": "markdown"
+    },
+    {
+      "path": ".\\INIT.md",
+      "start": 471789,
+      "end": 473011,
+      "lang": "markdown"
+    },
+    {
+      "path": ".\\TUNING.md",
+      "start": 473037,
+      "end": 536250,
+      "lang": "markdown"
+    },
+    {
+      "path": ".\\design_1550nm.md",
+      "start": 536276,
+      "end": 554143,
+      "lang": "markdown"
+    },
+    {
+      "path": ".\\tmp_patch2.py",
+      "start": 554169,
+      "end": 554933,
+      "lang": "python"
+    },
+    {
+      "path": ".\\tmp_patch3.py",
+      "start": 554959,
+      "end": 555902,
+      "lang": "python"
+    },
+    {
+      "path": ".\\tmp_patch4.py",
+      "start": 555928,
+      "end": 557277,
+      "lang": "python"
+    },
+    {
+      "path": ".\\AGENTS.md",
+      "start": 557303,
+      "end": 560324,
+      "lang": "markdown"
+    },
+    {
+      "path": ".\\tmp_script.py",
+      "start": 560350,
+      "end": 560971,
+      "lang": "python"
+    },
+    {
+      "path": ".\\FEEDBACK.md",
+      "start": 560997,
+      "end": 563089,
+      "lang": "markdown"
+    },
+    {
+      "path": ".\\REPORT.md",
+      "start": 563115,
+      "end": 604011,
+      "lang": "markdown"
+    },
+    {
+      "path": ".\\TASKS.md",
+      "start": 604037,
+      "end": 605746,
+      "lang": "markdown"
+    },
+    {
+      "path": ".\\deeploop_advice.md",
+      "start": 605772,
+      "end": 664933,
+      "lang": "markdown"
+    }
+  ]
+}
